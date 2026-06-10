@@ -9,6 +9,11 @@ export default defineConfig({
 
   themeConfig: {
     siteTitle: "Inkvoice",
+    logo: {
+      light: "/inkvoice-mark.svg",
+      dark: "/inkvoice-mark-white.svg",
+      alt: "Inkvoice",
+    },
     nav: [
       { text: "Guide", link: "/guide/" },
       { text: "Features", link: "/features/" },

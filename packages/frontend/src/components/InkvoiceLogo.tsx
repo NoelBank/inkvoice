@@ -4,122 +4,54 @@ interface LogoProps {
   className?: string;
 }
 
-/** Icon-only mark (the "iv" calligraphic monogram) */
+const ACCENT = "#f3522e";
+
+/** Icon-only mark (the five-bar "ink level" mark) */
 export function InkvoiceIcon({ className }: LogoProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 56"
+      viewBox="0 0 100 100"
       className={cn("shrink-0", className)}
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id="iv-s" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--foreground)" />
-          <stop offset="100%" stopColor="var(--muted-foreground)" />
-        </linearGradient>
-        <linearGradient id="iv-a" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#ef4444" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 14 C12 14, 16 18, 14 28 C12 38, 8 46, 10 50"
-        stroke="url(#iv-s)"
-        strokeWidth="5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="14" cy="7" r="4.5" fill="url(#iv-a)" />
-      <circle cx="20" cy="5" r="1.8" fill="#f97316" opacity="0.4" />
-      <circle cx="10" cy="3.5" r="1.3" fill="#ef4444" opacity="0.3" />
-      <path
-        d="M22 14 C22 14, 28 34, 32 44 C36 34, 42 14, 42 14"
-        stroke="url(#iv-s)"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M10 50 C14 52, 18 50, 20 46"
-        stroke="url(#iv-a)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.5"
-      />
+      <rect x="9" y="33" width="10" height="34" rx="5" fill="var(--foreground)" />
+      <rect x="27" y="21" width="10" height="58" rx="5" fill="var(--foreground)" />
+      <rect x="45" y="8" width="10" height="84" rx="5" fill={ACCENT} />
+      <rect x="63" y="26" width="10" height="48" rx="5" fill="var(--foreground)" />
+      <rect x="81" y="37" width="10" height="26" rx="5" fill="var(--foreground)" />
     </svg>
   );
 }
 
-/** Full logo with icon + wordmark */
+/** Full logo with mark + "inkvoice" wordmark */
 export function InkvoiceLogo({ className }: LogoProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 180 68"
+      viewBox="0 0 254 80"
       className={cn("shrink-0", className)}
       aria-label="Inkvoice"
     >
-      <defs>
-        <linearGradient id="ivf-s" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--foreground)" />
-          <stop offset="100%" stopColor="var(--muted-foreground)" />
-        </linearGradient>
-        <linearGradient id="ivf-a" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#ef4444" />
-        </linearGradient>
-      </defs>
-      <g transform="translate(6, 6)">
-        <path
-          d="M14 16 C14 16, 18 20, 16 32 C14 44, 10 56, 12 60"
-          stroke="url(#ivf-s)"
-          strokeWidth="6"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <circle cx="16" cy="8" r="5" fill="url(#ivf-a)" />
-        <circle cx="22" cy="6" r="2" fill="#f97316" opacity="0.4" />
-        <circle cx="12" cy="4" r="1.5" fill="#ef4444" opacity="0.3" />
-        <path
-          d="M24 16 C24 16, 30 40, 34 52 C38 40, 44 16, 44 16"
-          stroke="url(#ivf-s)"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <path
-          d="M12 60 C16 62, 20 60, 22 56"
-          stroke="url(#ivf-a)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.5"
-        />
+      <g transform="translate(15 15) scale(0.5)">
+        <rect x="9" y="33" width="10" height="34" rx="5" fill="var(--foreground)" />
+        <rect x="27" y="21" width="10" height="58" rx="5" fill="var(--foreground)" />
+        <rect x="45" y="8" width="10" height="84" rx="5" fill={ACCENT} />
+        <rect x="63" y="26" width="10" height="48" rx="5" fill="var(--foreground)" />
+        <rect x="81" y="37" width="10" height="26" rx="5" fill="var(--foreground)" />
       </g>
       <text
-        x="62"
-        y="50"
-        fontFamily="system-ui, -apple-system, sans-serif"
-        fontSize="34"
-        letterSpacing="-1.5"
-        fill="url(#ivf-s)"
+        x="78"
+        y="55.12"
+        fontFamily="'Geist Variable', system-ui, -apple-system, sans-serif"
+        fontSize="43"
+        fontWeight="700"
+        letterSpacing="-1.8"
+        fill="var(--foreground)"
       >
-        <tspan fontWeight="900">ink</tspan>
-        <tspan fontWeight="400" fill="var(--muted-foreground)">
-          voice
-        </tspan>
+        <tspan>ink</tspan>
+        <tspan fill="var(--muted-foreground)">voice</tspan>
       </text>
-      <path
-        d="M62 56 C80 58, 120 54, 160 56"
-        stroke="url(#ivf-a)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-      />
     </svg>
   );
 }

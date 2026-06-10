@@ -1,6 +1,9 @@
 <div align="center">
 
-# Inkvoice
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/branding/inkvoice-lockup-dark.png">
+  <img src="./docs/branding/inkvoice-lockup.png" alt="Inkvoice" width="320">
+</picture>
 
 ### Open-source invoicing for freelancers & small teams
 
