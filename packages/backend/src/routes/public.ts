@@ -239,7 +239,12 @@ publicRoutes.get("/portal/:token", (c) => {
   // Look up portal token (table may be absent on older databases)
   let portalToken: { customer_id: string } | null = null;
   try {
-    portalToken = db.query("SELECT customer_id FROM portal_tokens WHERE token = ?").get(token) as {
+    portalToken = db
+      .query(
+        `SELECT customer_id FROM portal_tokens
+         WHERE token = ? AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+      )
+      .get(token) as {
       customer_id: string;
     } | null;
   } catch {
@@ -301,7 +306,12 @@ function resolvePortalCustomer(token: string): { id: string; name: string } | nu
   const db = getDb();
   let row: { customer_id: string } | null = null;
   try {
-    row = db.query("SELECT customer_id FROM portal_tokens WHERE token = ?").get(token) as {
+    row = db
+      .query(
+        `SELECT customer_id FROM portal_tokens
+         WHERE token = ? AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+      )
+      .get(token) as {
       customer_id: string;
     } | null;
   } catch {

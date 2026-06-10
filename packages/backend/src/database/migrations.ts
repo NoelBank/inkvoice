@@ -630,6 +630,16 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "invoices", "last_viewed_at", "TEXT");
     },
   },
+  {
+    version: 17,
+    name: "portal_token_expiry",
+    up: (db) => {
+      // NULL = no expiry (self-hosted portal links stay permanent). Callers
+      // that stamp a TTL at generation time get expired tokens rejected by
+      // the public portal routes.
+      addColumnIfMissing(db, "portal_tokens", "expires_at", "TEXT");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

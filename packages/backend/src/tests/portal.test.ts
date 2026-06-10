@@ -240,3 +240,46 @@ describe("invoice comment thread", () => {
     void invoice2Id;
   });
 });
+
+describe("portal token expiry (TTL)", () => {
+  test("token with a future expires_at keeps working", async () => {
+    getDb().run("UPDATE portal_tokens SET expires_at = datetime('now', '+7 days') WHERE token = ?", [
+      portalToken,
+    ]);
+    const res = await app.request(`/api/v1/public/portal/${portalToken}`);
+    expect(res.status).toBe(200);
+  });
+
+  test("expired token is rejected on every portal route", async () => {
+    getDb().run("UPDATE portal_tokens SET expires_at = datetime('now', '-1 minute') WHERE token = ?", [
+      portalToken,
+    ]);
+
+    const portal = await app.request(`/api/v1/public/portal/${portalToken}`);
+    expect(portal.status).toBe(404);
+
+    const zip = await app.request(`/api/v1/public/portal/${portalToken}/invoices.zip?year=2026`);
+    expect(zip.status).toBe(404);
+
+    const comments = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${invoiceId}/comments`,
+    );
+    expect(comments.status).toBe(404);
+
+    const post = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${invoiceId}/comments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: "Should not land" }),
+      },
+    );
+    expect(post.status).toBe(404);
+  });
+
+  test("NULL expires_at means no expiry (self-hosted default)", async () => {
+    getDb().run("UPDATE portal_tokens SET expires_at = NULL WHERE token = ?", [portalToken]);
+    const res = await app.request(`/api/v1/public/portal/${portalToken}`);
+    expect(res.status).toBe(200);
+  });
+});
