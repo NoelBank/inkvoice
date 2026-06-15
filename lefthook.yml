@@ -1,0 +1,14 @@
+# Git hooks managed by lefthook (https://lefthook.dev).
+# Installed automatically via the package.json "prepare" script on `bun install`.
+#
+# pre-commit runs the repo's *pinned* Biome (the same `biome check` CI runs) on
+# staged files, so lint AND format issues are caught locally instead of failing
+# CI. Safe fixes (including formatting) are applied and re-staged; anything Biome
+# can't fix (a real error) aborts the commit.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css}"
+      run: bunx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true

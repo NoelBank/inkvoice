@@ -19,10 +19,12 @@
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "check": "bun run lint && bun run typecheck && bun test",
-    "db:reset": "bun run scripts/db-reset.ts"
+    "db:reset": "bun run scripts/db-reset.ts",
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "lefthook": "^2.1.9",
     "typescript": "^5.7.0"
   },
   "license": "MIT"
