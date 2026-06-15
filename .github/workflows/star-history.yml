@@ -1,0 +1,110 @@
+name: Star history
+
+# Daily snapshot of GitHub stars/forks/watchers into metrics/stars.csv.
+# The GitHub API only returns the CURRENT counts, so this CSV is the durable
+# history.
+#
+# Loop-avoidance: commits here are made with the default GITHUB_TOKEN, and
+# GitHub does NOT re-trigger workflows for pushes made by GITHUB_TOKEN. That is
+# the ONLY thing preventing a CI loop. The "[skip ci]" marker on the commit is
+# cosmetic for this trigger/token combo (schedule/workflow_dispatch ignore it,
+# and GITHUB_TOKEN pushes already don't trigger anything). If you ever switch
+# the push to a PAT or deploy key so it DOES trigger downstream CI, the loop
+# guard disappears with the token -- you must then add an explicit guard
+# (e.g. paths-ignore on metrics/** in push-triggered workflows).
+on:
+  schedule:
+    - cron: "17 3 * * *" # 03:17 UTC daily
+  workflow_dispatch: {}
+
+# Least privilege: default everything to read; grant write only on the job that
+# actually pushes the snapshot commit.
+permissions:
+  contents: read
+
+concurrency:
+  group: star-history
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required solely for the snapshot commit/push below
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Full history so the pull --rebase retry below can rebase onto an
+          # advanced origin/main if another commit landed during the run.
+          fetch-depth: 0
+          # Don't leave a write-capable git credential on disk for the API/jq
+          # step; the final push authenticates explicitly with GH_TOKEN.
+          persist-credentials: false
+
+      - name: Append daily snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          file="metrics/stars.csv"
+          mkdir -p metrics
+          [ -f "$file" ] || echo "date,stars,forks,watchers" > "$file"
+
+          repo_json="$(gh api "repos/${GITHUB_REPOSITORY}")"
+          stars="$(jq -r '.stargazers_count' <<<"$repo_json")"
+          forks="$(jq -r '.forks_count' <<<"$repo_json")"
+          watchers="$(jq -r '.subscribers_count' <<<"$repo_json")"
+
+          # Guard: only integers may reach the CSV (a failed API call would
+          # otherwise write a malformed row).
+          for n in "$stars" "$forks" "$watchers"; do
+            case "$n" in '' | *[!0-9]*) echo "Non-numeric metric: '$n'" >&2; exit 1 ;; esac
+          done
+
+          today="$(date -u +%F)"
+          # Idempotent: drop any existing row for today, then append the fresh one,
+          # so same-day re-runs replace rather than duplicate. Fixed-string match
+          # (-F) so the dedup never depends on regex metacharacters in the date.
+          grep -vF -- "${today}," "$file" > "$file.tmp" || true
+          mv "$file.tmp" "$file"
+          echo "${today},${stars},${forks},${watchers}" >> "$file"
+
+      - name: Commit if changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Stage first, THEN test the staged diff against HEAD. A bare
+          # `git diff` ignores untracked files, so on the first run (when
+          # metrics/stars.csv is not yet tracked) it would report no change and
+          # never commit the file. `git diff --cached` compares index vs HEAD
+          # and correctly reports a newly-staged file as a change.
+          git add metrics/stars.csv
+          if git diff --cached --quiet -- metrics/stars.csv; then
+            echo "No change; nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(metrics): star snapshot $(date -u +%F) [skip ci]"
+
+          # Resilient push: another commit may land on main between checkout and
+          # push (manual commit, another workflow, a concurrent dispatch). Retry
+          # with a rebase so a single concurrent commit doesn't drop the day's
+          # snapshot. The append step is idempotent, so re-running after a rebase
+          # is safe even if the rebase replays our row.
+          branch="${GITHUB_REF_NAME}"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for attempt in 1 2 3; do
+            if git push "$remote" "HEAD:${branch}"; then
+              echo "Pushed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}); rebasing onto origin/${branch} and retrying."
+            git pull --rebase --autostash "$remote" "$branch"
+          done
+
+          echo "Push failed after 3 attempts." >&2
+          exit 1
