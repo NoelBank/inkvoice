@@ -226,6 +226,11 @@ const en = {
     // Form
     invoice_details: "Invoice Details",
     select_customer: "Select customer...",
+    search_customer: "Search customers...",
+    add_customer: "Add customer",
+    add_new_customer: "Add new customer",
+    add_customer_named: "Add \"{{name}}\"",
+    refresh_customers: "Refresh customers",
     payment_terms: "Payment Terms",
     currency: "Currency",
     exchange_rate: "Exchange Rate",

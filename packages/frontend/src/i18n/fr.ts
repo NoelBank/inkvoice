@@ -232,6 +232,11 @@ const fr: TranslationKeys = {
     // Formulaire
     invoice_details: "Détails de la facture",
     select_customer: "Sélectionner un client...",
+    search_customer: "Rechercher des clients...",
+    add_customer: "Ajouter un client",
+    add_new_customer: "Ajouter un nouveau client",
+    add_customer_named: "Ajouter \"{{name}}\"",
+    refresh_customers: "Actualiser les clients",
     payment_terms: "Conditions de paiement",
     currency: "Devise",
     exchange_rate: "Taux de change",

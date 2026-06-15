@@ -1,6 +1,6 @@
 import { Clock, Copy, DollarSign, FileText, Save } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
@@ -35,6 +35,10 @@ export default function CustomerForm({ onSave }: Props) {
   const { t, language } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Set when arriving via "Add customer" from another page (e.g. the invoice
+  // form): pre-fill the name and return to the caller on cancel/save.
+  const navState = location.state as { returnTo?: string; prefillName?: string } | null;
   const isEdit = !!id && id !== "new";
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<{
@@ -50,7 +54,7 @@ export default function CustomerForm({ onSave }: Props) {
   });
   const [portalBusy, setPortalBusy] = useState(false);
   const [form, setForm] = useState({
-    name: "",
+    name: navState?.prefillName ?? "",
     email: "",
     phone: "",
     address_line1: "",
@@ -175,7 +179,12 @@ export default function CustomerForm({ onSave }: Props) {
           </h1>
         </div>
         <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate("/customers")}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(navState?.returnTo || "/customers")}
+          >
             {t("common.cancel")}
           </Button>
           <Button type="submit" size="sm" disabled={loading}>

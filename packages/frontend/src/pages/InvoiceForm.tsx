@@ -15,13 +15,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Save, Trash2 } from "lucide-react";
+import { GripVertical, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { CurrencyCombobox } from "@/components/shared/CurrencyCombobox";
+import { CustomerCombobox } from "@/components/shared/CustomerCombobox";
 import { ExchangeRateField } from "@/components/shared/ExchangeRateField";
 import { FormField } from "@/components/shared/FormField";
 import { PaymentTermsPicker, paymentTermsToDays } from "@/components/shared/PaymentTermsPicker";
@@ -37,6 +38,7 @@ import { isInvoiceFormEditable } from "@/lib/constants";
 import { addDaysIso, todayIso } from "@/lib/date";
 import { formatApiError } from "@/lib/format-api-error";
 import { markRowHighlight } from "@/lib/highlight-row";
+import { consumeInvoiceDraft, saveInvoiceDraft } from "@/lib/invoice-draft";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settings.store";
 
@@ -235,9 +237,17 @@ export default function InvoiceForm({ onSave }: Props) {
   const { id } = useParams();
   const isEdit = !!id && id !== "new";
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
+  const [editLoaded, setEditLoaded] = useState(false);
+  // Customer id to auto-select once the list contains it — set when returning
+  // from the customer-create page via "Add customer" (see handleAddCustomer).
+  const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(
+    () => (location.state as { addedCustomerId?: string } | null)?.addedCustomerId ?? null,
+  );
   const [products, setProducts] = useState<any[]>([]);
   const [taxDefs, setTaxDefs] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -337,33 +347,53 @@ export default function InvoiceForm({ onSave }: Props) {
     setTouched((prev) => (prev.has(field) ? prev : new Set(prev).add(field)));
   }, []);
 
+  const fetchCustomers = useCallback(async () => {
+    setCustomersLoading(true);
+    try {
+      const r = await api.listCustomers({ limit: "1000" });
+      setCustomers(r.data.items);
+    } finally {
+      setCustomersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    api.listCustomers({ limit: "1000" }).then((r) => setCustomers(r.data.items));
+    fetchCustomers();
     api.listProducts({ limit: "1000", active: "true" }).then((r) => setProducts(r.data.items));
     api.listTaxDefinitions().then((r) => setTaxDefs(r.data));
 
     if (!isEdit) {
-      api.getSettings().then((r) => {
-        setForm((f) => {
-          const terms = r.data.default_payment_terms || "";
-          // New invoices get a due date derived from the default terms too.
-          const days = paymentTermsToDays(terms);
-          return {
-            ...f,
-            payment_terms: terms,
-            due_date:
-              !f.due_date && days !== null && f.issue_date
-                ? addDaysIso(f.issue_date, days)
-                : f.due_date,
-            notes: r.data.default_notes || "",
-            currency: r.data.currency || "USD",
-          };
+      // Restore an in-progress draft if we're coming back from "Add customer";
+      // otherwise seed the new invoice from account defaults. (Skipping the
+      // defaults fetch when restoring avoids clobbering the user's draft.)
+      const draft = consumeInvoiceDraft();
+      if (draft) {
+        setForm(draft.form as typeof form);
+        setItems((draft.items as LineItem[]).map((it) => ({ ...it, _key: genKey() })));
+      } else {
+        api.getSettings().then((r) => {
+          setForm((f) => {
+            const terms = r.data.default_payment_terms || "";
+            // New invoices get a due date derived from the default terms too.
+            const days = paymentTermsToDays(terms);
+            return {
+              ...f,
+              payment_terms: terms,
+              due_date:
+                !f.due_date && days !== null && f.issue_date
+                  ? addDaysIso(f.issue_date, days)
+                  : f.due_date,
+              notes: r.data.default_notes || "",
+              currency: r.data.currency || "USD",
+            };
+          });
         });
-      });
+      }
     }
 
     if (isEdit) {
       initialLoadRef.current = true;
+      setEditLoaded(false);
       api.getInvoice(id!).then((r) => {
         const inv = r.data;
         if (!isInvoiceFormEditable(inv.status)) {
@@ -406,9 +436,29 @@ export default function InvoiceForm({ onSave }: Props) {
         setTimeout(() => {
           initialLoadRef.current = false;
         }, 0);
+        setEditLoaded(true);
       });
     }
-  }, [id, isEdit, navigate, t]);
+  }, [id, isEdit, navigate, t, fetchCustomers]);
+
+  // Serialize the form + line items into the API payload shape. Shared by
+  // autosave, manual submit, and the edit-mode flush in handleAddCustomer.
+  const buildPayload = useCallback(
+    () => ({
+      ...form,
+      // New invoices omit invoice_number — the backend generates a draft number.
+      invoice_number: isEdit ? form.invoice_number : undefined,
+      locale: form.locale || null,
+      discount_type: form.discount_type || null,
+      items: items.map(({ _key, ...item }, i) => ({
+        ...item,
+        sort_order: i,
+        product_id: item.product_id || null,
+        tax_id: item.tax_id || null,
+      })),
+    }),
+    [form, items, isEdit],
+  );
 
   // Auto-save (edit mode only) — debounced 1500ms after last change
   useEffect(() => {
@@ -419,19 +469,7 @@ export default function InvoiceForm({ onSave }: Props) {
     const timer = setTimeout(async () => {
       setSaveStatus("saving");
       try {
-        const data = {
-          ...form,
-          invoice_number: form.invoice_number,
-          locale: form.locale || null,
-          discount_type: form.discount_type || null,
-          items: items.map(({ _key, ...item }, i) => ({
-            ...item,
-            sort_order: i,
-            product_id: item.product_id || null,
-            tax_id: item.tax_id || null,
-          })),
-        };
-        await api.updateInvoice(id!, data);
+        await api.updateInvoice(id!, buildPayload());
         setLastSavedAt(Date.now());
         setSaveStatus("saved");
       } catch {
@@ -439,7 +477,7 @@ export default function InvoiceForm({ onSave }: Props) {
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [form, items, isEdit, id, validate]);
+  }, [form, items, isEdit, id, validate, buildPayload]);
 
   const handleProductSelect = (index: number, productId: string) => {
     const product = products.find((p: any) => p.id === productId);
@@ -564,6 +602,45 @@ export default function InvoiceForm({ onSave }: Props) {
     if (cust?.currency) handleCurrencyChange(cust.currency);
   };
 
+  // "Add customer": detour to the customer-create page without losing work.
+  // New invoices snapshot a draft; edit invoices flush any pending edits first
+  // (autosave is debounced, so an immediate click could otherwise drop them).
+  // We come back here via Customers' return-flow with addedCustomerId in state.
+  const handleAddCustomer = async (prefillName?: string) => {
+    if (!isEdit) {
+      saveInvoiceDraft(form, items);
+    } else if (Object.keys(validate(form, items)).length === 0) {
+      setSaveStatus("saving");
+      try {
+        await api.updateInvoice(id!, buildPayload());
+        setLastSavedAt(Date.now());
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
+    }
+    navigate("/customers/new", {
+      state: {
+        returnTo: location.pathname + location.search,
+        prefillName: prefillName || undefined,
+      },
+    });
+  };
+
+  // Auto-select the customer just created via "Add customer", once the
+  // refreshed list contains it (and, in edit mode, after the invoice loads so
+  // the server fetch can't clobber the selection).
+  useEffect(() => {
+    if (!pendingCustomerId) return;
+    if (isEdit && !editLoaded) return;
+    if (!customers.some((c: any) => c.id === pendingCustomerId)) return;
+    handleCustomerChange(pendingCustomerId);
+    setPendingCustomerId(null);
+    // Drop the nav state so a later manual reload doesn't re-apply it.
+    window.history.replaceState({}, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCustomerId, customers, isEdit, editLoaded]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setHasSubmitted(true);
@@ -573,19 +650,7 @@ export default function InvoiceForm({ onSave }: Props) {
 
     setLoading(true);
     try {
-      const data = {
-        ...form,
-        // Don't send invoice_number for new invoices — backend generates a draft number
-        invoice_number: isEdit ? form.invoice_number : undefined,
-        locale: form.locale || null,
-        discount_type: form.discount_type || null,
-        items: items.map(({ _key, ...item }, i) => ({
-          ...item,
-          sort_order: i,
-          product_id: item.product_id || null,
-          tax_id: item.tax_id || null,
-        })),
-      };
+      const data = buildPayload();
       let result;
       if (isEdit) {
         result = await api.updateInvoice(id!, data);
@@ -650,22 +715,38 @@ export default function InvoiceForm({ onSave }: Props) {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label={t("invoices.customer")} error={errors.customer_id} required>
-              <select
-                value={form.customer_id}
-                onChange={(e) => handleCustomerChange(e.target.value)}
-                onBlur={() => markTouched("customer_id")}
-                className={cn(
-                  "form-select",
-                  errors.customer_id && "border-destructive ring-3 ring-destructive/20",
-                )}
-              >
-                <option value="">{t("invoices.select_customer")}</option>
-                {customers.map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <CustomerCombobox
+                    customers={customers}
+                    value={form.customer_id}
+                    onChange={handleCustomerChange}
+                    onAddNew={handleAddCustomer}
+                    error={!!errors.customer_id}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={t("invoices.refresh_customers")}
+                  title={t("invoices.refresh_customers")}
+                  disabled={customersLoading}
+                  onClick={() => fetchCustomers()}
+                >
+                  <RefreshCw className={cn("h-4 w-4", customersLoading && "animate-spin")} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={t("invoices.add_customer")}
+                  title={t("invoices.add_customer")}
+                  onClick={() => handleAddCustomer()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </FormField>
             <FormField label={t("invoices.invoice_number")}>
               {!isEdit ? (

@@ -241,6 +241,11 @@ const de: TranslationKeys = {
     // Formular
     invoice_details: "Rechnungsdetails",
     select_customer: "Kunde auswählen...",
+    search_customer: "Kunden suchen...",
+    add_customer: "Kunde hinzufügen",
+    add_new_customer: "Neuen Kunden hinzufügen",
+    add_customer_named: "\"{{name}}\" hinzufügen",
+    refresh_customers: "Kunden aktualisieren",
     payment_terms: "Zahlungsbedingungen",
     currency: "Währung",
     exchange_rate: "Wechselkurs",

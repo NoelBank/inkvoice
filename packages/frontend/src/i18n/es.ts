@@ -233,6 +233,11 @@ const es: TranslationKeys = {
     // Formulario
     invoice_details: "Detalles de la factura",
     select_customer: "Seleccionar cliente...",
+    search_customer: "Buscar clientes...",
+    add_customer: "Añadir cliente",
+    add_new_customer: "Añadir nuevo cliente",
+    add_customer_named: "Añadir \"{{name}}\"",
+    refresh_customers: "Actualizar clientes",
     payment_terms: "Condiciones de pago",
     currency: "Moneda",
     exchange_rate: "Tipo de cambio",

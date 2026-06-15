@@ -1,6 +1,6 @@
 import { Download, Pencil, Plus, Search, Trash2, Upload, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { BatchActionToolbar } from "@/components/shared/BatchActionToolbar";
@@ -43,6 +43,7 @@ export default function Customers() {
   const [actionLoading, setActionLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isForm =
     location.pathname.includes("/new") || (id && location.pathname.includes("/customers/"));
@@ -87,8 +88,16 @@ export default function Customers() {
     return (
       <CustomerForm
         onSave={() => {
-          navigate("/customers");
-          fetchCustomers();
+          // When reached via "Add customer" from another page, return there and
+          // hand off the new customer's id so the caller can auto-select it.
+          const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+          if (returnTo) {
+            const addedCustomerId = consumeRowHighlight("customer");
+            navigate(returnTo, { state: addedCustomerId ? { addedCustomerId } : undefined });
+          } else {
+            navigate("/customers");
+            fetchCustomers();
+          }
         }}
       />
     );
