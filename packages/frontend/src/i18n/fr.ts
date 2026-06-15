@@ -235,7 +235,7 @@ const fr: TranslationKeys = {
     search_customer: "Rechercher des clients...",
     add_customer: "Ajouter un client",
     add_new_customer: "Ajouter un nouveau client",
-    add_customer_named: "Ajouter \"{{name}}\"",
+    add_customer_named: 'Ajouter "{{name}}"',
     refresh_customers: "Actualiser les clients",
     payment_terms: "Conditions de paiement",
     currency: "Devise",

@@ -243,17 +243,19 @@ describe("invoice comment thread", () => {
 
 describe("portal token expiry (TTL)", () => {
   test("token with a future expires_at keeps working", async () => {
-    getDb().run("UPDATE portal_tokens SET expires_at = datetime('now', '+7 days') WHERE token = ?", [
-      portalToken,
-    ]);
+    getDb().run(
+      "UPDATE portal_tokens SET expires_at = datetime('now', '+7 days') WHERE token = ?",
+      [portalToken],
+    );
     const res = await app.request(`/api/v1/public/portal/${portalToken}`);
     expect(res.status).toBe(200);
   });
 
   test("expired token is rejected on every portal route", async () => {
-    getDb().run("UPDATE portal_tokens SET expires_at = datetime('now', '-1 minute') WHERE token = ?", [
-      portalToken,
-    ]);
+    getDb().run(
+      "UPDATE portal_tokens SET expires_at = datetime('now', '-1 minute') WHERE token = ?",
+      [portalToken],
+    );
 
     const portal = await app.request(`/api/v1/public/portal/${portalToken}`);
     expect(portal.status).toBe(404);

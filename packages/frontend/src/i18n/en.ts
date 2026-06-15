@@ -229,7 +229,7 @@ const en = {
     search_customer: "Search customers...",
     add_customer: "Add customer",
     add_new_customer: "Add new customer",
-    add_customer_named: "Add \"{{name}}\"",
+    add_customer_named: 'Add "{{name}}"',
     refresh_customers: "Refresh customers",
     payment_terms: "Payment Terms",
     currency: "Currency",

@@ -232,7 +232,7 @@ const tr: TranslationKeys = {
     search_customer: "Müşteri ara...",
     add_customer: "Müşteri ekle",
     add_new_customer: "Yeni müşteri ekle",
-    add_customer_named: "\"{{name}}\" ekle",
+    add_customer_named: '"{{name}}" ekle',
     refresh_customers: "Müşterileri yenile",
     payment_terms: "Ödeme Koşulları",
     currency: "Para Birimi",
