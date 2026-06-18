@@ -32,6 +32,14 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 - 🌍 **Multi-currency, multi-user, multi-language** out of the box.
 - ☁️ **Don't want to self-host?** Use the managed **[Inkvoice Cloud](https://cloud.inkvoice.app)** and skip the ops.
 
+<div align="center">
+
+<img src="./docs/screenshots/12-resource-usage.png" alt="Dokploy monitoring: Inkvoice idling at ~1% CPU and ~42 MB RAM" width="820">
+
+<sub>📊 **Real production usage** on a [Dokploy](https://dokploy.com) host — Inkvoice idles at **~1% CPU** and **41.79 MiB RAM** (of a 512 MiB cap). The whole app comfortably fits on the cheapest VPS tier.</sub>
+
+</div>
+
 > Try it right now on the **[live demo](https://demo.inkvoice.app)** — no signup required.
 
 ## Features
