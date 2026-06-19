@@ -55,7 +55,7 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 - Recurring invoices with automated generation on a schedule
 
 **Get paid**
-- Online card payments via **Stripe**
+- Online card payments via **Stripe** & **PayPal**
 - Manual and partial payment tracking
 
 **Money & books**
