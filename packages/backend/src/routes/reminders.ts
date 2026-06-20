@@ -15,11 +15,13 @@ const ruleSchema = z.object({
   type: z.enum(["before_due", "on_due", "after_due"]),
   email_subject: z.string().min(1),
   email_body: z.string().min(1),
-  is_active: z.preprocess((v) => {
-    if (v === 1 || v === "1") return true;
-    if (v === 0 || v === "0") return false;
-    return v;
-  }, z.boolean()).optional(),
+  is_active: z
+    .preprocess((v) => {
+      if (v === 1 || v === "1") return true;
+      if (v === 0 || v === "0") return false;
+      return v;
+    }, z.boolean())
+    .optional(),
 });
 
 reminders.post("/", async (c) => {
