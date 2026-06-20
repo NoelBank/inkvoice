@@ -9,7 +9,7 @@ Most invoicing tools are either SaaS platforms that charge per invoice or self-h
 - **50-100MB RAM** — Built on Bun with Hono (14KB) and SQLite (zero-copy native bindings)
 - **Single container** — No separate database server, no reverse proxy, no multi-service orchestration
 - **Modern stack** — React 19, Tailwind CSS, shadcn/ui — a clean UI without the bloat
-- **Full featured** — Invoices, quotes, recurring billing, PDF generation, Stripe payments, reports
+- **Full featured** — Invoices, quotes, recurring billing, PDF generation, Stripe & PayPal payments, reports
 
 ## Tech Stack
 

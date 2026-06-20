@@ -61,7 +61,7 @@ Published invoices get a unique share link that customers can use to:
 
 - View the invoice in the browser
 - Download the PDF
-- Pay online (if Stripe is configured)
+- Pay online (if Stripe or PayPal is configured)
 
 ## Batch Operations
 

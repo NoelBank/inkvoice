@@ -12,7 +12,7 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 ## Billing
 
 - **[Recurring Invoices](/features/recurring)** — Set up automatic invoice generation on a schedule
-- **[Online Payments](/features/payments)** — Accept Stripe payments directly from invoice links
+- **[Online Payments](/features/payments)** — Accept Stripe and PayPal payments directly from invoice links
 - **Tax Management** — Define tax rates (VAT, GST, etc.) and apply them automatically to line items
 
 ## Tools

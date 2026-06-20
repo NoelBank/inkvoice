@@ -84,7 +84,7 @@ These endpoints do not require authentication:
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/v1/public/invoices/:shareToken` | View shared invoice |
-| `POST` | `/api/v1/public/invoices/:shareToken/pay` | Initiate Stripe payment |
+| `POST` | `/api/v1/public/invoices/:shareToken/pay` | Initiate online payment (Stripe or PayPal) |
 | `GET` | `/api/v1/public/invoices/:shareToken/preview` | Invoice PDF preview |
 | `GET` | `/api/v1/public/quotes/:shareToken` | View shared quote |
 | `GET` | `/api/v1/public/quotes/:shareToken/preview` | Quote PDF preview |

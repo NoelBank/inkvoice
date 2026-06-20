@@ -23,7 +23,7 @@ features:
   - title: PDF Generation
     details: Generate professional PDFs from customizable Mustache templates. Share invoices via public links.
   - title: Online Payments
-    details: Accept payments via Stripe. Customers pay directly from their invoice link.
+    details: Accept card payments via Stripe or PayPal. Customers pay directly from their invoice link.
   - title: Self-Hosted Friendly
     details: Deploy on Dokploy, Coolify, or any Docker host. Your data stays on your server.
 ---

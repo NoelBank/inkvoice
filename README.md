@@ -170,9 +170,13 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `SMTP_PASS`               | no       | —                     | SMTP password                                                        |
 | `SMTP_FROM`               | no       | —                     | Sender address                                                       |
 | `SMTP_SECURE`             | no       | `false`               | Use TLS (set `true` for port 465)                                    |
-| `STRIPE_SECRET_KEY`       | no       | —                     | Stripe secret key (`sk_…`) — enables online payments                 |
+| `STRIPE_SECRET_KEY`       | no       | —                     | Stripe secret key (`sk_…`) — enables Stripe online payments          |
 | `STRIPE_PUBLISHABLE_KEY`  | no       | —                     | Stripe publishable key (`pk_…`)                                      |
 | `STRIPE_WEBHOOK_SECRET`   | no       | —                     | Stripe webhook signing secret (`whsec_…`)                            |
+| `PAYPAL_CLIENT_ID`        | no       | —                     | PayPal REST app client ID — enables PayPal online payments           |
+| `PAYPAL_SECRET`           | no       | —                     | PayPal REST app secret                                               |
+| `PAYPAL_WEBHOOK_ID`       | no       | —                     | PayPal webhook ID (signature verification)                           |
+| `PAYPAL_ENV`              | no       | `sandbox`             | PayPal environment: `sandbox` or `live`                              |
 | `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys)  |
 | `DEMO_RESET_INTERVAL`     | no       | `86400000`            | Demo reset interval in ms (default 24h)                              |
 

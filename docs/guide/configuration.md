@@ -61,15 +61,28 @@ Optional. Enables sending invoices and quotes by email.
 | `SMTP_FROM` | — | Sender email address |
 | `SMTP_SECURE` | `false` | Use TLS (set to `true` for port 465) |
 
-## Stripe (Online Payments)
+## Online Payments (Stripe & PayPal)
 
-Optional. Enables customers to pay invoices online via Stripe.
+Optional. Enables customers to pay invoices online from the public invoice link.
+Configure either gateway or both; each is enabled per workspace under **Settings →
+Payments** once its credentials are set.
+
+### Stripe
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `STRIPE_SECRET_KEY` | — | Stripe secret key (`sk_...`) |
 | `STRIPE_PUBLISHABLE_KEY` | — | Stripe publishable key (`pk_...`) |
 | `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret (`whsec_...`) |
+
+### PayPal
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PAYPAL_CLIENT_ID` | — | PayPal REST app client ID |
+| `PAYPAL_SECRET` | — | PayPal REST app secret |
+| `PAYPAL_WEBHOOK_ID` | — | PayPal webhook ID (for signature verification) |
+| `PAYPAL_ENV` | `sandbox` | `sandbox` or `live` |
 
 See [Online Payments](/features/payments) for setup instructions.
 
