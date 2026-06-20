@@ -2,6 +2,7 @@ import Mustache from "mustache";
 import { getDb } from "../database/connection";
 import type { Customer } from "../types/customer";
 import { formatCurrency } from "../utils/currency";
+import { escapeMultiline } from "../utils/html";
 import { qrToDataUri } from "../utils/qr-code";
 import { getInvoice } from "./invoice.service";
 import { getQuote } from "./quote.service";
@@ -126,10 +127,10 @@ export function buildInvoiceContext(invoiceId: string) {
       name: settings.company_name || "",
       email: settings.company_email || "",
       phone: settings.company_phone || "",
-      address: (settings.company_address || "").replace(/\n/g, "<br>"),
+      address: escapeMultiline(settings.company_address || ""),
       tax_id: settings.company_tax_id || "",
       logo: settings.company_logo || "",
-      bank_details: (settings.company_bank_details ?? "").replace(/\n/g, "<br>"),
+      bank_details: escapeMultiline(settings.company_bank_details ?? ""),
     },
     watermark: buildWatermarkContext(settings, invoice.status),
     qr: buildQrContext(settings, invoice.share_token, "invoice"),
@@ -270,10 +271,10 @@ export function buildQuoteContext(quoteId: string) {
       name: settings.company_name || "",
       email: settings.company_email || "",
       phone: settings.company_phone || "",
-      address: (settings.company_address || "").replace(/\n/g, "<br>"),
+      address: escapeMultiline(settings.company_address || ""),
       tax_id: settings.company_tax_id || "",
       logo: settings.company_logo || "",
-      bank_details: (settings.company_bank_details ?? "").replace(/\n/g, "<br>"),
+      bank_details: escapeMultiline(settings.company_bank_details ?? ""),
     },
     watermark: buildWatermarkContext(settings, quote.status),
     qr: buildQrContext(settings, quote.share_token, "quote"),

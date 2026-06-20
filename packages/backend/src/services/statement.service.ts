@@ -3,6 +3,7 @@ import { getDb } from "../database/connection";
 import type { Customer } from "../types/customer";
 import { formatCurrency } from "../utils/currency";
 import { todayIso } from "../utils/date";
+import { escapeLines, escapeMultiline } from "../utils/html";
 import { getAllSettings } from "./settings.service";
 import { STATEMENT_TEMPLATE } from "./statement-template";
 
@@ -370,15 +371,13 @@ export function buildStatementData(
   const buckets = agingBuckets(agingRows, to, labels);
   const agingTotalRaw = buckets.reduce((s, b) => s + b.raw, 0);
 
-  const addr = [
+  const addr = escapeLines([
     customer.address_line1,
     customer.address_line2,
     [customer.postal_code, customer.city].filter(Boolean).join(" "),
     customer.state,
     customer.country,
-  ]
-    .filter(Boolean)
-    .join("<br>");
+  ]);
 
   return {
     customer: {
@@ -391,7 +390,7 @@ export function buildStatementData(
       name: settings.company_name || "",
       email: settings.company_email || "",
       phone: settings.company_phone || "",
-      address: (settings.company_address || "").replace(/\n/g, "<br>"),
+      address: escapeMultiline(settings.company_address || ""),
       tax_id: settings.company_tax_id || "",
       logo: settings.company_logo || "",
     },
