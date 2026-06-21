@@ -51,13 +51,17 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     checkAuth: async () => {
-      // Handle OAuth callback: backend redirects to /?token=xxx
-      const params = new URLSearchParams(window.location.search);
-      const oauthToken = params.get("token");
-      if (oauthToken) {
-        setAuthToken(oauthToken);
-        set({ token: oauthToken });
-        // Clean URL without reload
+      // Accept a token handed off via the URL. Ops impersonation uses the
+      // #fragment (kept out of server/proxy logs and the Referer header); the
+      // OAuth callback still redirects with ?token= from the server. Prefer the
+      // fragment, then strip whichever carried it so it can't linger in history.
+      const hashToken = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("token");
+      const queryToken = new URLSearchParams(window.location.search).get("token");
+      const urlToken = hashToken || queryToken;
+      if (urlToken) {
+        setAuthToken(urlToken);
+        set({ token: urlToken });
+        // Clean URL (both fragment and query) without reload
         window.history.replaceState({}, "", window.location.pathname);
       }
 
