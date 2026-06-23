@@ -201,6 +201,11 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 
 PRs are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for setup and conventions. Found a bug or have an idea? [Open an issue](https://github.com/pigontech/inkvoice/issues).
 
-## License
+## License & trademark
 
-[MIT](./LICENSE)
+The **source code** is [MIT](./LICENSE) licensed.
+
+The **Inkvoice name and logos are trademarks** and are *not* covered by the MIT
+license — see [TRADEMARK.md](./TRADEMARK.md) for what's free to do and what
+needs a quick word. Running, forking, and "Inkvoice hosting" are all fine;
+hosting providers wanting an **official listing** are welcome to get in touch.
