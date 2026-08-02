@@ -1,6 +1,6 @@
 name: Star history
 
-# Daily snapshot of GitHub stars/forks/watchers into metrics/stars.csv.
+# Weekly snapshot of GitHub stars/forks/watchers into metrics/stars.csv.
 # The GitHub API only returns the CURRENT counts, so this CSV is the durable
 # history.
 #
@@ -14,7 +14,7 @@ name: Star history
 # (e.g. paths-ignore on metrics/** in push-triggered workflows).
 on:
   schedule:
-    - cron: "17 3 * * *" # 03:17 UTC daily
+    - cron: "17 3 * * 0" # 03:17 UTC weekly (Sundays)
   workflow_dispatch: {}
 
 # Least privilege: default everything to read; grant write only on the job that
