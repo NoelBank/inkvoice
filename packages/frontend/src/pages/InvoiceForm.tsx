@@ -112,7 +112,7 @@ function SortableLineItem({
           {...attributes}
           {...listeners}
           className={cn(
-            "flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors",
+            "flex h-8 items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors",
             isFirst && "mt-5",
           )}
           aria-label={t("a11y.drag_to_reorder")}

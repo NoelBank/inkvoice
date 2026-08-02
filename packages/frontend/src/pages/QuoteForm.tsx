@@ -103,7 +103,7 @@ function SortableQuoteItem({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
+        className="flex h-8 items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
         aria-label={t("a11y.drag_to_reorder")}
       >
         <GripVertical className="h-4 w-4" />
