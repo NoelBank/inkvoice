@@ -69,6 +69,9 @@ jobs:
           mv "$file.tmp" "$file"
           echo "${today},${stars},${forks},${watchers}" >> "$file"
 
+      - name: Render star chart SVG
+        run: python3 .github/scripts/render_star_chart.py
+
       - name: Commit if changed
         env:
           GH_TOKEN: ${{ github.token }}
@@ -82,8 +85,8 @@ jobs:
           # metrics/stars.csv is not yet tracked) it would report no change and
           # never commit the file. `git diff --cached` compares index vs HEAD
           # and correctly reports a newly-staged file as a change.
-          git add metrics/stars.csv
-          if git diff --cached --quiet -- metrics/stars.csv; then
+          git add metrics/stars.csv metrics/stars.svg
+          if git diff --cached --quiet -- metrics/stars.csv metrics/stars.svg; then
             echo "No change; nothing to commit."
             exit 0
           fi

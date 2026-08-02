@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="320" viewBox="0 0 760 320" role="img" aria-label="Inkvoice GitHub stars over time">
+<style>.tick{fill:#64748b;font:11px sans-serif}.grid{stroke:#e2e8f0;stroke-width:1}</style>
+<line x1="60" y1="272" x2="736" y2="272" class="grid"/>
+<text x="52" y="276" class="tick" text-anchor="end">0</text>
+<line x1="60" y1="236" x2="736" y2="236" class="grid"/>
+<text x="52" y="240" class="tick" text-anchor="end">1</text>
+<line x1="60" y1="200" x2="736" y2="200" class="grid"/>
+<text x="52" y="204" class="tick" text-anchor="end">2</text>
+<line x1="60" y1="128" x2="736" y2="128" class="grid"/>
+<text x="52" y="132" class="tick" text-anchor="end">4</text>
+<line x1="60" y1="92" x2="736" y2="92" class="grid"/>
+<text x="52" y="96" class="tick" text-anchor="end">5</text>
+<line x1="60" y1="20" x2="736" y2="20" class="grid"/>
+<text x="52" y="24" class="tick" text-anchor="end">7</text>
+<text x="60" y="292" class="tick" text-anchor="middle">2026-06-15</text>
+<text x="398" y="292" class="tick" text-anchor="middle">2026-07-09</text>
+<text x="736" y="292" class="tick" text-anchor="middle">2026-08-02</text>
+<line x1="60" y1="272" x2="736" y2="272" stroke="#e2e8f0"/>
+<polygon points="60,272 60,272 74,272 88,272 102,272 116,272 130,272 144,272 159,272 173,272 187,272 201,272 215,272 229,272 243,272 257,272 271,272 285,236 299,236 314,200 328,200 342,200 356,200 370,200 384,200 398,164 412,128 426,128 440,128 454,92 468,92 482,56 497,56 511,56 525,56 539,56 553,56 567,56 581,56 595,56 609,56 623,20 637,20 652,20 666,20 680,20 694,20 708,20 722,20 736,20 736,272" fill="#6366f1" fill-opacity="0.12"/>
+<polyline points="60,272 74,272 88,272 102,272 116,272 130,272 144,272 159,272 173,272 187,272 201,272 215,272 229,272 243,272 257,272 271,272 285,236 299,236 314,200 328,200 342,200 356,200 370,200 384,200 398,164 412,128 426,128 440,128 454,92 468,92 482,56 497,56 511,56 525,56 539,56 553,56 567,56 581,56 595,56 609,56 623,20 637,20 652,20 666,20 680,20 694,20 708,20 722,20 736,20" fill="none" stroke="#6366f1" stroke-width="2"/>
+<circle cx="736" cy="20" r="3" fill="#6366f1"/>
+<text x="736" y="262" class="tick" text-anchor="end">⭐ 7</text>
+</svg>

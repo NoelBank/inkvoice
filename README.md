@@ -18,9 +18,9 @@ A self-hostable alternative to FreshBooks, Wave, Zoho Invoice & Invoice Ninja.
 
 **[Live Demo](https://demo.inkvoice.app) · [Inkvoice Cloud](https://cloud.inkvoice.app) · [Documentation](https://docs.inkvoice.app) · [Website](https://inkvoice.app)**
 
-<sub>⭐ **Star history** — powered by the weekly `metrics/stars.csv` snapshot.</sub>
+<sub>⭐ **Star history** — auto-updated weekly in [`metrics/stars.svg`](./metrics/stars.svg).</sub>
 
-![Star history](https://api.star-history.com/svg?repos=pigontech/inkvoice&type=Date)
+![Star history](./metrics/stars.svg)
 
 <img src="./docs/screenshots/01-dashboard.png" alt="Inkvoice dashboard" width="860">
 
