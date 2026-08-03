@@ -1149,6 +1149,9 @@ const tr: TranslationKeys = {
     method_card: "Kredi Kartı",
     method_check: "Çek",
     method_other: "Diğer",
+    method_credit: "Kredi (kredi notu)",
+    available_credit:
+      "Müşterinin {{amount}} kullanılabilir kredisi var. Gönderdikten sonra Ödeme Kaydet ile uygulayın.",
     reference: "Referans Numarası",
     notes: "Notlar",
     record: "Ödeme Kaydet",

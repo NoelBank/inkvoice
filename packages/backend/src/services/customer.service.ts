@@ -72,6 +72,7 @@ export function getCustomer(id: string):
       invoice_count: number;
       total_revenue: number;
       last_invoice_date: string | null;
+      available_credit: number;
       portal_token: string | null;
     })
   | null {
@@ -87,11 +88,28 @@ export function getCustomer(id: string):
   `)
     .get(id) as { invoice_count: number; total_revenue: number; last_invoice_date: string | null };
 
+  // Available credit = sum of issued (non-draft, non-voided) credit notes for
+  // the customer. Credit notes are stored with negative totals, so negating the
+  // sum yields a positive balance available to offset future invoices.
+  const credit = db
+    .query(`
+    SELECT -COALESCE(SUM(total), 0) as available_credit
+    FROM invoices
+    WHERE customer_id = ? AND type = 'credit_note' AND deleted_at IS NULL
+      AND status NOT IN ('draft', 'voided')
+  `)
+    .get(id) as { available_credit: number };
+
   const portal = db.query("SELECT token FROM portal_tokens WHERE customer_id = ?").get(id) as {
     token: string;
   } | null;
 
-  return { ...customer, ...stats, portal_token: portal?.token ?? null };
+  return {
+    ...customer,
+    ...stats,
+    available_credit: credit.available_credit,
+    portal_token: portal?.token ?? null,
+  };
 }
 
 export function createCustomer(data: Partial<Customer>): Customer {

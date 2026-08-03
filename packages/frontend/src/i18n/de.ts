@@ -1177,6 +1177,9 @@ const de: TranslationKeys = {
     method_card: "Karte",
     method_check: "Scheck",
     method_other: "Sonstige",
+    method_credit: "Guthaben (Gutschrift)",
+    available_credit:
+      "Kunde hat {{amount}} verfügbares Guthaben. Nach dem Senden über Zahlung erfassen anwenden.",
     reference: "Referenznummer",
     notes: "Anmerkungen",
     record: "Zahlung erfassen",

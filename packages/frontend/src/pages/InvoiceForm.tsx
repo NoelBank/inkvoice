@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { GripVertical, Info, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -239,6 +239,7 @@ export default function InvoiceForm({ onSave }: Props) {
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [availableCredit, setAvailableCredit] = useState<number>(0);
   const [editLoaded, setEditLoaded] = useState(false);
   // Customer id to auto-select once the list contains it — set when returning
   // from the customer-create page via "Add customer" (see handleAddCustomer).
@@ -440,6 +441,11 @@ export default function InvoiceForm({ onSave }: Props) {
           setLastSavedAt(new Date(inv.updated_at).getTime());
           setSaveStatus("saved");
         }
+        if (inv.customer_id) {
+          api.getCustomer(inv.customer_id).then((r) => {
+            setAvailableCredit(Math.max(0, Number(r.data.available_credit) || 0));
+          });
+        }
         // Re-arm autosave after fresh load. Wait one tick so the form/items state updates first.
         setTimeout(() => {
           initialLoadRef.current = false;
@@ -608,6 +614,13 @@ export default function InvoiceForm({ onSave }: Props) {
     const cust = customers.find((c: any) => c.id === customerId);
     setForm((f) => ({ ...f, customer_id: customerId }));
     if (cust?.currency) handleCurrencyChange(cust.currency);
+    if (customerId) {
+      api.getCustomer(customerId).then((r) => {
+        setAvailableCredit(Math.max(0, Number(r.data.available_credit) || 0));
+      });
+    } else {
+      setAvailableCredit(0);
+    }
   };
 
   // "Add customer": detour to the customer-create page without losing work.
@@ -763,6 +776,14 @@ export default function InvoiceForm({ onSave }: Props) {
             <CardTitle className="text-sm">{t("invoices.invoice_details")}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {availableCredit > 0 && (
+              <div className="md:col-span-2 flex items-center gap-2 text-sm rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-700 dark:text-amber-400">
+                <Info className="h-4 w-4 shrink-0" />
+                {t("record_payment.available_credit", {
+                  amount: formatCurrency(availableCredit, form.currency),
+                })}
+              </div>
+            )}
             <FormField label={t("invoices.customer")} error={errors.customer_id} required>
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">

@@ -110,6 +110,7 @@ export function RecordPaymentDialog({
               <option value="cash">{t("record_payment.method_cash")}</option>
               <option value="card">{t("record_payment.method_card")}</option>
               <option value="check">{t("record_payment.method_check")}</option>
+              <option value="credit">{t("record_payment.method_credit")}</option>
               <option value="other">{t("record_payment.method_other")}</option>
             </select>
           </FormField>

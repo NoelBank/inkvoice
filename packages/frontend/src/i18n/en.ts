@@ -1148,6 +1148,9 @@ const en = {
     method_card: "Card",
     method_check: "Check",
     method_other: "Other",
+    method_credit: "Credit (credit note)",
+    available_credit:
+      "Customer has {{amount}} in available credit. Apply it via Record Payment after sending.",
     reference: "Reference Number",
     notes: "Notes",
     record: "Record Payment",

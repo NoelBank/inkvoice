@@ -1166,6 +1166,9 @@ const fr: TranslationKeys = {
     method_card: "Carte",
     method_check: "Chèque",
     method_other: "Autre",
+    method_credit: "Crédit (note de crédit)",
+    available_credit:
+      "Le client dispose de {{amount}} de crédit disponible. Appliquez-le via Enregistrer le paiement après l'envoi.",
     reference: "Numéro de référence",
     notes: "Notes",
     record: "Enregistrer le paiement",

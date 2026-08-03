@@ -53,6 +53,7 @@ export function PaymentHistory({
     cash: t("record_payment.method_cash"),
     card: t("record_payment.method_card"),
     check: t("record_payment.method_check"),
+    credit: t("record_payment.method_credit"),
     other: t("record_payment.method_other"),
   };
 
