@@ -27,6 +27,7 @@ import {
   type SortState,
   sortData,
 } from "@/components/shared/SortableColumnHeader";
+import { TagInput } from "@/components/shared/TagInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,6 +74,8 @@ export default function Invoices() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortState | null>(null);
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [batchAction, setBatchAction] = useState<{ action: string; label: string } | null>(null);
   const [batchLoading, setBatchLoading] = useState(false);
   const navigate = useNavigate();
@@ -106,15 +109,19 @@ export default function Invoices() {
       if (customerIdFilter) params.customer_id = customerIdFilter;
       if (dateRange.from) params.from = dateRange.from;
       if (dateRange.to) params.to = dateRange.to;
+      if (tags.length > 0) params.tags = tags.join(",");
       const res = await api.listInvoices(params);
       setInvoices(res.data.items);
       setTotal(res.data.total);
     }
-  }, [page, search, statusFilter, customerIdFilter, isTrash, isCreditNotes, dateRange]);
+  }, [page, search, statusFilter, customerIdFilter, isTrash, isCreditNotes, dateRange, tags]);
 
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+  useEffect(() => {
+    api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
+  }, []);
   useEffect(() => {
     setSelected(new Set());
   }, []);
@@ -253,6 +260,7 @@ export default function Invoices() {
                 if (customerIdFilter) params.customer_id = customerIdFilter;
                 if (dateRange.from) params.from = dateRange.from;
                 if (dateRange.to) params.to = dateRange.to;
+                if (tags.length > 0) params.tags = tags.join(",");
                 window.open(api.exportCsvUrl("invoices", params), "_blank");
               }}
             >
@@ -309,6 +317,17 @@ export default function Invoices() {
                 setDateRange(r);
                 setPage(1);
               }}
+            />
+            <TagInput
+              value={tags}
+              onChange={(next) => {
+                setTags(next);
+                setPage(1);
+              }}
+              suggestions={tagSuggestions}
+              placeholder={t("tags.filter_placeholder")}
+              ariaLabel={t("tags.filter_placeholder")}
+              className="max-w-xs"
             />
             <SavedFiltersMenu
               storageKey="inkvoice-saved-filters-invoices"

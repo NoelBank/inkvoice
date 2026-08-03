@@ -14,6 +14,7 @@ import { calculateInvoiceTotals, calculateLineItem } from "../utils/tax-calculat
 import { getBaseCurrency } from "./exchange-rate.service";
 import { applyLateFees } from "./late-fee.service";
 import { recordPayment as recordPaymentService } from "./payment.service";
+import { getTagsForItem, getTagsForItems, removeItemTags, setItemTags } from "./tag.service";
 
 /**
  * Rate to store on an invoice: forced to 1 when it's already in the base
@@ -33,6 +34,8 @@ interface InvoiceFilterParams {
   to?: string;
   search?: string;
   type?: string;
+  /** Comma-separated tag names; matches invoices carrying ANY of them. */
+  tags?: string;
   /** ISO timestamp; returns only rows changed at/after it (integration polling). */
   updated_since?: string;
 }
@@ -60,6 +63,7 @@ interface CreateInvoiceData {
   cash_discount_days?: number;
   locale?: string | null;
   template_id?: string | null;
+  tags?: string[];
   items: {
     product_id?: string | null;
     description: string;
@@ -112,13 +116,30 @@ function buildInvoiceFilters(params: InvoiceFilterParams): {
     conditions.push("i.updated_at >= ?");
     queryParams.push(params.updated_since);
   }
+  if (params.tags) {
+    const names = params.tags
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (names.length > 0) {
+      conditions.push(
+        `EXISTS (
+           SELECT 1 FROM item_tags it
+           JOIN tags tg ON tg.id = it.tag_id
+           WHERE it.item_type = 'invoice' AND it.item_id = i.id
+             AND LOWER(tg.name) IN (${names.map(() => "?").join(",")})
+         )`,
+      );
+      queryParams.push(...names.map((n) => n.toLowerCase()));
+    }
+  }
 
   return { where: `WHERE ${conditions.join(" AND ")}`, queryParams };
 }
 
 export function listInvoices(
   params: InvoiceListParams,
-): PaginatedResponse<Invoice & { customer_name: string }> {
+): PaginatedResponse<Invoice & { customer_name: string; tags: string[] }> {
   const db = getDb();
 
   // Auto-detect overdue invoices (sent and partially_paid can become overdue)
@@ -155,8 +176,19 @@ export function listInvoices(
     )
     .all(...queryParams, limit, offset) as (Invoice & { customer_name: string })[];
 
+  const tags = getTagsForItems(
+    items.map((i) => i.id),
+    "invoice",
+  );
+  const taggedItems: (Invoice & { customer_name: string; tags: string[] })[] = items.map(
+    (item) => ({
+      ...item,
+      tags: tags.get(item.id) ?? [],
+    }),
+  );
+
   return {
-    items,
+    items: taggedItems,
     total: countRow.count,
     page,
     limit,
@@ -184,6 +216,7 @@ export function getInvoice(id: string): InvoiceWithItems | null {
   return {
     ...invoice,
     items,
+    tags: getTagsForItem(id, "invoice"),
     customer: {
       id: invoice.cust_id,
       name: invoice.customer_name,
@@ -282,6 +315,8 @@ export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
     return invoiceId;
   })();
 
+  if (data.tags) setItemTags(id, "invoice", data.tags);
+
   return getInvoice(id)!;
 }
 
@@ -363,6 +398,8 @@ export function updateInvoice(id: string, data: CreateInvoiceData): InvoiceWithI
     }
   })();
 
+  if (data.tags) setItemTags(id, "invoice", data.tags);
+
   return getInvoice(id)!;
 }
 
@@ -399,6 +436,7 @@ export function permanentlyDeleteInvoice(id: string): { success: boolean; error?
   if (!existing) return { success: false, error: "Invoice not found in trash" };
 
   db.run("DELETE FROM invoices WHERE id = ?", [id]);
+  removeItemTags(id, "invoice");
   return { success: true };
 }
 
@@ -584,6 +622,7 @@ export function duplicateInvoice(id: string): InvoiceWithItems | null {
     discount_type: existing.discount_type,
     discount_value: existing.discount_value,
     template_id: existing.template_id,
+    tags: existing.tags,
     items: existing.items.map((item) => ({
       product_id: item.product_id,
       description: item.description,

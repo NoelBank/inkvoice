@@ -28,6 +28,7 @@ import { FormField } from "@/components/shared/FormField";
 import { PaymentTermsPicker, paymentTermsToDays } from "@/components/shared/PaymentTermsPicker";
 import { ProductCombobox } from "@/components/shared/ProductCombobox";
 import { type SaveStatus, SaveStatusIndicator } from "@/components/shared/SaveStatusIndicator";
+import { TagInput } from "@/components/shared/TagInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -259,6 +260,7 @@ export default function InvoiceForm({ onSave }: Props) {
   });
   const [products, setProducts] = useState<any[]>([]);
   const [taxDefs, setTaxDefs] = useState<any[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -279,6 +281,7 @@ export default function InvoiceForm({ onSave }: Props) {
     cash_discount_value: 0,
     cash_discount_days: 0,
     prices_include_tax: false,
+    tags: [] as string[],
   });
 
   const baseCurrency = useSettingsStore(
@@ -373,6 +376,7 @@ export default function InvoiceForm({ onSave }: Props) {
     fetchCustomers();
     api.listProducts({ limit: "1000", active: "true" }).then((r) => setProducts(r.data.items));
     api.listTaxDefinitions().then((r) => setTaxDefs(r.data));
+    api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
 
     if (!isEdit) {
       // Restore an in-progress draft if we're coming back from "Add customer";
@@ -429,6 +433,7 @@ export default function InvoiceForm({ onSave }: Props) {
           cash_discount_value: inv.cash_discount_value || 0,
           cash_discount_days: inv.cash_discount_days || 0,
           prices_include_tax: !!inv.prices_include_tax,
+          tags: inv.tags || [],
         });
         setItems(
           inv.items.map((it: any) => ({
@@ -932,6 +937,15 @@ export default function InvoiceForm({ onSave }: Props) {
                 <option value="ja-JP">ja-JP</option>
                 <option value="zh-CN">zh-CN</option>
               </select>
+            </FormField>
+            <FormField label={t("tags.title")} hint={t("tags.hint")}>
+              <TagInput
+                value={form.tags}
+                onChange={(tags) => setForm((f) => ({ ...f, tags }))}
+                suggestions={tagSuggestions}
+                placeholder={t("tags.placeholder")}
+                ariaLabel={t("tags.title")}
+              />
             </FormField>
           </CardContent>
         </Card>

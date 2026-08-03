@@ -1447,6 +1447,15 @@ const es: TranslationKeys = {
     error: "No se pudieron enviar los comentarios. Inténtelo de nuevo.",
     too_short: "Los comentarios no pueden estar vacíos.",
   },
+
+  tags: {
+    title: "Etiquetas",
+    hint: "Organiza con etiquetas libres",
+    placeholder: "Añadir etiqueta…",
+    filter_placeholder: "Filtrar por etiquetas",
+    remove: "Eliminar etiqueta {{tag}}",
+    save_error: "No se pudieron guardar las etiquetas",
+  },
 };
 
 export default es;

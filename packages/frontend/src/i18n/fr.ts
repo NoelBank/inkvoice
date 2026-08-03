@@ -1449,6 +1449,15 @@ const fr: TranslationKeys = {
     error: "Impossible d'envoyer le commentaire. Réessayez.",
     too_short: "Le commentaire ne peut pas être vide.",
   },
+
+  tags: {
+    title: "Étiquettes",
+    hint: "Organisez avec des étiquettes libres",
+    placeholder: "Ajouter une étiquette…",
+    filter_placeholder: "Filtrer par étiquettes",
+    remove: "Retirer l'étiquette {{tag}}",
+    save_error: "Impossible d'enregistrer les étiquettes",
+  },
 };
 
 export default fr;

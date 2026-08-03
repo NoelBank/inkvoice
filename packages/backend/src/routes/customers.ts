@@ -3,6 +3,7 @@ import { z } from "zod";
 import { logActivity } from "../services/activity.service";
 import * as customerService from "../services/customer.service";
 import { buildStatementData, renderStatementHtml } from "../services/statement.service";
+import { getTagsForItem, setItemTags } from "../services/tag.service";
 import type { Customer } from "../types/customer";
 import { buildCsv, type CsvColumn, csvHeaders } from "../utils/csv";
 import { parseCsv } from "../utils/csv-parser";
@@ -24,10 +25,11 @@ function statementRange(from?: string, to?: string): { from: string; to: string 
 customers.get("/", (c) => {
   const search = c.req.query("search");
   const updated_since = c.req.query("updated_since");
+  const tags = c.req.query("tags");
   const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
   const limit = Math.min(Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20), 100);
 
-  const data = customerService.listCustomers({ search, updated_since, page, limit });
+  const data = customerService.listCustomers({ search, updated_since, tags, page, limit });
   return c.json({ success: true, data });
 });
 
@@ -50,6 +52,7 @@ const customerCsvColumns: CsvColumn<Customer>[] = [
 customers.get("/export/csv", (c) => {
   const rows = customerService.listCustomersForExport({
     search: c.req.query("search"),
+    tags: c.req.query("tags"),
   });
 
   const headers = csvHeaders(`customers-${todayIso()}.csv`);
@@ -153,6 +156,11 @@ const customerSchema = z.object({
   language: z.string().max(35).optional().or(z.literal("")),
   default_template_id: z.string().max(64).optional().nullable().or(z.literal("")),
   currency: z.string().max(3).optional().or(z.literal("")),
+  tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
+});
+
+const tagListSchema = z.object({
+  tags: z.array(z.string().trim().min(1).max(50)).max(30).default([]),
 });
 
 customers.post("/", async (c) => {
@@ -186,6 +194,17 @@ customers.put("/:id", async (c) => {
     metadata: { customer_name: customer.name },
   });
   return c.json({ success: true, data: customer });
+});
+
+// Replace tags on a customer (full replace, no status restrictions).
+customers.put("/:id/tags", async (c) => {
+  const body = await c.req.json();
+  const parsed = tagListSchema.parse(body);
+  const id = c.req.param("id");
+  const customer = customerService.getCustomer(id);
+  if (!customer) return c.json({ success: false, error: "Customer not found" }, 404);
+  setItemTags(id, "customer", parsed.tags);
+  return c.json({ success: true, data: { tags: getTagsForItem(id, "customer") } });
 });
 
 customers.delete("/:id", (c) => {

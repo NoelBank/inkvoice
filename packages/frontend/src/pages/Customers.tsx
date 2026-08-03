@@ -16,6 +16,7 @@ import {
   type SortState,
   sortData,
 } from "@/components/shared/SortableColumnHeader";
+import { TagInput } from "@/components/shared/TagInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,8 @@ export default function Customers() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<SortState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({
@@ -51,14 +54,18 @@ export default function Customers() {
   const fetchCustomers = useCallback(async () => {
     const params: Record<string, string> = { page: String(page), limit: "20" };
     if (search) params.search = search;
+    if (tags.length > 0) params.tags = tags.join(",");
     const res = await api.listCustomers(params);
     setCustomers(res.data.items);
     setTotal(res.data.total);
-  }, [page, search]);
+  }, [page, search, tags]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+  useEffect(() => {
+    api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
+  }, []);
   useEffect(() => {
     setSelected(new Set());
   }, []);
@@ -169,6 +176,7 @@ export default function Customers() {
             onClick={() => {
               const params: Record<string, string> = {};
               if (search) params.search = search;
+              if (tags.length > 0) params.tags = tags.join(",");
               window.open(api.exportCsvUrl("customers", params), "_blank");
             }}
           >
@@ -184,17 +192,30 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={t("customers.search_placeholder")}
-          aria-label={t("common.search")}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("customers.search_placeholder")}
+            aria-label={t("common.search")}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+          />
+        </div>
+        <TagInput
+          value={tags}
+          onChange={(next) => {
+            setTags(next);
             setPage(1);
           }}
-          className="pl-9"
+          suggestions={tagSuggestions}
+          placeholder={t("tags.filter_placeholder")}
+          ariaLabel={t("tags.filter_placeholder")}
+          className="max-w-xs"
         />
       </div>
 

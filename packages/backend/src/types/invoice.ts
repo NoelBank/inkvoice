@@ -68,6 +68,8 @@ export interface InvoiceItem {
 
 export interface InvoiceWithItems extends Invoice {
   items: InvoiceItem[];
+  /** Free-form tag names attached to this invoice. */
+  tags: string[];
   customer?: {
     id: string;
     name: string;

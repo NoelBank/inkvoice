@@ -1429,6 +1429,16 @@ const en = {
     error: "Could not send feedback. Try again.",
     too_short: "Feedback can't be empty.",
   },
+
+  // Free-form tags on invoices and customers
+  tags: {
+    title: "Tags",
+    hint: "Organize with free-form tags",
+    placeholder: "Add a tag…",
+    filter_placeholder: "Filter by tags",
+    remove: "Remove tag {{tag}}",
+    save_error: "Could not save tags",
+  },
 } as const;
 
 type DeepStringify<T> = {

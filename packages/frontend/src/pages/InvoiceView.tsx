@@ -26,6 +26,7 @@ import { RecordPaymentDialog } from "@/components/invoices/RecordPaymentDialog";
 import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { TagInput } from "@/components/shared/TagInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,11 +77,14 @@ export default function InvoiceView({ onBack }: Props) {
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const printIframeRef = useRef<HTMLIFrameElement>(null);
 
   const fetchInvoice = useCallback(() => {
     api.getInvoice(id!).then((r) => {
       setInvoice(r.data);
+      setTags(r.data.tags || []);
       if (r.data.invoice_number) {
         pushRecentlyViewed({
           type: "invoice",
@@ -99,6 +103,19 @@ export default function InvoiceView({ onBack }: Props) {
   useEffect(() => {
     fetchInvoice();
   }, [fetchInvoice]);
+
+  useEffect(() => {
+    api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
+  }, []);
+
+  const handleTagsChange = (next: string[]) => {
+    setTags(next);
+    api.updateInvoiceTags(id!, next).catch((err) => {
+      toast.error(formatApiError(err, t));
+      // Revert to the server's tags so the UI can't drift from what's saved.
+      api.getInvoice(id!).then((r) => setTags(r.data.tags || []));
+    });
+  };
 
   if (!invoice) {
     return (
@@ -438,6 +455,21 @@ export default function InvoiceView({ onBack }: Props) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+
+      {/* Tags (editable on any status) */}
+      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+        <span className="mt-2 shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {t("tags.title")}
+        </span>
+        <TagInput
+          value={tags}
+          onChange={handleTagsChange}
+          suggestions={tagSuggestions}
+          placeholder={t("tags.placeholder")}
+          ariaLabel={t("tags.title")}
+          className="bg-transparent"
+        />
       </div>
 
       {/* Public share link panel */}

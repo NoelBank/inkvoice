@@ -2,22 +2,27 @@ import crypto from "node:crypto";
 import { getDb } from "../database/connection";
 import type { PaginatedResponse } from "../types/common";
 import type { Customer } from "../types/customer";
+import { getTagsForItem, getTagsForItems, removeItemTags, setItemTags } from "./tag.service";
 
 interface CustomerListParams {
   search?: string;
   page: number;
   limit: number;
+  /** Comma-separated tag names; matches customers carrying ANY of them. */
+  tags?: string;
   /** ISO timestamp; returns only rows changed at/after it (integration polling). */
   updated_since?: string;
 }
 
-export function listCustomers(params: CustomerListParams): PaginatedResponse<Customer> {
+export function listCustomers(
+  params: CustomerListParams,
+): PaginatedResponse<Customer & { invoice_count: number; tags: string[] }> {
   const db = getDb();
-  const { search, page, limit, updated_since } = params;
+  const { search, page, limit, tags, updated_since } = params;
   const offset = (page - 1) * limit;
 
-  // Bare column names so the same clause works for both the aliased (c) item
-  // query and the unaliased count query.
+  // Bare column names so the same clause works in both the items query and the
+  // aliased count query below (both use alias c).
   const conditions: string[] = [];
   const queryParams: (string | number)[] = [];
 
@@ -29,10 +34,27 @@ export function listCustomers(params: CustomerListParams): PaginatedResponse<Cus
     conditions.push("updated_at >= ?");
     queryParams.push(updated_since);
   }
+  if (tags) {
+    const names = tags
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (names.length > 0) {
+      conditions.push(
+        `EXISTS (
+           SELECT 1 FROM item_tags it
+           JOIN tags tg ON tg.id = it.tag_id
+           WHERE it.item_type = 'customer' AND it.item_id = c.id
+             AND LOWER(tg.name) IN (${names.map(() => "?").join(",")})
+         )`,
+      );
+      queryParams.push(...names.map((n) => n.toLowerCase()));
+    }
+  }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const countRow = db
-    .query(`SELECT COUNT(*) as count FROM customers ${where}`)
+    .query(`SELECT COUNT(*) as count FROM customers c ${where}`)
     .get(...queryParams) as { count: number };
   const items = db
     .query(
@@ -43,8 +65,19 @@ export function listCustomers(params: CustomerListParams): PaginatedResponse<Cus
     )
     .all(...queryParams, limit, offset) as (Customer & { invoice_count: number })[];
 
+  const tagsMap = getTagsForItems(
+    items.map((i) => i.id),
+    "customer",
+  );
+  const taggedItems: (Customer & { invoice_count: number; tags: string[] })[] = items.map(
+    (item) => ({
+      ...item,
+      tags: tagsMap.get(item.id) ?? [],
+    }),
+  );
+
   return {
-    items,
+    items: taggedItems,
     total: countRow.count,
     page,
     limit,
@@ -52,18 +85,36 @@ export function listCustomers(params: CustomerListParams): PaginatedResponse<Cus
   };
 }
 
-export function listCustomersForExport(params: { search?: string }): Customer[] {
+export function listCustomersForExport(params: { search?: string; tags?: string }): Customer[] {
   const db = getDb();
-  let where = "";
-  const queryParams: string[] = [];
+  const conditions: string[] = [];
+  const queryParams: (string | number)[] = [];
 
   if (params.search) {
-    where = "WHERE (name LIKE ? OR email LIKE ?)";
+    conditions.push("(name LIKE ? OR email LIKE ?)");
     queryParams.push(`%${params.search}%`, `%${params.search}%`);
   }
+  if (params.tags) {
+    const names = params.tags
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (names.length > 0) {
+      conditions.push(
+        `EXISTS (
+           SELECT 1 FROM item_tags it
+           JOIN tags tg ON tg.id = it.tag_id
+           WHERE it.item_type = 'customer' AND it.item_id = c.id
+             AND LOWER(tg.name) IN (${names.map(() => "?").join(",")})
+         )`,
+      );
+      queryParams.push(...names.map((n) => n.toLowerCase()));
+    }
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   return db
-    .query(`SELECT * FROM customers ${where} ORDER BY created_at DESC`)
+    .query(`SELECT * FROM customers c ${where} ORDER BY c.created_at DESC`)
     .all(...queryParams) as Customer[];
 }
 
@@ -74,6 +125,7 @@ export function getCustomer(id: string):
       last_invoice_date: string | null;
       available_credit: number;
       portal_token: string | null;
+      tags: string[];
     })
   | null {
   const db = getDb();
@@ -107,12 +159,15 @@ export function getCustomer(id: string):
   return {
     ...customer,
     ...stats,
+    tags: getTagsForItem(id, "customer"),
     available_credit: credit.available_credit,
     portal_token: portal?.token ?? null,
   };
 }
 
-export function createCustomer(data: Partial<Customer>): Customer {
+type CustomerInput = Partial<Customer> & { tags?: string[] };
+
+export function createCustomer(data: CustomerInput): Customer & { tags: string[] } {
   const db = getDb();
   const id = crypto.randomBytes(16).toString("hex");
 
@@ -143,10 +198,18 @@ export function createCustomer(data: Partial<Customer>): Customer {
     ],
   );
 
-  return db.query("SELECT * FROM customers WHERE id = ?").get(id) as Customer;
+  if (data.tags) setItemTags(id, "customer", data.tags);
+
+  return {
+    ...(db.query("SELECT * FROM customers WHERE id = ?").get(id) as Customer),
+    tags: getTagsForItem(id, "customer"),
+  };
 }
 
-export function updateCustomer(id: string, data: Partial<Customer>): Customer | null {
+export function updateCustomer(
+  id: string,
+  data: CustomerInput,
+): (Customer & { tags: string[] }) | null {
   const db = getDb();
   const existing = db.query("SELECT id FROM customers WHERE id = ?").get(id);
   if (!existing) return null;
@@ -181,7 +244,12 @@ export function updateCustomer(id: string, data: Partial<Customer>): Customer | 
     ],
   );
 
-  return db.query("SELECT * FROM customers WHERE id = ?").get(id) as Customer;
+  if (data.tags) setItemTags(id, "customer", data.tags);
+
+  return {
+    ...(db.query("SELECT * FROM customers WHERE id = ?").get(id) as Customer),
+    tags: getTagsForItem(id, "customer"),
+  };
 }
 
 export function deleteCustomer(id: string): { success: boolean; error?: string } {
@@ -195,6 +263,7 @@ export function deleteCustomer(id: string): { success: boolean; error?: string }
   }
 
   db.run("DELETE FROM customers WHERE id = ?", [id]);
+  removeItemTags(id, "customer");
   return { success: true };
 }
 

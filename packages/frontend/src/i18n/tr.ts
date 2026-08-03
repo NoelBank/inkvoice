@@ -1432,6 +1432,15 @@ const tr: TranslationKeys = {
     error: "Geri bildirim gönderilemedi. Tekrar deneyin.",
     too_short: "Geri bildirim boş olamaz.",
   },
+
+  tags: {
+    title: "Etiketler",
+    hint: "Serbest form etiketleriyle düzenleyin",
+    placeholder: "Etiket ekle…",
+    filter_placeholder: "Etiketlere göre filtrele",
+    remove: "{{tag}} etiketini kaldır",
+    save_error: "Etiketler kaydedilemedi",
+  },
 } as const;
 
 export default tr;

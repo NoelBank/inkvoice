@@ -739,6 +739,30 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "invoices", "cash_discount_applied", "REAL DEFAULT 0");
     },
   },
+  {
+    version: 22,
+    name: "tags",
+    up: (db) => {
+      // Free-form tags. `name` is unique (case-sensitive storage) so one row is
+      // shared across every item using it. item_tags is a polymorphic join so
+      // invoices and customers can each carry tags.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS tags (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          name TEXT NOT NULL UNIQUE,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS item_tags (
+          tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+          item_id TEXT NOT NULL,
+          item_type TEXT NOT NULL CHECK(item_type IN ('invoice', 'customer')),
+          PRIMARY KEY (tag_id, item_id, item_type)
+        );
+        CREATE INDEX IF NOT EXISTS idx_item_tags_item ON item_tags(item_id, item_type);
+        CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag_id);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

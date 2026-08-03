@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { FormField } from "@/components/shared/FormField";
+import { TagInput } from "@/components/shared/TagInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ export default function CustomerForm({ onSave }: Props) {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   // Set when arriving via "Add customer" from another page (e.g. the invoice
   // form): pre-fill the name and return to the caller on cancel/save.
   const navState = location.state as { returnTo?: string; prefillName?: string } | null;
@@ -75,6 +77,7 @@ export default function CustomerForm({ onSave }: Props) {
     language: "",
     default_template_id: "",
     currency: "",
+    tags: [] as string[],
   });
 
   const { validateAll, onBlur, onChange, getError } = useFormValidation({
@@ -92,6 +95,7 @@ export default function CustomerForm({ onSave }: Props) {
 
   useEffect(() => {
     api.listTemplates().then((r) => setTemplates(r.data));
+    api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
   }, []);
 
   useEffect(() => {
@@ -118,6 +122,7 @@ export default function CustomerForm({ onSave }: Props) {
           language: d.language || "",
           default_template_id: d.default_template_id || "",
           currency: d.currency || "",
+          tags: d.tags || [],
         });
         setStats({
           invoice_count: d.invoice_count,
@@ -428,6 +433,15 @@ export default function CustomerForm({ onSave }: Props) {
                   aria-invalid={!!getError("notes")}
                   rows={3}
                   placeholder={t("customers.notes_placeholder")}
+                />
+              </FormField>
+              <FormField label={t("tags.title")} hint={t("tags.hint")}>
+                <TagInput
+                  value={form.tags}
+                  onChange={(tags) => setForm((f) => ({ ...f, tags }))}
+                  suggestions={tagSuggestions}
+                  placeholder={t("tags.placeholder")}
+                  ariaLabel={t("tags.title")}
                 />
               </FormField>
             </CardContent>

@@ -736,6 +736,19 @@ export const api = {
       };
     }>(`/search?q=${encodeURIComponent(q)}&limit=${limit}`),
 
+  // Tags
+  listTags: () => request<{ success: boolean; data: { name: string; count: number }[] }>("/tags"),
+  updateInvoiceTags: (id: string, tags: string[]) =>
+    request<{ success: boolean; data: { tags: string[] } }>(`/invoices/${id}/tags`, {
+      method: "PUT",
+      body: JSON.stringify({ tags }),
+    }),
+  updateCustomerTags: (id: string, tags: string[]) =>
+    request<{ success: boolean; data: { tags: string[] } }>(`/customers/${id}/tags`, {
+      method: "PUT",
+      body: JSON.stringify({ tags }),
+    }),
+
   // CSV Import
   previewCsvImport: async (
     resource: "customers" | "products" | "expenses",

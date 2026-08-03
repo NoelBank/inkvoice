@@ -1460,6 +1460,15 @@ const de: TranslationKeys = {
     error: "Feedback konnte nicht gesendet werden. Versuchen Sie es erneut.",
     too_short: "Feedback darf nicht leer sein.",
   },
+
+  tags: {
+    title: "Schlagwörter",
+    hint: "Mit freien Schlagwörtern organisieren",
+    placeholder: "Schlagwort hinzufügen…",
+    filter_placeholder: "Nach Schlagwörtern filtern",
+    remove: "Schlagwort {{tag}} entfernen",
+    save_error: "Schlagwörter konnten nicht gespeichert werden",
+  },
 };
 
 export default de;

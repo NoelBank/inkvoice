@@ -18,6 +18,7 @@ import * as paymentService from "../services/payment.service";
 import * as quoteService from "../services/quote.service";
 import { getReminderLog } from "../services/reminder.service";
 import { getAllSettings } from "../services/settings.service";
+import { getTagsForItem, setItemTags } from "../services/tag.service";
 import type { Invoice } from "../types/invoice";
 import { buildCsv, type CsvColumn, csvHeaders } from "../utils/csv";
 import { formatCurrency } from "../utils/currency";
@@ -39,6 +40,7 @@ invoices.get("/", (c) => {
 
   const type = c.req.query("type");
   const updated_since = c.req.query("updated_since");
+  const tags = c.req.query("tags");
   const data = invoiceService.listInvoices({
     status,
     customer_id,
@@ -47,6 +49,7 @@ invoices.get("/", (c) => {
     search,
     type,
     updated_since,
+    tags,
     page,
     limit,
   });
@@ -167,6 +170,7 @@ invoices.get("/export/csv", (c) => {
     from: c.req.query("from"),
     to: c.req.query("to"),
     search: c.req.query("search"),
+    tags: c.req.query("tags"),
   });
 
   const headers = csvHeaders(`invoices-${todayIso()}.csv`);
@@ -207,7 +211,12 @@ const invoiceSchema = z.object({
   prices_include_tax: z.boolean().optional(),
   locale: z.string().max(10).optional().nullable(),
   template_id: z.string().optional().nullable(),
+  tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
   items: z.array(itemSchema).min(1),
+});
+
+const tagListSchema = z.object({
+  tags: z.array(z.string().trim().min(1).max(50)).max(30).default([]),
 });
 
 invoices.post("/", async (c) => {
@@ -247,6 +256,20 @@ invoices.put("/:id", async (c) => {
     return c.json({ success: false, error: "Invoice not found or not editable" }, 404);
   }
   return c.json({ success: true, data: invoice });
+});
+
+// Replace the tags on an invoice. Unlike PUT /:id this is allowed on any
+// status (a sent/paid invoice's tags stay editable) and is a full replace.
+invoices.put("/:id/tags", async (c) => {
+  const body = await c.req.json();
+  const parsed = tagListSchema.parse(body);
+  const id = c.req.param("id");
+  const exists = getDb()
+    .query("SELECT id FROM invoices WHERE id = ? AND deleted_at IS NULL")
+    .get(id);
+  if (!exists) return c.json({ success: false, error: "Invoice not found" }, 404);
+  setItemTags(id, "invoice", parsed.tags);
+  return c.json({ success: true, data: { tags: getTagsForItem(id, "invoice") } });
 });
 
 invoices.delete("/:id", (c) => {

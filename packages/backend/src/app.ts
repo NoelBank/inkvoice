@@ -28,6 +28,7 @@ import { reminders } from "./routes/reminders";
 import { reports } from "./routes/reports";
 import { searchRoutes } from "./routes/search";
 import { settings } from "./routes/settings";
+import { tags } from "./routes/tags";
 import { tax } from "./routes/tax";
 import { templates } from "./routes/templates";
 import { users } from "./routes/users";
@@ -159,6 +160,6 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/api/v1/export", exportRoutes);
   app.route("/api/v1/outgoing-webhooks", outgoingWebhooks);
   app.route("/api/v1/api-tokens", apiTokens);
-
+  app.route("/api/v1/tags", tags);
   return app;
 }

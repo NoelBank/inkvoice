@@ -8,6 +8,7 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 - **[Quotes](/features/quotes)** — Send quotes to clients, then convert accepted quotes to invoices
 - **[Customers](/features/customers)** — Manage your client directory with contact details and tax IDs
 - **[Products](/features/products)** — Maintain a catalog of products and services with pricing, categories, and units
+- **[Tags](/features/tags)** — Free-form tags on invoices and customers with list filtering
 
 ## Billing
 
