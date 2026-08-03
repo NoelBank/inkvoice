@@ -942,7 +942,9 @@ const es: TranslationKeys = {
     auto_fetch_rates_label: "Obtener tipos automáticamente",
     tax_label: "Etiqueta del impuesto",
     tax_label_placeholder: "Impuesto, IVA, GST...",
+    number_patterns: "Patrones de numeración",
     invoice_number_pattern: "Patrón de numeración de facturas",
+    quote_number_pattern: "Patrón de numeración de presupuestos",
     pattern_variables:
       "{YYYY} año, {YY} año corto, {MM} mes, {DD} día, {SEQ} secuencia, {SEQ4} secuencia con ceros, {RAND4} 4 dígitos aleatorios",
     preview: "Vista previa:",

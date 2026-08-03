@@ -10,6 +10,7 @@ export interface Settings {
   currency: string;
   tax_label: string;
   invoice_number_pattern: string;
+  quote_number_pattern: string;
   default_payment_terms: string;
   default_notes: string;
   locale: string;

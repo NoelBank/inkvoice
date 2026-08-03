@@ -954,7 +954,9 @@ const de: TranslationKeys = {
     auto_fetch_rates_label: "Kurse automatisch abrufen",
     tax_label: "Steuerbezeichnung",
     tax_label_placeholder: "Steuer, MwSt., USt. ...",
+    number_patterns: "Nummernkreise",
     invoice_number_pattern: "Rechnungsnummern-Muster",
+    quote_number_pattern: "Angebotsnummern-Muster",
     pattern_variables:
       "{YYYY} Jahr, {YY} kurzes Jahr, {MM} Monat, {DD} Tag, {SEQ} laufende Nummer, {SEQ4} aufgefüllte Nummer, {RAND4} 4 Zufallsziffern",
     preview: "Vorschau:",

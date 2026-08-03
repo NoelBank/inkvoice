@@ -929,7 +929,9 @@ const tr: TranslationKeys = {
     auto_fetch_rates_label: "Kurları otomatik getir",
     tax_label: "Vergi Etiketi",
     tax_label_placeholder: "Vergi, KDV, ÖTV...",
+    number_patterns: "Numara Desenleri",
     invoice_number_pattern: "Fatura Numara Deseni",
+    quote_number_pattern: "Teklif Numara Deseni",
     pattern_variables:
       "{YYYY} yıl, {YY} kısa yıl, {MM} ay, {DD} gün, {SEQ} sıra, {SEQ4} dolgulu sıra, {RAND4} rastgele 4 hane",
     preview: "Önizleme:",

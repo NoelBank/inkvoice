@@ -10,8 +10,11 @@ export function isDraftNumber(invoiceNumber: string): boolean {
   return invoiceNumber.startsWith("DRAFT-");
 }
 
-export function generateInvoiceNumber(): string {
-  const pattern = getSetting("invoice_number_pattern") || "INV-{YYYY}-{SEQ4}";
+const DEFAULT_INVOICE_NUMBER_PATTERN = "INV-{YYYY}-{SEQ4}";
+const DEFAULT_QUOTE_NUMBER_PATTERN = "QT-{YYYY}-{SEQ4}";
+const CREDIT_NOTE_NUMBER_PATTERN = "CN-{YYYY}-{SEQ4}";
+
+function renderPattern(pattern: string, nextSequence: (pattern: string) => number): string {
   const now = new Date();
 
   let result = pattern;
@@ -27,48 +30,30 @@ export function generateInvoiceNumber(): string {
   const seqMatch = result.match(/\{SEQ(\d*)\}/);
   if (seqMatch) {
     const padLen = seqMatch[1] ? parseInt(seqMatch[1], 10) : 0;
-    const nextSeq = getNextSequenceNumber(pattern);
+    const nextSeq = nextSequence(pattern);
     const seqStr = padLen > 0 ? String(nextSeq).padStart(padLen, "0") : String(nextSeq);
     result = result.replace(seqMatch[0], seqStr);
   }
 
   return result;
+}
+
+export function generateInvoiceNumber(): string {
+  return renderPattern(
+    getSetting("invoice_number_pattern") || DEFAULT_INVOICE_NUMBER_PATTERN,
+    getNextSequenceNumber,
+  );
 }
 
 export function generateCreditNoteNumber(): string {
-  const pattern = "CN-{YYYY}-{SEQ4}";
-  const now = new Date();
-
-  let result = pattern;
-  result = result.replace("{YYYY}", String(now.getFullYear()));
-
-  const seqMatch = result.match(/\{SEQ(\d*)\}/);
-  if (seqMatch) {
-    const padLen = seqMatch[1] ? parseInt(seqMatch[1], 10) : 0;
-    const nextSeq = getNextSequenceNumber(pattern);
-    const seqStr = padLen > 0 ? String(nextSeq).padStart(padLen, "0") : String(nextSeq);
-    result = result.replace(seqMatch[0], seqStr);
-  }
-
-  return result;
+  return renderPattern(CREDIT_NOTE_NUMBER_PATTERN, getNextSequenceNumber);
 }
 
 export function generateQuoteNumber(): string {
-  const pattern = "QT-{YYYY}-{SEQ4}";
-  const now = new Date();
-
-  let result = pattern;
-  result = result.replace("{YYYY}", String(now.getFullYear()));
-
-  const seqMatch = result.match(/\{SEQ(\d*)\}/);
-  if (seqMatch) {
-    const padLen = seqMatch[1] ? parseInt(seqMatch[1], 10) : 0;
-    const nextSeq = getNextQuoteSequenceNumber(pattern);
-    const seqStr = padLen > 0 ? String(nextSeq).padStart(padLen, "0") : String(nextSeq);
-    result = result.replace(seqMatch[0], seqStr);
-  }
-
-  return result;
+  return renderPattern(
+    getSetting("quote_number_pattern") || DEFAULT_QUOTE_NUMBER_PATTERN,
+    getNextQuoteSequenceNumber,
+  );
 }
 
 function getNextSequenceNumber(pattern: string): number {

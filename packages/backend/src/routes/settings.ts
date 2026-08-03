@@ -42,6 +42,7 @@ const ALLOWED_SETTINGS = new Set([
   "pdf_qr_code_enabled",
   "tax_label",
   "invoice_number_pattern",
+  "quote_number_pattern",
   "default_payment_terms",
   "default_notes",
   "locale",
