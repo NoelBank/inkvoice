@@ -692,6 +692,18 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 19,
+    name: "late_fees",
+    up: (db) => {
+      // Tracks automatically-applied late payment fees. `late_fee_next_date`
+      // gates a "monthly" frequency: a fee is re-applied only once that date is
+      // reached while the invoice is still overdue. Flipping `late_fee_blocked`
+      // to 1 stops re-application for the "once" frequency.
+      addColumnIfMissing(db, "invoices", "late_fee_blocked", "INTEGER DEFAULT 0");
+      addColumnIfMissing(db, "invoices", "late_fee_next_date", "TEXT");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

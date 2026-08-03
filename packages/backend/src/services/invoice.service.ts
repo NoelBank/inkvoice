@@ -12,6 +12,7 @@ import {
 } from "../utils/invoice-number";
 import { calculateInvoiceTotals, calculateLineItem } from "../utils/tax-calculator";
 import { getBaseCurrency } from "./exchange-rate.service";
+import { applyLateFees } from "./late-fee.service";
 import { recordPayment as recordPaymentService } from "./payment.service";
 
 /**
@@ -123,6 +124,14 @@ export function listInvoices(
     "UPDATE invoices SET status = 'overdue', updated_at = datetime('now') WHERE status IN ('sent', 'partially_paid') AND due_date IS NOT NULL AND due_date < ? AND deleted_at IS NULL",
     [today],
   );
+
+  // Build-apply configured late fees to overdue invoices (idempotent). Late-fee
+  // failures must never break invoice listing.
+  try {
+    applyLateFees();
+  } catch {
+    // swallowed: fees retry on the next list
+  }
 
   const { page, limit } = params;
   const offset = (page - 1) * limit;
