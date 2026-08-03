@@ -1,2 +1,8 @@
 [install]
 peer = false
+
+[test]
+# CI runners are slower than dev machines; beforeAll hooks (fresh DB +
+# migrations + seed) can exceed bun's 5000ms default when test files run
+# in parallel.
+timeout = 30000
