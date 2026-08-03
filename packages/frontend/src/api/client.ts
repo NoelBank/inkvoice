@@ -554,6 +554,21 @@ export const api = {
     request<{ success: boolean; data: any }>(`/quotes/${id}/reject`, { method: "POST" }),
   convertQuoteToInvoice: (id: string) =>
     request<{ success: boolean; data: any }>(`/quotes/${id}/convert`, { method: "POST" }),
+  convertQuoteToInvoices: (
+    id: string,
+    instalments: Array<{
+      value: number;
+      unit: "percent" | "amount";
+      due_offset_days: number;
+      label?: string;
+    }>,
+  ) =>
+    request<{ success: boolean; data: any }>(`/quotes/${id}/convert-invoices`, {
+      method: "POST",
+      body: JSON.stringify(instalments),
+    }),
+  getQuoteInstalments: (id: string) =>
+    request<{ success: boolean; data: any[] }>(`/quotes/${id}/instalments`),
   duplicateQuote: (id: string) =>
     request<{ success: boolean; data: any }>(`/quotes/${id}/duplicate`, { method: "POST" }),
   getNextQuoteNumber: () =>

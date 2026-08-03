@@ -5,7 +5,7 @@ import type { Quote, QuoteItem, QuoteWithItems } from "../types/quote";
 import { todayIso } from "../utils/date";
 import { generateQuoteNumber } from "../utils/invoice-number";
 import { calculateInvoiceTotals, calculateLineItem } from "../utils/tax-calculator";
-import { createInvoice, getInvoice } from "./invoice.service";
+import { createInvoice, getInvoice, updateInvoice } from "./invoice.service";
 
 interface QuoteFilterParams {
   status?: string;
@@ -455,6 +455,232 @@ export function convertToInvoice(
 
   const updatedQuote = getQuote(quoteId)!;
   return { success: true, data: { quote: updatedQuote, invoice_id: invoice.id } };
+}
+
+export interface QuoteInstalmentInput {
+  value: number;
+  unit: "percent" | "amount";
+  due_offset_days: number;
+  label?: string;
+}
+
+export interface QuoteInstalmentRow {
+  id: string;
+  quote_id: string;
+  invoice_id: string;
+  seq: number;
+  percent: number;
+  label: string;
+  due_date: string;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function addDays(from: string, days: number): string {
+  const d = new Date(`${from}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+export function listQuoteInstalments(quoteId: string): QuoteInstalmentRow[] {
+  const db = getDb();
+  return db
+    .query(
+      `SELECT qi.*, i.invoice_number, i.total, i.status FROM quote_instalments qi
+       JOIN invoices i ON i.id = qi.invoice_id
+       WHERE qi.quote_id = ? ORDER BY qi.seq ASC`,
+    )
+    .all(quoteId) as (QuoteInstalmentRow & {
+    invoice_number: string;
+    total: number;
+    status: string;
+  })[];
+}
+
+const FALLBACK_LABELS = ["Deposit", "Stage 2", "Stage 3", "Stage 4", "Stage 5"];
+
+export function convertQuoteToInvoices(
+  quoteId: string,
+  instalments: QuoteInstalmentInput[],
+):
+  | {
+      success: true;
+      data: {
+        quote: QuoteWithItems;
+        invoices: {
+          id: string;
+          invoice_number: string;
+          total: number;
+          due_date: string;
+          label: string;
+        }[];
+      };
+    }
+  | { success: false; error: string } {
+  const db = getDb();
+  const existing = getQuote(quoteId);
+  if (!existing) return { success: false, error: "Quote not found" };
+  if (existing.status === "converted") {
+    return { success: false, error: "Quote has already been converted" };
+  }
+  if (existing.status === "rejected" || existing.status === "expired") {
+    return { success: false, error: `Cannot convert a ${existing.status} quote` };
+  }
+  if (!instalments.length) return { success: false, error: "At least one instalment is required" };
+
+  // Resolve each instalment to a percentage of the quote total.
+  const percentages: number[] = instalments.map((inst) =>
+    inst.unit === "amount" ? round2((inst.value / existing.total) * 100) : inst.value,
+  );
+  const sum = round2(percentages.reduce((a, b) => a + b, 0));
+  if (Math.abs(sum - 100) > 0.01) return { success: false, error: "Instalments must total 100%" };
+  if (percentages.some((p) => p <= 0))
+    return { success: false, error: "Each instalment must be greater than 0" };
+
+  const today = todayIso();
+
+  const invoices: {
+    id: string;
+    invoice_number: string;
+    label: string;
+    dueDate: string;
+    percent: number;
+  }[] = [];
+
+  db.transaction(() => {
+    instalments.forEach((inst, idx) => {
+      const pct = percentages[idx];
+      const scale = pct / 100;
+      const label =
+        inst.label?.trim() ||
+        (idx === instalments.length - 1
+          ? "Final"
+          : FALLBACK_LABELS[idx] || `Instalment ${idx + 1}`);
+      const dueDate = addDays(today, inst.due_offset_days);
+
+      // Scale each quote line by this instalment's share. Discount is carried
+      // proportionally: a percentage discount scales with the subtotal, an
+      // amount discount is scaled by the same share.
+      const scaledDiscountValue =
+        existing.discount_type === "amount"
+          ? round2(existing.discount_value * scale)
+          : existing.discount_value;
+
+      const items = existing.items.map((item) => ({
+        product_id: item.product_id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: round2(item.unit_price * scale),
+        unit: item.unit,
+        tax_id: item.tax_id,
+        tax_rate: item.tax_rate,
+        sort_order: item.sort_order,
+      }));
+
+      const invoice = createInvoice({
+        customer_id: existing.customer_id,
+        issue_date: today,
+        due_date: dueDate,
+        notes: existing.notes,
+        currency: existing.currency,
+        locale: existing.locale,
+        discount_type: existing.discount_type,
+        discount_value: scaledDiscountValue,
+        template_id: existing.template_id,
+        items,
+      });
+
+      invoices.push({
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        label,
+        dueDate,
+        percent: pct,
+      });
+    });
+
+    // Absorb rounding drift so the instalments exactly sum to the quote total.
+    const sumTotal = round2(invoices.reduce((a, b) => a + getInvoice(b.id)!.total, 0));
+    const diff = round2(existing.total - sumTotal);
+    if (Math.abs(diff) > 0.009) {
+      const last = invoices[invoices.length - 1];
+      const lastInvoice = getInvoice(last.id)!;
+      const adjustedItems = [
+        ...lastInvoice.items.map((item) => ({
+          product_id: item.product_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          unit: item.unit,
+          tax_id: item.tax_id,
+          tax_rate: item.tax_rate,
+          sort_order: item.sort_order,
+        })),
+        {
+          product_id: null,
+          description: "Rounding adjustment",
+          quantity: 1,
+          unit_price: diff,
+          unit: "piece",
+          tax_id: null,
+          tax_rate: 0,
+          sort_order: lastInvoice.items.length,
+        },
+      ];
+      updateInvoice(last.id, {
+        customer_id: existing.customer_id,
+        issue_date: today,
+        due_date: lastInvoice.due_date || null,
+        notes: existing.notes,
+        currency: existing.currency,
+        locale: existing.locale,
+        discount_type: lastInvoice.discount_type,
+        discount_value: lastInvoice.discount_value,
+        template_id: existing.template_id,
+        items: adjustedItems,
+      });
+    }
+
+    const insertStmt = db.prepare(
+      "INSERT INTO quote_instalments (id, quote_id, invoice_id, seq, percent, label, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    invoices.forEach((inv, idx) => {
+      insertStmt.run(
+        crypto.randomBytes(16).toString("hex"),
+        quoteId,
+        inv.id,
+        idx + 1,
+        inv.percent,
+        inv.label,
+        inv.dueDate,
+      );
+    });
+
+    db.run(
+      "UPDATE quotes SET status = 'converted', converted_invoice_id = ?, updated_at = datetime('now') WHERE id = ?",
+      [invoices[0].id, quoteId],
+    );
+  })();
+
+  const updatedQuote = getQuote(quoteId)!;
+  return {
+    success: true,
+    data: {
+      quote: updatedQuote,
+      invoices: invoices.map((inv) => {
+        const full = getInvoice(inv.id)!;
+        return {
+          id: inv.id,
+          invoice_number: full.invoice_number,
+          total: full.total,
+          due_date: full.due_date || inv.dueDate,
+          label: inv.label,
+        };
+      }),
+    },
+  };
 }
 
 export function createQuoteFromInvoice(

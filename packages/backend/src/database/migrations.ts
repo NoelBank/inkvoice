@@ -704,6 +704,27 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "invoices", "late_fee_next_date", "TEXT");
     },
   },
+  {
+    version: 20,
+    name: "quote_instalments",
+    up: (db) => {
+      // Records invoices generated from a quote split into instalments. One
+      // row per instalment invoice; the quote itself is marked 'converted'.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS quote_instalments (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          quote_id TEXT NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+          invoice_id TEXT NOT NULL REFERENCES invoices(id),
+          seq INTEGER NOT NULL,
+          percent REAL NOT NULL,
+          label TEXT NOT NULL,
+          due_date TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_quote_instalments_quote ON quote_instalments(quote_id);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

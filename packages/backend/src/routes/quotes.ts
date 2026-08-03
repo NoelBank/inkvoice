@@ -14,6 +14,7 @@ function logQuoteActivity(
   c: Context,
   action: string,
   quote: { id: string; quote_number?: string | null },
+  extraMetadata?: Record<string, unknown>,
 ) {
   logActivity({
     user_id: c.get("userId"),
@@ -21,7 +22,10 @@ function logQuoteActivity(
     action,
     resource_type: "quote",
     resource_id: quote.id,
-    metadata: quote.quote_number ? { quote_number: quote.quote_number } : undefined,
+    metadata: {
+      ...(quote.quote_number ? { quote_number: quote.quote_number } : {}),
+      ...extraMetadata,
+    },
   });
 }
 
@@ -232,6 +236,36 @@ quotes.post("/:id/convert", (c) => {
   }
   const quote = quoteService.getQuote(id);
   logQuoteActivity(c, "converted", { id, quote_number: quote?.quote_number });
+  return c.json({ success: true, data: result.data }, 201);
+});
+
+const instalmentSchema = z.object({
+  value: z.number().positive(),
+  unit: z.enum(["percent", "amount"]),
+  due_offset_days: z.number().int().min(0),
+  label: z.string().max(255).optional(),
+});
+
+quotes.get("/:id/instalments", (c) => {
+  const rows = quoteService.listQuoteInstalments(c.req.param("id"));
+  return c.json({ success: true, data: rows });
+});
+
+quotes.post("/:id/convert-invoices", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const parsed = z.array(instalmentSchema).min(1).parse(body);
+  const result = quoteService.convertQuoteToInvoices(id, parsed);
+  if (!result.success) {
+    return c.json({ success: false, error: result.error }, 400);
+  }
+  const quote = quoteService.getQuote(id);
+  logQuoteActivity(
+    c,
+    "converted",
+    { id, quote_number: quote?.quote_number },
+    { instalments: result.data.invoices.length },
+  );
   return c.json({ success: true, data: result.data }, 201);
 });
 

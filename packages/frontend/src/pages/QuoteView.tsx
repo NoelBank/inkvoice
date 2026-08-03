@@ -8,6 +8,7 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
+  Plus,
   Send,
   Share2,
   Trash2,
@@ -30,6 +31,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -53,6 +56,25 @@ const STATUS_COLORS: Record<string, string> = {
   converted: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
 };
 
+interface InstalmentRow {
+  unit: "percent" | "amount";
+  value: number;
+  days: number;
+  label: string;
+}
+
+let instalmentKey = 0;
+function newInstalmentRow(partial?: Partial<InstalmentRow>): InstalmentRow & { key: number } {
+  instalmentKey += 1;
+  return {
+    key: instalmentKey,
+    unit: partial?.unit ?? "percent",
+    value: partial?.value ?? 0,
+    days: partial?.days ?? 0,
+    label: partial?.label ?? "",
+  };
+}
+
 export default function QuoteView() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -68,7 +90,21 @@ export default function QuoteView() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertMode, setConvertMode] = useState<"single" | "split">("single");
+  const [rows, setRows] = useState<Array<InstalmentRow & { key: number }>>([
+    newInstalmentRow({ value: 50 }),
+    newInstalmentRow({ value: 50, days: 30 }),
+  ]);
+  const [converting, setConverting] = useState(false);
+  const [instalments, setInstalments] = useState<any[]>([]);
   const printIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const fetchInstalments = useCallback(() => {
+    if (quote?.converted_invoice_id) {
+      api.getQuoteInstalments(id!).then((r) => setInstalments(r.data));
+    }
+  }, [id, quote?.converted_invoice_id]);
 
   const fetchQuote = useCallback(() => {
     api.getQuote(id!).then((r) => {
@@ -87,6 +123,10 @@ export default function QuoteView() {
   useEffect(() => {
     fetchQuote();
   }, [fetchQuote]);
+
+  useEffect(() => {
+    fetchInstalments();
+  }, [fetchInstalments]);
 
   if (!quote) {
     return (
@@ -122,14 +162,63 @@ export default function QuoteView() {
     }
   };
 
-  const handleConvert = async () => {
+  const handleConvertSingle = async () => {
+    setConverting(true);
     try {
       const res = await api.convertQuoteToInvoice(id!);
       toast.success(t("quotes.converted"));
+      setConvertOpen(false);
       navigate(`/invoices/${res.data.invoice_id}`);
     } catch (err: unknown) {
       toast.error(formatApiError(err, t));
+    } finally {
+      setConverting(false);
     }
+  };
+
+  const percentTotal = rows.reduce((sum, row) => {
+    const pct = row.unit === "percent" ? row.value : (row.value / quote.total) * 100;
+    return sum + (Number.isFinite(pct) ? pct : 0);
+  }, 0);
+
+  const splitValid = rows.length >= 2 && Math.abs(percentTotal - 100) <= 0.01;
+
+  const handleConvertSplit = async () => {
+    if (!splitValid) return;
+    setConverting(true);
+    try {
+      const payload = rows.map((row) => ({
+        value: row.value,
+        unit: row.unit,
+        due_offset_days: row.days,
+        label: row.label.trim() || undefined,
+      }));
+      const res = await api.convertQuoteToInvoices(id!, payload);
+      toast.success(t("quotes.converted_split", { count: String(res.data.invoices.length) }));
+      setConvertOpen(false);
+      fetchQuote();
+      api.getQuoteInstalments(id!).then((r) => setInstalments(r.data));
+    } catch (err: unknown) {
+      toast.error(formatApiError(err, t));
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  const applyPreset = (mode: "deposit" | "equal") => {
+    if (mode === "deposit") {
+      setRows([newInstalmentRow({ value: 50 }), newInstalmentRow({ value: 50, days: 30 })]);
+    } else {
+      setRows([
+        newInstalmentRow({ value: 33.33 }),
+        newInstalmentRow({ value: 33.33, days: 30 }),
+        newInstalmentRow({ value: 33.34, days: 60 }),
+      ]);
+    }
+  };
+
+  const updateRow = (index: number, patch: Partial<InstalmentRow>) => {
+    setRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
 
   const handleDuplicate = async () => {
@@ -212,7 +301,7 @@ export default function QuoteView() {
         <div className="flex items-center gap-3 min-w-0">
           <h1 className="text-2xl font-bold tracking-tight truncate">{quote.quote_number}</h1>
           <Badge variant="secondary" className={STATUS_COLORS[quote.status]}>
-            {t(("quotes.status_" + quote.status) as any)}
+            {t(`quotes.status_${quote.status}` as any)}
           </Badge>
           <span className="text-sm text-muted-foreground truncate">{quote.customer?.name}</span>
         </div>
@@ -238,7 +327,7 @@ export default function QuoteView() {
 
           {(["sent", "accepted"].includes(quote.status) ||
             (!!quote.is_published && quote.status === "draft")) && (
-            <Button size="sm" onClick={handleConvert}>
+            <Button size="sm" onClick={() => setConvertOpen(true)}>
               <FileText className="h-4 w-4 mr-1" /> {t("quotes.convert_to_invoice")}
             </Button>
           )}
@@ -339,15 +428,48 @@ export default function QuoteView() {
       )}
 
       {quote.converted_invoice_id && (
-        <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/30 px-4 py-3 text-sm">
-          <FileText className="h-4 w-4 text-purple-600" />
-          {t("quotes.converted_to_invoice")}{" "}
-          <button
-            className="font-medium text-primary hover:underline"
-            onClick={() => navigate(`/invoices/${quote.converted_invoice_id}`)}
-          >
-            {t("public.invoice")}
-          </button>
+        <div className="rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/30 px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-purple-600" />
+            <span className="font-medium">{t("quotes.converted_to_invoice")}</span>
+          </div>
+          {instalments.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {instalments.map((inst) => (
+                <div key={inst.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-muted-foreground shrink-0">
+                      {inst.seq}
+                      {inst.label ? ` · ${inst.label}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      className="font-medium text-primary hover:underline truncate"
+                      onClick={() => navigate(`/invoices/${inst.invoice_id}`)}
+                    >
+                      {inst.invoice_number}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="tabular-nums">
+                      {formatCurrency(inst.total, quote.currency)}
+                    </span>
+                    <Badge variant="secondary" className={STATUS_COLORS[inst.status]}>
+                      {t(`invoices.status_${inst.status}` as any)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => navigate(`/invoices/${quote.converted_invoice_id}`)}
+            >
+              {t("public.invoice")}
+            </button>
+          )}
         </div>
       )}
 
@@ -464,6 +586,154 @@ export default function QuoteView() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={convertOpen} onOpenChange={setConvertOpen}>
+        <DialogContent className="sm:max-w-2xl flex flex-col">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">{t("quotes.convert_title")}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t("quotes.convert_hint")} · {formatCurrency(quote.total, quote.currency)}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={convertMode === "single" ? "default" : "outline"}
+              onClick={() => setConvertMode("single")}
+            >
+              {t("quotes.convert_single")}
+            </Button>
+            <Button
+              size="sm"
+              variant={convertMode === "split" ? "default" : "outline"}
+              onClick={() => setConvertMode("split")}
+            >
+              {t("quotes.convert_split")}
+            </Button>
+          </div>
+
+          {convertMode === "single" ? (
+            <p className="text-sm text-muted-foreground">{t("quotes.convert_single_hint")}</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Button size="xs" variant="outline" onClick={() => applyPreset("deposit")}>
+                  {t("quotes.preset_deposit")}
+                </Button>
+                <Button size="xs" variant="outline" onClick={() => applyPreset("equal")}>
+                  {t("quotes.preset_equal")}
+                </Button>
+              </div>
+
+              <div className="hidden md:grid grid-cols-[1.2fr_110px_1.5fr_1fr_1fr_2rem] gap-2 px-1 text-xs font-medium text-muted-foreground">
+                <span>{t("quotes.instalment_value")}</span>
+                <span>{t("quotes.instalment_unit")}</span>
+                <span>{t("quotes.instalment_due_days")}</span>
+                <span>{t("quotes.instalment_label")}</span>
+                <span>{t("quotes.instalment_share")}</span>
+                <span />
+              </div>
+
+              {rows.map((row, index) => {
+                const pct = row.unit === "percent" ? row.value : (row.value / quote.total) * 100;
+                return (
+                  <div
+                    key={row.key}
+                    className="grid grid-cols-1 md:grid-cols-[1.2fr_110px_1.5fr_1fr_1fr_2rem] gap-2 md:items-center px-1"
+                  >
+                    <NumberInput
+                      value={row.value}
+                      onValueChange={(v) => updateRow(index, { value: v })}
+                      min={0}
+                      decimals={2}
+                      aria-label={t("quotes.instalment_value")}
+                    />
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() =>
+                        updateRow(index, {
+                          unit: row.unit === "percent" ? "amount" : "percent",
+                          value:
+                            row.unit === "percent"
+                              ? Math.round((row.value / 100) * quote.total * 100) / 100
+                              : Math.round((row.value / quote.total) * 10000) / 100,
+                        })
+                      }
+                      className="justify-self-start md:justify-self-stretch"
+                    >
+                      {t(
+                        row.unit === "percent"
+                          ? "quotes.instalment_percent"
+                          : "quotes.instalment_amount",
+                      )}
+                    </Button>
+                    <NumberInput
+                      value={row.days}
+                      onValueChange={(v) => updateRow(index, { days: v })}
+                      min={0}
+                      integer
+                      aria-label={t("quotes.instalment_due_days")}
+                    />
+                    <Input
+                      value={row.label}
+                      onChange={(e) => updateRow(index, { label: e.target.value })}
+                      placeholder={t("quotes.instalment_label")}
+                      className="h-8"
+                    />
+                    <span className="tabular-nums text-sm text-muted-foreground">
+                      {Number.isFinite(pct) ? `${pct.toFixed(2)}%` : "—"}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={rows.length <= 2}
+                      onClick={() => setRows((prev) => prev.filter((_, i) => i !== index))}
+                      aria-label={t("quotes.remove_instalment")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRows((prev) => [...prev, newInstalmentRow()])}
+              >
+                <Plus className="h-4 w-4 mr-1" /> {t("quotes.add_instalment")}
+              </Button>
+
+              <div
+                className={`text-sm font-medium ${
+                  splitValid
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {t("quotes.instalment_sum_label", { sum: percentTotal.toFixed(2) })}
+                {!splitValid && ` · ${t("quotes.instalment_sum_error")}`}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button variant="outline" onClick={() => setConvertOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={convertMode === "split" && !splitValid}
+              onClick={convertMode === "single" ? handleConvertSingle : handleConvertSplit}
+            >
+              {converting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {t("quotes.convert_to_invoice")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SendInvoiceDialog
         open={sendDialogOpen}

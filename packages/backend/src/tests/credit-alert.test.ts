@@ -45,6 +45,7 @@ describe("customer available credit", () => {
     markSent(inv.id);
     const res = createCreditNote(inv.id);
     expect(res.success).toBe(true);
+    if (!res.success) throw new Error(res.error);
     markSent(res.data.id);
 
     // Credit note total is -100; available credit is +100.
