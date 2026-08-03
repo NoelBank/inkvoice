@@ -14,6 +14,13 @@ export interface Invoice {
   discount_type: string | null;
   discount_value: number;
   discount_amount: number;
+  /** Early-payment (cash) discount offer; null when not offered. */
+  cash_discount_type: string | null;
+  cash_discount_value: number;
+  /** Discount valid for this many days after `issue_date`; 0 disables it. */
+  cash_discount_days: number;
+  /** Amount actually given up via the early-payment discount. */
+  cash_discount_applied: number;
   total: number;
   amount_paid: number;
   notes: string | null;

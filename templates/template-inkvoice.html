@@ -408,6 +408,18 @@
               <td>Total (inc. tax)</td>
               <td>{{formatted_total}}</td>
             </tr>
+            {{#has_cash_discount}}
+            <tr>
+              <td>Early payment discount (due by {{cash_discount_deadline}})</td>
+              <td>&minus;{{formatted_cash_discount}}</td>
+            </tr>
+            {{/has_cash_discount}}
+            {{#has_cash_discount_applied}}
+            <tr>
+              <td>Early payment discount applied</td>
+              <td>&minus;{{formatted_cash_discount_applied}}</td>
+            </tr>
+            {{/has_cash_discount_applied}}
             {{#has_payments}}
             <tr>
               <td>Amount Paid</td>

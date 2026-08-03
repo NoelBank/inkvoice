@@ -483,9 +483,10 @@ invoices.post("/:id/send", async (c) => {
 const paymentSchema = z.object({
   amount: z.number().positive(),
   payment_date: z.string().min(1),
-  method: z.enum(["bank_transfer", "cash", "card", "check", "other"]).optional(),
+  method: z.enum(["bank_transfer", "cash", "card", "check", "credit", "other"]).optional(),
   reference: z.string().max(255).optional(),
   notes: z.string().max(1000).optional(),
+  apply_cash_discount: z.boolean().optional(),
 });
 
 invoices.post("/:id/payments", async (c) => {

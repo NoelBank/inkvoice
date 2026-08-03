@@ -317,6 +317,18 @@
             <span>Total</span>
             <span class="v">{{formatted_total}}</span>
           </div>
+          {{#has_cash_discount}}
+          <div class="row discount">
+            <span>Early payment discount (due by {{cash_discount_deadline}})</span>
+            <span class="v">−{{formatted_cash_discount}}</span>
+          </div>
+          {{/has_cash_discount}}
+          {{#has_cash_discount_applied}}
+          <div class="row discount">
+            <span>Early payment discount applied</span>
+            <span class="v">−{{formatted_cash_discount_applied}}</span>
+          </div>
+          {{/has_cash_discount_applied}}
           {{#has_payments}}
           <div class="row">
             <span>Amount Paid</span>

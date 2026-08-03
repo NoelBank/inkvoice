@@ -275,6 +275,9 @@ export default function InvoiceForm({ onSave }: Props) {
     locale: "",
     discount_type: "" as string,
     discount_value: 0,
+    cash_discount_type: "" as string,
+    cash_discount_value: 0,
+    cash_discount_days: 0,
     prices_include_tax: false,
   });
 
@@ -422,6 +425,9 @@ export default function InvoiceForm({ onSave }: Props) {
           locale: inv.locale || "",
           discount_type: inv.discount_type || "",
           discount_value: inv.discount_value || 0,
+          cash_discount_type: inv.cash_discount_type || "",
+          cash_discount_value: inv.cash_discount_value || 0,
+          cash_discount_days: inv.cash_discount_days || 0,
           prices_include_tax: !!inv.prices_include_tax,
         });
         setItems(
@@ -464,6 +470,9 @@ export default function InvoiceForm({ onSave }: Props) {
       invoice_number: isEdit ? form.invoice_number : undefined,
       locale: form.locale || null,
       discount_type: form.discount_type || null,
+      cash_discount_type: form.cash_discount_type || null,
+      cash_discount_value: form.cash_discount_value,
+      cash_discount_days: form.cash_discount_days,
       items: items.map(({ _key, ...item }, i) => ({
         ...item,
         sort_order: i,
@@ -1044,6 +1053,57 @@ export default function InvoiceForm({ onSave }: Props) {
                   </span>
                 </div>
               )}
+              {/* Early-payment (cash) discount */}
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t("invoices.cash_discount")}
+                  </span>
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {t("invoices.cash_discount_type")}
+                    </Label>
+                    <select
+                      value={form.cash_discount_type}
+                      onChange={(e) => setForm({ ...form, cash_discount_type: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="">{t("common.none")}</option>
+                      <option value="percentage">%</option>
+                      <option value="amount">{t("common.fixed")}</option>
+                    </select>
+                  </div>
+                  {form.cash_discount_type && (
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">
+                        {t("invoices.cash_discount_value")}
+                      </Label>
+                      <NumberInput
+                        value={form.cash_discount_value}
+                        min={0}
+                        decimals={2}
+                        onValueChange={(v) => setForm({ ...form, cash_discount_value: v })}
+                      />
+                    </div>
+                  )}
+                </div>
+                {form.cash_discount_type && (
+                  <div className="flex gap-2 items-center">
+                    <Label className="text-xs text-muted-foreground">
+                      {t("invoices.cash_discount_days")}
+                    </Label>
+                    <NumberInput
+                      value={form.cash_discount_days}
+                      min={0}
+                      integer
+                      className="flex-1"
+                      onValueChange={(v) => setForm({ ...form, cash_discount_days: v })}
+                    />
+                  </div>
+                )}
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("invoices.tax")}</span>
                 <span className="tabular-nums">{formatCurrency(taxTotal, form.currency)}</span>

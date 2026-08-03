@@ -313,6 +313,12 @@ const tr: TranslationKeys = {
     failed_print: "Yazdırma için fatura yüklenemedi",
     auto_number_on_send: "Gonderimde otomatik olusturulur",
     prices_include_tax: "Fiyatlar vergi dahil",
+    cash_discount: "Erken ödeme indirimi",
+    cash_discount_type: "İndirim türü",
+    cash_discount_value: "İndirim tutarı",
+    cash_discount_days: "Geçerlilik süresi (gün)",
+    cash_discount_hint:
+      "Faturanın düzenlenme tarihinden itibaren belirtilen gün içinde ödenmesi durumunda indirimli tutar sunun.",
   },
 
   // Müşteriler
@@ -1177,6 +1183,9 @@ const tr: TranslationKeys = {
     record: "Ödeme Kaydet",
     recorded: "Ödeme kaydedildi",
     amount_error: "Tutar 0'dan büyük olmalıdır",
+    apply_cash_discount: "Erken ödeme indirimini uygula",
+    cash_discount_detail: "({{deadline}} tarihine kadar ödenirse {{amount}} tasarruf)",
+    cash_discount_expired: "indirim süresi doldu",
   },
 
   // Toplu işlem araç çubuğu

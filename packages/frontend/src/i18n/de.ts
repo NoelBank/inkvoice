@@ -326,6 +326,12 @@ const de: TranslationKeys = {
     failed_print: "Rechnung konnte nicht zum Drucken geladen werden",
     auto_number_on_send: "Wird beim Senden automatisch erzeugt",
     prices_include_tax: "Preise inkl. Steuer",
+    cash_discount: "Skonto",
+    cash_discount_type: "Rabattart",
+    cash_discount_value: "Rabattwert",
+    cash_discount_days: "Gültig für (Tage)",
+    cash_discount_hint:
+      "Bieten Sie einen reduzierten Betrag an, wenn die Rechnung innerhalb dieser Tage nach Ausstellung bezahlt wird.",
   },
 
   // Kunden
@@ -1205,6 +1211,9 @@ const de: TranslationKeys = {
     record: "Zahlung erfassen",
     recorded: "Zahlung erfasst",
     amount_error: "Betrag muss größer als 0 sein",
+    apply_cash_discount: "Skonto anwenden",
+    cash_discount_detail: "(sparen Sie {{amount}}, wenn bis {{deadline}} bezahlt)",
+    cash_discount_expired: "Skontofrist abgelaufen",
   },
 
   // Stapelaktionsleiste

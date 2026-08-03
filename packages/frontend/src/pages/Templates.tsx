@@ -388,6 +388,25 @@ const TEMPLATE_VARIABLES = [
     ],
   },
   {
+    group: "Cash Discount",
+    vars: [
+      {
+        tag: "has_cash_discount",
+        desc: "Boolean — an early-payment discount is offered and a balance remains",
+      },
+      {
+        tag: "cash_discount_deadline",
+        desc: "Formatted date by which payment must arrive to claim the discount",
+      },
+      { tag: "formatted_cash_discount", desc: "Formatted amount saved by paying early" },
+      {
+        tag: "has_cash_discount_applied",
+        desc: "Boolean — the early-payment discount was already applied",
+      },
+      { tag: "formatted_cash_discount_applied", desc: "Formatted discount amount given up" },
+    ],
+  },
+  {
     group: "QR Code (optional)",
     vars: [
       { tag: "qr", desc: "Truthy when QR codes are enabled and the document is published" },

@@ -616,8 +616,21 @@ export default function InvoiceView({ onBack }: Props) {
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         invoiceId={id!}
-        balanceDue={Math.max(0, invoice.total - (invoice.amount_paid || 0))}
+        balanceDue={Math.max(
+          0,
+          invoice.total - (invoice.amount_paid || 0) - (invoice.cash_discount_applied || 0),
+        )}
         currency={invoice.currency}
+        cashDiscount={
+          invoice.cash_discount_days > 0
+            ? {
+                type: invoice.cash_discount_type || null,
+                value: invoice.cash_discount_value || 0,
+                days: invoice.cash_discount_days,
+                issueDate: invoice.issue_date,
+              }
+            : null
+        }
         onSuccess={fetchInvoice}
       />
 

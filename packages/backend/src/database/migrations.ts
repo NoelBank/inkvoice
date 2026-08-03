@@ -725,6 +725,20 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 21,
+    name: "cash_discount",
+    up: (db) => {
+      // Optional early-payment (cash) discount offered on an invoice. When
+      // `cash_discount_days > 0` the customer may pay a reduced amount if they
+      // settle within that many days of the issue date. `cash_discount_applied`
+      // tracks how much was actually given up so the invoice settles as paid.
+      addColumnIfMissing(db, "invoices", "cash_discount_type", "TEXT");
+      addColumnIfMissing(db, "invoices", "cash_discount_value", "REAL DEFAULT 0");
+      addColumnIfMissing(db, "invoices", "cash_discount_days", "INTEGER DEFAULT 0");
+      addColumnIfMissing(db, "invoices", "cash_discount_applied", "REAL DEFAULT 0");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

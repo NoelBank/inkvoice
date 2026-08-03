@@ -46,6 +46,16 @@ All `formatted_*` values are pre-formatted with the active locale, currency, and
 | `{{#tax_summary}}`          | section | One entry per distinct tax rate. Inside: `{{name}}`, `{{rate}}`, `{{formatted_amount}}`. |
 | `{{formatted_total}}`       | string  | Grand total.                                                           |
 
+### Cash discount (early-payment / Skonto)
+
+| Token                             | Type     | Notes                                                              |
+| --------------------------------- | -------- | ------------------------------------------------------------------ |
+| `{{#has_cash_discount}}`          | boolean  | True when an early-payment discount is offered and a balance remains. |
+| `{{cash_discount_deadline}}`      | string   | Locale-formatted date by which payment must arrive to claim the discount. |
+| `{{formatted_cash_discount}}`     | string   | Pre-formatted amount saved by paying early.                        |
+| `{{#has_cash_discount_applied}}`  | boolean  | True once the early-payment discount has been applied.             |
+| `{{formatted_cash_discount_applied}}` | string | Pre-formatted discount amount given up.                           |
+
 ### Company (your business)
 
 Pulled from the **Settings** page.

@@ -1,6 +1,7 @@
 import Mustache from "mustache";
 import { getDb } from "../database/connection";
 import type { Customer } from "../types/customer";
+import { cashDiscountDeadline, cashDiscountOn, hasCashDiscount } from "../utils/cash-discount";
 import { formatCurrency } from "../utils/currency";
 import { escapeMultiline } from "../utils/html";
 import { qrToDataUri } from "../utils/qr-code";
@@ -121,7 +122,8 @@ export function buildInvoiceContext(invoiceId: string) {
 
   const payments = listPayments(invoiceId);
   const amountPaid = invoice.amount_paid || 0;
-  const balanceDue = Math.max(0, invoice.total - amountPaid);
+  const cashDiscountApplied = invoice.cash_discount_applied || 0;
+  const balanceDue = Math.max(0, invoice.total - amountPaid - cashDiscountApplied);
 
   return {
     invoice_number: invoice.invoice_number,
@@ -181,6 +183,33 @@ export function buildInvoiceContext(invoiceId: string) {
     has_payments: amountPaid > 0,
     formatted_amount_paid: formatCurrency(amountPaid, currency, numberFormat, localeOverride),
     formatted_balance_due: formatCurrency(balanceDue, currency, numberFormat, localeOverride),
+    has_cash_discount: hasCashDiscount(invoice) && balanceDue > 0,
+    cash_discount_value: invoice.cash_discount_value,
+    cash_discount_days: invoice.cash_discount_days,
+    cash_discount_deadline: hasCashDiscount(invoice)
+      ? formatDateStr(
+          cashDiscountDeadline(invoice.issue_date, invoice.cash_discount_days),
+          dateFormat,
+          localeOverride,
+        )
+      : null,
+    formatted_cash_discount: formatCurrency(
+      cashDiscountOn(balanceDue, {
+        type: invoice.cash_discount_type,
+        value: invoice.cash_discount_value,
+        days: invoice.cash_discount_days,
+      }),
+      currency,
+      numberFormat,
+      localeOverride,
+    ),
+    has_cash_discount_applied: cashDiscountApplied > 0,
+    formatted_cash_discount_applied: formatCurrency(
+      cashDiscountApplied,
+      currency,
+      numberFormat,
+      localeOverride,
+    ),
     payments: payments.map((p) => ({
       payment_date: formatDateStr(p.payment_date, dateFormat, localeOverride),
       method: p.method,

@@ -55,6 +55,9 @@ interface CreateInvoiceData {
   exchange_rate?: number;
   discount_type?: string | null;
   discount_value?: number;
+  cash_discount_type?: string | null;
+  cash_discount_value?: number;
+  cash_discount_days?: number;
   locale?: string | null;
   template_id?: string | null;
   items: {
@@ -209,8 +212,9 @@ export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
     db.run(
       `INSERT INTO invoices (id, invoice_number, customer_id, status, type, reference_invoice_id,
        issue_date, due_date, subtotal, tax_total, discount_type, discount_value, discount_amount,
+       cash_discount_type, cash_discount_value, cash_discount_days,
        total, notes, payment_terms, currency, exchange_rate, locale, template_id)
-       VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         invoiceId,
         invoiceNumber,
@@ -224,6 +228,9 @@ export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
         data.discount_type || null,
         data.discount_value ?? 0,
         totals.discount_amount,
+        data.cash_discount_type || null,
+        data.cash_discount_value ?? 0,
+        data.cash_discount_days ?? 0,
         totals.total,
         data.notes || null,
         data.payment_terms || null,
@@ -298,7 +305,8 @@ export function updateInvoice(id: string, data: CreateInvoiceData): InvoiceWithI
     db.run(
       `UPDATE invoices SET customer_id = ?, issue_date = ?, due_date = ?,
        subtotal = ?, tax_total = ?, discount_type = ?, discount_value = ?,
-       discount_amount = ?, total = ?, notes = ?, payment_terms = ?,
+       discount_amount = ?, cash_discount_type = ?, cash_discount_value = ?,
+       cash_discount_days = ?, total = ?, notes = ?, payment_terms = ?,
        currency = ?, exchange_rate = ?, locale = ?, template_id = ?, updated_at = datetime('now') WHERE id = ?`,
       [
         data.customer_id,
@@ -309,6 +317,9 @@ export function updateInvoice(id: string, data: CreateInvoiceData): InvoiceWithI
         data.discount_type || null,
         data.discount_value ?? 0,
         totals.discount_amount,
+        data.cash_discount_type || null,
+        data.cash_discount_value ?? 0,
+        data.cash_discount_days ?? 0,
         totals.total,
         data.notes || null,
         data.payment_terms || null,

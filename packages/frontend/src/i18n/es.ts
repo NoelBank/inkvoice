@@ -316,6 +316,12 @@ const es: TranslationKeys = {
     failed_print: "No se pudo cargar la factura para imprimir",
     auto_number_on_send: "Se genera automáticamente al enviar",
     prices_include_tax: "Los precios incluyen impuestos",
+    cash_discount: "Descuento por pronto pago",
+    cash_discount_type: "Tipo de descuento",
+    cash_discount_value: "Valor del descuento",
+    cash_discount_days: "Válido por (días)",
+    cash_discount_hint:
+      "Ofrezca un importe reducido si la factura se paga dentro de estos días desde su emisión.",
   },
 
   // Clientes
@@ -1192,6 +1198,9 @@ const es: TranslationKeys = {
     record: "Registrar pago",
     recorded: "Pago registrado",
     amount_error: "El importe debe ser mayor que 0",
+    apply_cash_discount: "Aplicar descuento por pronto pago",
+    cash_discount_detail: "(ahorre {{amount}} si paga antes del {{deadline}})",
+    cash_discount_expired: "el periodo de descuento ha pasado",
   },
 
   // Barra de acciones por lote

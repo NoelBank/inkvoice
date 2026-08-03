@@ -55,6 +55,15 @@ Totals are calculated automatically: `line_total = quantity × unit_price + tax_
 | **Void** | Cancel the invoice |
 | **Download PDF** | Generate and download a PDF |
 
+## Early Payment Discount (Skonto)
+
+An invoice can offer a discount for paying early:
+
+- In the **totals** section of the invoice form, set a discount type (`%` or fixed amount), a discount value, and the number of days the offer is valid from the issue date.
+- The PDF shows the savings and the deadline (e.g. `Early payment discount (due by 2026-01-15)`).
+- When recording a payment inside the window, tick **Apply early-payment discount**; the amount is prefilled to the discounted balance and the invoice settles as paid.
+- If the discount window has passed, the option is disabled. Deleting a payment that used the discount reverts the invoice to its unpaid state.
+
 ## Sharing
 
 Published invoices get a unique share link that customers can use to:

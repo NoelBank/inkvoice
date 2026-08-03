@@ -310,6 +310,12 @@ const en = {
     failed_print: "Failed to load invoice for printing",
     auto_number_on_send: "Auto-generated on send",
     prices_include_tax: "Prices include tax",
+    cash_discount: "Early payment discount",
+    cash_discount_type: "Discount type",
+    cash_discount_value: "Discount value",
+    cash_discount_days: "Valid for (days)",
+    cash_discount_hint:
+      "Offer a reduced amount if the invoice is paid within this many days of issue.",
   },
 
   // Customers
@@ -1176,6 +1182,9 @@ const en = {
     record: "Record Payment",
     recorded: "Payment recorded",
     amount_error: "Amount must be greater than 0",
+    apply_cash_discount: "Apply early-payment discount",
+    cash_discount_detail: "(save {{amount}} if paid by {{deadline}})",
+    cash_discount_expired: "discount window has passed",
   },
 
   // Batch action toolbar

@@ -316,6 +316,12 @@ const fr: TranslationKeys = {
     failed_print: "Échec du chargement de la facture pour impression",
     auto_number_on_send: "Généré automatiquement à l'envoi",
     prices_include_tax: "Prix TTC",
+    cash_discount: "Remise pour paiement anticipé",
+    cash_discount_type: "Type de remise",
+    cash_discount_value: "Montant de la remise",
+    cash_discount_days: "Valable (jours)",
+    cash_discount_hint:
+      "Proposez un montant réduit si la facture est payée dans ce nombre de jours après son émission.",
   },
 
   // Clients
@@ -1194,6 +1200,9 @@ const fr: TranslationKeys = {
     record: "Enregistrer le paiement",
     recorded: "Paiement enregistré",
     amount_error: "Le montant doit être supérieur à 0",
+    apply_cash_discount: "Appliquer la remise pour paiement anticipé",
+    cash_discount_detail: "(économisez {{amount}} si payé avant le {{deadline}})",
+    cash_discount_expired: "la période de remise est passée",
   },
 
   // Barre d'actions groupées
