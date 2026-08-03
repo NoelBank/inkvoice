@@ -164,6 +164,30 @@
     .items-table tbody tr:last-child td {
       border-bottom: 2px solid #1a1a1a;
     }
+    .items-table tbody tr.group-header td {
+      padding: 16px 0 8px 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .items-table tbody tr.group-header .group-issue {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      color: #999;
+    }
+    .items-table tbody tr.group-subtotal td {
+      padding-top: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .items-table tbody tr.group-subtotal td.num {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
 
     /* === TOTALS === */
     .totals-wrapper {
@@ -309,6 +333,14 @@
       </tr>
     </thead>
     <tbody>
+      {{#consolidated}}
+      {{#sources}}
+      <tr class="group-header">
+        <td colspan="5">
+          {{invoice_number}}
+          {{#issue_date}}<span class="group-issue"> · {{issue_date}}</span>{{/issue_date}}
+        </td>
+      </tr>
       {{#items}}
       <tr>
         <td class="desc">{{description}}</td>
@@ -318,6 +350,26 @@
         <td class="num">{{formatted_line_total}}</td>
       </tr>
       {{/items}}
+      <tr class="group-subtotal">
+        <td class="desc">Subtotal</td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num">{{formatted_subtotal}}</td>
+      </tr>
+      {{/sources}}
+      {{/consolidated}}
+      {{^consolidated}}
+      {{#items}}
+      <tr>
+        <td class="desc">{{description}}</td>
+        <td class="num">{{quantity}} {{unit}}</td>
+        <td class="num">{{formatted_unit_price}}</td>
+        <td class="num">{{tax_rate}}%</td>
+        <td class="num">{{formatted_line_total}}</td>
+      </tr>
+      {{/items}}
+      {{/consolidated}}
     </tbody>
   </table>
 

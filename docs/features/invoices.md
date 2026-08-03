@@ -80,6 +80,21 @@ Select multiple invoices to:
 - Move to trash
 - Restore from trash
 
+## Consolidated Invoice
+
+Merge several draft invoices for one customer into a single consolidated draft:
+
+1. Open any draft invoice and choose **Consolidate** from the actions menu.
+2. Pick the target customer (defaults to the current invoice's customer).
+3. Select at least two draft invoices for that customer and confirm.
+
+How it works:
+
+- **Line items** from each source are copied in order into the new draft; the merged subtotal, tax, and total are the exact sum of the sources. Existing draft discounts are not carried over, but you can apply a single discount when consolidating via the API.
+- **Source grouping** is preserved: the PDF and detail view group line items under their source invoice number, with a per-source subtotal row.
+- **Constraints**: sources must be drafts, belong to the same customer, and share a currency (mixing currencies is rejected).
+- The API route is `POST /api/v1/invoices/consolidate` with `{ customer_id, invoice_ids: string[], discount_type?, discount_value? }`; it returns the new consolidated draft.
+
 ## CSV Export
 
 Export your invoice list as a CSV file from the Invoices page. The export includes invoice number, customer, dates, status, and totals.

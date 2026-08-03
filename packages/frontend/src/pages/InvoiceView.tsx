@@ -7,6 +7,7 @@ import {
   Eye,
   FileText,
   Globe,
+  Layers,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -20,6 +21,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
+import { ConsolidateInvoiceDialog } from "@/components/invoices/ConsolidateInvoiceDialog";
 import { EinvoicePanel } from "@/components/invoices/EinvoicePanel";
 import { PaymentHistory } from "@/components/invoices/PaymentHistory";
 import { RecordPaymentDialog } from "@/components/invoices/RecordPaymentDialog";
@@ -77,6 +79,7 @@ export default function InvoiceView({ onBack }: Props) {
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [consolidateOpen, setConsolidateOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const printIframeRef = useRef<HTMLIFrameElement>(null);
@@ -211,6 +214,10 @@ export default function InvoiceView({ onBack }: Props) {
     } catch (err: unknown) {
       toast.error(formatApiError(err, t));
     }
+  };
+
+  const handleConsolidated = (invoiceId: string) => {
+    navigate(`/invoices/${invoiceId}`);
   };
 
   const handlePublish = async () => {
@@ -376,6 +383,11 @@ export default function InvoiceView({ onBack }: Props) {
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {invoice.status === "draft" && (
+                <DropdownMenuItem onClick={() => setConsolidateOpen(true)}>
+                  <Layers className="h-4 w-4 mr-2" /> {t("invoices.consolidate")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleDuplicate}>
                 <Copy className="h-4 w-4 mr-2" /> {t("invoices.duplicate")}
               </DropdownMenuItem>
@@ -509,6 +521,25 @@ export default function InvoiceView({ onBack }: Props) {
             ) : (
               "N/A"
             )}
+          </span>
+        </div>
+      )}
+
+      {/* Consolidated invoice banner */}
+      {invoice.consolidation && invoice.consolidation.sources.length > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/30 px-4 py-3 text-sm">
+          <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="text-muted-foreground">{t("invoices.consolidated_from")}:</span>
+          <span className="flex flex-wrap gap-1.5">
+            {invoice.consolidation.sources.map((s: any) => (
+              <button
+                key={s.id}
+                className="font-medium text-primary hover:underline"
+                onClick={() => navigate(`/invoices/${s.id}`)}
+              >
+                {s.invoice_number}
+              </button>
+            ))}
           </span>
         </div>
       )}
@@ -763,6 +794,14 @@ export default function InvoiceView({ onBack }: Props) {
         customerEmail={invoice.customer?.email || null}
         invoiceNumber={invoice.invoice_number}
         onSuccess={fetchInvoice}
+      />
+
+      {/* Consolidate Drafts Dialog */}
+      <ConsolidateInvoiceDialog
+        open={consolidateOpen}
+        onOpenChange={setConsolidateOpen}
+        defaultCustomerId={invoice.customer?.id ?? null}
+        onConsolidated={handleConsolidated}
       />
 
       {/* Hidden iframe for printing */}

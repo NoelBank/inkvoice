@@ -153,6 +153,30 @@
         margin-top: 0.5mm;
       }
 
+      .items tbody tr.group-header td {
+        padding: 4mm 0 1.5mm 0;
+        font-size: 9.5pt;
+        font-weight: 600;
+        border-bottom: 1px solid #ccc;
+        color: #1f1f1f;
+      }
+
+      .items tbody tr.group-header .group-issue {
+        font-weight: 400;
+        color: #888;
+      }
+
+      .items tbody tr.group-subtotal td {
+        padding: 2.5mm 0;
+        border-bottom: 1px solid #e6e6e6;
+        font-weight: 600;
+        color: #1f1f1f;
+      }
+
+      .items tbody tr.group-subtotal td.num {
+        font-weight: 600;
+      }
+
       .totals-wrap {
         display: flex;
         justify-content: flex-end;
@@ -280,6 +304,14 @@
             </tr>
           </thead>
           <tbody>
+            {{#consolidated}}
+            {{#sources}}
+            <tr class="group-header">
+              <td class="description" colspan="4">
+                {{invoice_number}}
+                {{#issue_date}}<span class="group-issue"> · {{issue_date}}</span>{{/issue_date}}
+              </td>
+            </tr>
             {{#items}}
             <tr>
               <td class="description">
@@ -291,6 +323,25 @@
               <td class="num">{{formatted_line_total}}</td>
             </tr>
             {{/items}}
+            <tr class="group-subtotal">
+              <td class="description" colspan="3">Subtotal</td>
+              <td class="num">{{formatted_subtotal}}</td>
+            </tr>
+            {{/sources}}
+            {{/consolidated}}
+            {{^consolidated}}
+            {{#items}}
+            <tr>
+              <td class="description">
+                {{description}}
+                {{#unit}}<div class="meta-line">{{unit}}{{#tax_rate}} · {{tax_rate}}% tax{{/tax_rate}}</div>{{/unit}}
+              </td>
+              <td class="num">{{quantity}}</td>
+              <td class="num">{{formatted_unit_price}}</td>
+              <td class="num">{{formatted_line_total}}</td>
+            </tr>
+            {{/items}}
+            {{/consolidated}}
           </tbody>
         </table>
       </div>

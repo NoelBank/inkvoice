@@ -66,10 +66,29 @@ export interface InvoiceItem {
   created_at: string;
 }
 
+/** One source invoice merged into a consolidated invoice. */
+export interface InvoiceConsolidationSource {
+  id: string;
+  invoice_number: string;
+  issue_date: string;
+  subtotal: number;
+  total: number;
+  items: InvoiceItem[];
+}
+
+/** Present on an invoice that is the product of consolidating several drafts. */
+export interface InvoiceConsolidation {
+  group_id: string;
+  name: string;
+  sources: InvoiceConsolidationSource[];
+}
+
 export interface InvoiceWithItems extends Invoice {
   items: InvoiceItem[];
   /** Free-form tag names attached to this invoice. */
   tags: string[];
+  /** Set when this invoice was produced by consolidating several drafts. */
+  consolidation?: InvoiceConsolidation;
   customer?: {
     id: string;
     name: string;

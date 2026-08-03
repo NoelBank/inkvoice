@@ -191,6 +191,16 @@ export const api = {
     request<{ success: boolean; data: any }>(`/invoices/${id}/mark-complete`, { method: "POST" }),
   markSent: (id: string) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/mark-sent`, { method: "POST" }),
+  consolidateInvoices: (data: {
+    customer_id: string;
+    invoice_ids: string[];
+    discount_type?: "percentage" | "amount" | null;
+    discount_value?: number;
+  }) =>
+    request<{ success: boolean; data: any }>("/invoices/consolidate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   duplicateInvoice: (id: string) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/duplicate`, { method: "POST" }),
   duplicateInvoiceAsQuote: (id: string) =>

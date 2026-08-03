@@ -184,6 +184,40 @@ invoices.get("/next-cn-number", (c) => {
   return c.json({ success: true, data: { number } });
 });
 
+// Consolidate several draft invoices into one merged draft (grouped per source
+// on the PDF). Must be registered before parameterized routes.
+const consolidateSchema = z.object({
+  customer_id: z.string().min(1),
+  invoice_ids: z.array(z.string().min(1)).min(2),
+  discount_type: z.enum(["percentage", "amount"]).optional().nullable(),
+  discount_value: z.number().min(0).optional(),
+});
+
+invoices.post("/consolidate", async (c) => {
+  const body = await c.req.json();
+  const parsed = consolidateSchema.parse(body);
+  const invoice = invoiceService.createConsolidated(parsed);
+  logActivity({
+    user_id: c.get("userId"),
+    user_name: c.get("user")?.username,
+    action: "created",
+    resource_type: "invoice",
+    resource_id: invoice.id,
+    metadata: {
+      invoice_number: invoice.invoice_number,
+      consolidated_from: parsed.invoice_ids,
+    },
+  });
+  void dispatchEvent("invoice.created", {
+    invoice_id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    total: invoice.total,
+    currency: invoice.currency,
+    consolidated_from: parsed.invoice_ids,
+  });
+  return c.json({ success: true, data: invoice }, 201);
+});
+
 // Parameterized routes — after all literal path routes
 const itemSchema = z.object({
   product_id: z.string().optional().nullable(),

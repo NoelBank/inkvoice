@@ -316,6 +316,15 @@ const en = {
     cash_discount_days: "Valid for (days)",
     cash_discount_hint:
       "Offer a reduced amount if the invoice is paid within this many days of issue.",
+    // Consolidation
+    consolidate: "Consolidate",
+    consolidate_action: "Consolidate",
+    consolidated: "Consolidated invoices created",
+    consolidate_source_invoices: "Source invoices (drafts)",
+    no_drafts_to_consolidate: "No drafts for this customer yet.",
+    consolidate_hint:
+      "Select at least two drafts. The merged invoice groups line items per source on the PDF.",
+    consolidated_from: "Consolidated from",
   },
 
   // Customers

@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 import { getDb } from "../database/connection";
 import type { PaginatedResponse } from "../types/common";
-import type { Invoice, InvoiceItem, InvoiceWithItems } from "../types/invoice";
+import type {
+  Invoice,
+  InvoiceConsolidation,
+  InvoiceConsolidationSource,
+  InvoiceItem,
+  InvoiceWithItems,
+} from "../types/invoice";
 import { todayIso } from "../utils/date";
 import { HttpError } from "../utils/http-error";
 import {
@@ -196,6 +202,48 @@ export function listInvoices(
   };
 }
 
+/**
+ * If `invoiceId` is the product of a consolidation, returns the group metadata
+ * (the source invoices and their line items, in merge order) so downstream
+ * consumers — PDF rendering, the detail view — can group line items per source.
+ */
+function getConsolidation(invoiceId: string): InvoiceConsolidation | null {
+  const db = getDb();
+  const group = db
+    .query("SELECT g.id, g.name FROM invoice_groups g WHERE g.consolidated_invoice_id = ?")
+    .get(invoiceId) as { id: string; name: string } | null;
+  if (!group) return null;
+
+  const members = db
+    .query(
+      `SELECT m.invoice_id, i.invoice_number, i.issue_date, i.subtotal, i.total
+       FROM invoice_group_members m
+       JOIN invoices i ON i.id = m.invoice_id
+       WHERE m.group_id = ?
+       ORDER BY m.rowid`,
+    )
+    .all(group.id) as {
+    invoice_id: string;
+    invoice_number: string;
+    issue_date: string;
+    subtotal: number;
+    total: number;
+  }[];
+
+  const sources: InvoiceConsolidationSource[] = members.map((m) => ({
+    id: m.invoice_id,
+    invoice_number: m.invoice_number,
+    issue_date: m.issue_date,
+    subtotal: m.subtotal,
+    total: m.total,
+    items: db
+      .query("SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, created_at")
+      .all(m.invoice_id) as InvoiceItem[],
+  }));
+
+  return { group_id: group.id, name: group.name, sources };
+}
+
 export function getInvoice(id: string): InvoiceWithItems | null {
   const db = getDb();
   const invoice = db
@@ -213,9 +261,12 @@ export function getInvoice(id: string): InvoiceWithItems | null {
     .query("SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY sort_order, created_at")
     .all(id) as InvoiceItem[];
 
+  const consolidation = getConsolidation(id) ?? undefined;
+
   return {
     ...invoice,
     items,
+    consolidation,
     tags: getTagsForItem(id, "invoice"),
     customer: {
       id: invoice.cust_id,
@@ -634,6 +685,181 @@ export function duplicateInvoice(id: string): InvoiceWithItems | null {
       sort_order: item.sort_order,
     })),
   });
+}
+
+export interface CreateConsolidatedData {
+  customer_id: string;
+  invoice_ids: string[];
+  discount_type?: string | null;
+  discount_value?: number;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * Merge several draft invoices for one customer into a new consolidated draft.
+ * The source line items are copied verbatim (reusing their stored line totals
+ * guarantees the merged totals are the exact sum of the sources), a single
+ * optional discount is applied to the merged subtotal, and the consolidation is
+ * recorded in `invoice_groups` so the PDF can group items per source invoice.
+ */
+export function createConsolidated(data: CreateConsolidatedData): InvoiceWithItems {
+  const db = getDb();
+  const order = [...new Set(data.invoice_ids)];
+
+  if (order.length < 2) {
+    throw new HttpError(
+      400,
+      "Select at least two draft invoices to consolidate",
+      undefined,
+      "VALIDATION_FAILED",
+    );
+  }
+
+  const customer = db.query("SELECT id FROM customers WHERE id = ?").get(data.customer_id);
+  if (!customer) {
+    throw new HttpError(404, "Customer not found", undefined, "NOT_FOUND");
+  }
+
+  const sources = order.map((id, idx) => {
+    const source = getInvoice(id);
+    if (!source) {
+      throw new HttpError(404, `Invoice ${idx + 1} was not found`, undefined, "NOT_FOUND");
+    }
+    if (source.type !== "invoice") {
+      throw new HttpError(
+        400,
+        `Invoice ${source.invoice_number} is not an invoice`,
+        undefined,
+        "VALIDATION_FAILED",
+      );
+    }
+    if (source.status !== "draft") {
+      throw new HttpError(
+        400,
+        `Invoice ${source.invoice_number} must be a draft to be consolidated`,
+        undefined,
+        "VALIDATION_FAILED",
+      );
+    }
+    if (source.customer_id !== data.customer_id) {
+      throw new HttpError(
+        400,
+        `Invoice ${source.invoice_number} belongs to a different customer`,
+        undefined,
+        "VALIDATION_FAILED",
+      );
+    }
+    return source;
+  });
+
+  const currency = sources[0].currency;
+  for (const source of sources) {
+    if (source.currency !== currency) {
+      throw new HttpError(
+        400,
+        "Cannot consolidate invoices with different currencies",
+        undefined,
+        "VALIDATION_FAILED",
+      );
+    }
+  }
+
+  const invoiceId = db.transaction(() => {
+    const id = crypto.randomBytes(16).toString("hex");
+    const number = generateDraftNumber();
+
+    // Flatten items in source order, re-numbering sort_order across the merge.
+    const itemRows: InvoiceItem[] = [];
+    let sortOrder = 0;
+    for (const source of sources) {
+      for (const item of source.items) {
+        itemRows.push({ ...item, sort_order: sortOrder++ });
+      }
+    }
+
+    // Exact sum of the stored line/tax values so the merged totals match the
+    // sources regardless of tax-inclusive pricing or rounding mode.
+    let subtotal = 0;
+    let taxTotal = 0;
+    for (const item of itemRows) {
+      subtotal += item.line_total;
+      taxTotal += item.tax_amount;
+    }
+    subtotal = round2(subtotal);
+    taxTotal = round2(taxTotal);
+
+    let discountAmount = 0;
+    if (data.discount_type === "percentage" && data.discount_value) {
+      discountAmount = round2(subtotal * (Math.min(data.discount_value, 100) / 100));
+    } else if (data.discount_type === "amount" && data.discount_value) {
+      discountAmount = round2(Math.min(data.discount_value, subtotal));
+    }
+    const total = round2(subtotal - discountAmount + taxTotal);
+
+    const notes = `Consolidated from ${sources.map((s) => s.invoice_number).join(", ")}`;
+
+    db.run(
+      `INSERT INTO invoices (id, invoice_number, customer_id, status, type, issue_date,
+       subtotal, tax_total, discount_type, discount_value, discount_amount, total,
+       notes, currency, exchange_rate)
+       VALUES (?, ?, ?, 'draft', 'invoice', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        number,
+        data.customer_id,
+        todayIso(),
+        subtotal,
+        taxTotal,
+        data.discount_type || null,
+        data.discount_value ?? 0,
+        discountAmount,
+        total,
+        notes,
+        currency,
+        resolveExchangeRate(currency, sources[0].exchange_rate),
+      ],
+    );
+
+    const itemStmt = db.prepare(
+      `INSERT INTO invoice_items (id, invoice_id, product_id, description, quantity, unit_price,
+       unit, tax_id, tax_rate, tax_amount, line_total, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    for (const item of itemRows) {
+      itemStmt.run(
+        crypto.randomBytes(16).toString("hex"),
+        id,
+        item.product_id,
+        item.description,
+        item.quantity,
+        item.unit_price,
+        item.unit,
+        item.tax_id,
+        item.tax_rate,
+        item.tax_amount,
+        item.line_total,
+        item.sort_order,
+      );
+    }
+
+    const groupId = crypto.randomBytes(16).toString("hex");
+    db.run("INSERT INTO invoice_groups (id, name, consolidated_invoice_id) VALUES (?, ?, ?)", [
+      groupId,
+      sources.map((s) => s.invoice_number).join(", "),
+      id,
+    ]);
+    const memberStmt = db.prepare(
+      "INSERT INTO invoice_group_members (group_id, invoice_id) VALUES (?, ?)",
+    );
+    for (const source of sources) memberStmt.run(groupId, source.id);
+
+    return id;
+  })();
+
+  return getInvoice(invoiceId)!;
 }
 
 export function getNextNumber(): string {

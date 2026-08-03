@@ -163,6 +163,29 @@
         border-bottom: 1px solid #999;
       }
 
+      .items-table tbody tr.group-header td {
+        background-color: #f0f0f0;
+        border-block: 1px solid #999;
+        font-weight: bold;
+        padding: 1.5mm 2.5mm;
+      }
+
+      .items-table tbody tr.group-header .group-issue {
+        font-weight: normal;
+        color: #555;
+      }
+
+      .items-table tbody tr.group-subtotal td {
+        background-color: #fff;
+        border-block: 1px solid #999;
+        font-weight: bold;
+      }
+
+      .items-table tbody tr.group-subtotal td.num {
+        text-align: right;
+        white-space: nowrap;
+      }
+
       .bottom-section {
         display: flex;
         justify-content: space-between;
@@ -350,6 +373,31 @@
           </tr>
         </thead>
         <tbody>
+          {{#consolidated}}
+          {{#sources}}
+          <tr class="group-header">
+            <td colspan="6">
+              {{invoice_number}}
+              {{#issue_date}}<span class="group-issue">&nbsp;&nbsp;{{issue_date}}</span>{{/issue_date}}
+            </td>
+          </tr>
+          {{#items}}
+          <tr>
+            <td class="description">{{description}}</td>
+            <td class="center">{{tax_rate}}%</td>
+            <td class="num">{{formatted_unit_price}}</td>
+            <td class="num">{{quantity}}</td>
+            <td class="center">{{unit}}</td>
+            <td class="num">{{formatted_line_total}}</td>
+          </tr>
+          {{/items}}
+          <tr class="group-subtotal">
+            <td colspan="5" class="description">Subtotal</td>
+            <td class="num">{{formatted_subtotal}}</td>
+          </tr>
+          {{/sources}}
+          {{/consolidated}}
+          {{^consolidated}}
           {{#items}}
           <tr>
             <td class="description">{{description}}</td>
@@ -368,6 +416,7 @@
             <td>&nbsp;</td>
             <td>&nbsp;</td>
           </tr>
+          {{/consolidated}}
         </tbody>
       </table>
 

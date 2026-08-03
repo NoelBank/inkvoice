@@ -322,6 +322,15 @@ const fr: TranslationKeys = {
     cash_discount_days: "Valable (jours)",
     cash_discount_hint:
       "Proposez un montant réduit si la facture est payée dans ce nombre de jours après son émission.",
+    // Consolidation
+    consolidate: "Consolider",
+    consolidate_action: "Consolider",
+    consolidated: "Factures consolidées créées",
+    consolidate_source_invoices: "Factures sources (brouillons)",
+    no_drafts_to_consolidate: "Aucun brouillon pour ce client pour le moment.",
+    consolidate_hint:
+      "Sélectionnez au moins deux brouillons. La facture consolidée regroupe les lignes par source dans le PDF.",
+    consolidated_from: "Consolidée depuis",
   },
 
   // Clients

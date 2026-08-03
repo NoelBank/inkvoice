@@ -332,6 +332,15 @@ const de: TranslationKeys = {
     cash_discount_days: "Gültig für (Tage)",
     cash_discount_hint:
       "Bieten Sie einen reduzierten Betrag an, wenn die Rechnung innerhalb dieser Tage nach Ausstellung bezahlt wird.",
+    // Konsolidierung
+    consolidate: "Konsolidieren",
+    consolidate_action: "Konsolidieren",
+    consolidated: "Konsolidierte Rechnungen erstellt",
+    consolidate_source_invoices: "Quellrechnungen (Entwürfe)",
+    no_drafts_to_consolidate: "Noch keine Entwürfe für diesen Kunden.",
+    consolidate_hint:
+      "Wählen Sie mindestens zwei Entwürfe aus. Die zusammengeführte Rechnung gruppiert Positionen je Quelle im PDF.",
+    consolidated_from: "Konsolidiert aus",
   },
 
   // Kunden

@@ -322,6 +322,15 @@ const es: TranslationKeys = {
     cash_discount_days: "Válido por (días)",
     cash_discount_hint:
       "Ofrezca un importe reducido si la factura se paga dentro de estos días desde su emisión.",
+    // Consolidación
+    consolidate: "Consolidar",
+    consolidate_action: "Consolidar",
+    consolidated: "Facturas consolidadas creadas",
+    consolidate_source_invoices: "Facturas de origen (borradores)",
+    no_drafts_to_consolidate: "Aún no hay borradores para este cliente.",
+    consolidate_hint:
+      "Seleccione al menos dos borradores. La factura consolidada agrupa las líneas por origen en el PDF.",
+    consolidated_from: "Consolidada desde",
   },
 
   // Clientes

@@ -763,6 +763,33 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 23,
+    name: "invoice_groups",
+    up: (db) => {
+      // One row per consolidated invoice. `consolidated_invoice_id` points at
+      // the merged draft the group produces; members are the source drafts that
+      // were merged. Deleting the consolidated invoice removes the whole group.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS invoice_groups (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          name TEXT NOT NULL,
+          consolidated_invoice_id TEXT REFERENCES invoices(id) ON DELETE CASCADE,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_invoice_groups_consolidated
+          ON invoice_groups(consolidated_invoice_id);
+
+        CREATE TABLE IF NOT EXISTS invoice_group_members (
+          group_id TEXT NOT NULL REFERENCES invoice_groups(id) ON DELETE CASCADE,
+          invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+          PRIMARY KEY (group_id, invoice_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_invoice_group_members_invoice
+          ON invoice_group_members(invoice_id);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

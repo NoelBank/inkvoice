@@ -166,6 +166,42 @@ export function buildInvoiceContext(invoiceId: string) {
       line_total: item.line_total,
       formatted_line_total: formatCurrency(item.line_total, currency, numberFormat, localeOverride),
     })),
+    consolidated: invoice.consolidation
+      ? {
+          name: invoice.consolidation.name,
+          sources: invoice.consolidation.sources.map((source) => ({
+            invoice_number: source.invoice_number,
+            issue_date: formatDateStr(source.issue_date, dateFormat, localeOverride),
+            items: source.items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit,
+              unit_price: item.unit_price,
+              formatted_unit_price: formatCurrency(
+                item.unit_price,
+                currency,
+                numberFormat,
+                localeOverride,
+              ),
+              tax_rate: item.tax_rate,
+              line_total: item.line_total,
+              formatted_line_total: formatCurrency(
+                item.line_total,
+                currency,
+                numberFormat,
+                localeOverride,
+              ),
+            })),
+            subtotal: source.subtotal,
+            formatted_subtotal: formatCurrency(
+              source.subtotal,
+              currency,
+              numberFormat,
+              localeOverride,
+            ),
+          })),
+        }
+      : null,
     formatted_subtotal: formatCurrency(invoice.subtotal, currency, numberFormat, localeOverride),
     has_discount: invoice.discount_amount > 0,
     formatted_discount: formatCurrency(

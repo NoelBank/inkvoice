@@ -319,6 +319,15 @@ const tr: TranslationKeys = {
     cash_discount_days: "Geçerlilik süresi (gün)",
     cash_discount_hint:
       "Faturanın düzenlenme tarihinden itibaren belirtilen gün içinde ödenmesi durumunda indirimli tutar sunun.",
+    // Birleştirme
+    consolidate: "Birleştir",
+    consolidate_action: "Birleştir",
+    consolidated: "Birleştirilmiş faturalar oluşturuldu",
+    consolidate_source_invoices: "Kaynak faturalar (taslaklar)",
+    no_drafts_to_consolidate: "Bu müşteri için henüz taslak yok.",
+    consolidate_hint:
+      "En az iki taslak seçin. Birleştirilen fatura, satır öğelerini PDF'de kaynağa göre gruplar.",
+    consolidated_from: "Şunlardan birleştirildi:",
   },
 
   // Müşteriler

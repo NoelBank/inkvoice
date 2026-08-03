@@ -181,6 +181,30 @@
     .items-table tbody tr:last-child td {
       border-bottom: 2px solid #2c2a26;
     }
+    .items-table tbody tr.group-header td {
+      border-bottom: 1px solid #2c2a26;
+      padding: 16px 0 8px 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #2c2a26;
+    }
+    .items-table tbody tr.group-header .group-issue {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      color: #b0a898;
+    }
+    .items-table tbody tr.group-subtotal td {
+      padding-top: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e8e2d8;
+    }
+    .items-table tbody tr.group-subtotal td.r {
+      font-weight: 600;
+      color: #2c2a26;
+    }
 
     /* === TOTALS === */
     .totals-area {
@@ -348,6 +372,14 @@
         </tr>
       </thead>
       <tbody>
+        {{#consolidated}}
+        {{#sources}}
+        <tr class="group-header">
+          <td colspan="5">
+            {{invoice_number}}
+            {{#issue_date}}<span class="group-issue"> · {{issue_date}}</span>{{/issue_date}}
+          </td>
+        </tr>
         {{#items}}
         <tr>
           <td class="item-desc">{{description}}</td>
@@ -357,6 +389,26 @@
           <td class="r">{{formatted_line_total}}</td>
         </tr>
         {{/items}}
+        <tr class="group-subtotal">
+          <td class="item-desc">Subtotal</td>
+          <td class="r"></td>
+          <td class="r"></td>
+          <td class="r"></td>
+          <td class="r">{{formatted_subtotal}}</td>
+        </tr>
+        {{/sources}}
+        {{/consolidated}}
+        {{^consolidated}}
+        {{#items}}
+        <tr>
+          <td class="item-desc">{{description}}</td>
+          <td class="r">{{quantity}} {{unit}}</td>
+          <td class="r">{{formatted_unit_price}}</td>
+          <td class="r">{{tax_rate}}%</td>
+          <td class="r">{{formatted_line_total}}</td>
+        </tr>
+        {{/items}}
+        {{/consolidated}}
       </tbody>
     </table>
 
