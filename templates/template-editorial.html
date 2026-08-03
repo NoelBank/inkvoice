@@ -383,8 +383,48 @@
           <span class="t-label">Total Due</span>
           <span class="t-value">{{formatted_total}}</span>
         </div>
+        {{#has_payments}}
+        <div class="totals-row">
+          <span class="t-label">Amount Paid</span>
+          <span class="t-value">&minus;{{formatted_amount_paid}}</span>
+        </div>
+        <div class="totals-grand">
+          <span class="t-label">Balance Due</span>
+          <span class="t-value">{{formatted_balance_due}}</span>
+        </div>
+        {{/has_payments}}
       </div>
     </div>
+
+    {{#has_payments}}
+    <div class="footer-notes">
+      <div class="fn-block">
+        <div class="fn-title">Payments received</div>
+        <div class="fn-text">
+          <table style="width: 100%; border-collapse: collapse">
+            <thead>
+              <tr>
+                <th style="text-align: left; font-weight: bold; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Date</th>
+                <th style="text-align: left; font-weight: bold; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Method</th>
+                <th style="text-align: left; font-weight: bold; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Reference</th>
+                <th style="text-align: right; font-weight: bold; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#payments}}
+              <tr>
+                <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{payment_date}}</td>
+                <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{method}}</td>
+                <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{reference}}</td>
+                <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee; text-align: right">{{formatted_amount}}</td>
+              </tr>
+              {{/payments}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {{/has_payments}}
 
     <!-- FOOTER -->
     {{#payment_terms}}

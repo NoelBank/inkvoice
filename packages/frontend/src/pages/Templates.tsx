@@ -376,6 +376,18 @@ const TEMPLATE_VARIABLES = [
     ],
   },
   {
+    group: "Payments",
+    vars: [
+      { tag: "has_payments", desc: "Boolean — true when any payment has been recorded" },
+      { tag: "formatted_amount_paid", desc: "Formatted total amount paid" },
+      { tag: "formatted_balance_due", desc: "Formatted remaining balance due" },
+      { tag: "payment_date", desc: "Payment date (inside payments block)" },
+      { tag: "method", desc: "Payment method (inside payments block)" },
+      { tag: "reference", desc: "Payment reference (inside payments block)" },
+      { tag: "formatted_amount", desc: "Formatted payment amount (inside payments block)" },
+    ],
+  },
+  {
     group: "QR Code (optional)",
     vars: [
       { tag: "qr", desc: "Truthy when QR codes are enabled and the document is published" },

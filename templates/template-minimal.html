@@ -317,8 +317,44 @@
             <span>Total</span>
             <span class="v">{{formatted_total}}</span>
           </div>
+          {{#has_payments}}
+          <div class="row">
+            <span>Amount Paid</span>
+            <span class="v">−{{formatted_amount_paid}}</span>
+          </div>
+          <div class="row total">
+            <span>Balance Due</span>
+            <span class="v">{{formatted_balance_due}}</span>
+          </div>
+          {{/has_payments}}
         </div>
       </div>
+
+      {{#has_payments}}
+      <div style="margin-top: 6mm">
+        <div class="label">Payments received</div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 2mm">
+          <thead>
+            <tr>
+              <th style="text-align: left; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Date</th>
+              <th style="text-align: left; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Method</th>
+              <th style="text-align: left; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Reference</th>
+              <th style="text-align: right; padding: 1.2mm 2mm; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 8pt">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#payments}}
+            <tr>
+              <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{payment_date}}</td>
+              <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{method}}</td>
+              <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee">{{reference}}</td>
+              <td style="padding: 1.2mm 2mm; border-bottom: 1px solid #eee; text-align: right">{{formatted_amount}}</td>
+            </tr>
+            {{/payments}}
+          </tbody>
+        </table>
+      </div>
+      {{/has_payments}}
 
       <div class="currency-note">All amounts in {{currency}}.</div>
 

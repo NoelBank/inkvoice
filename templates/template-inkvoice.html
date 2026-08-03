@@ -200,6 +200,37 @@
         line-height: 1.4;
       }
 
+      .payments-history {
+        margin-top: 5mm;
+        font-size: 9pt;
+      }
+
+      .payments-history h4 {
+        font-weight: bold;
+        color: #222;
+        margin-bottom: 1mm;
+        font-size: 10pt;
+      }
+
+      .payments-history table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .payments-history th,
+      .payments-history td {
+        padding: 1.2mm 2mm;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .payments-history th {
+        text-align: left;
+        font-weight: bold;
+        color: #555;
+        font-size: 8pt;
+        text-transform: uppercase;
+      }
+
       .totals-box {
         min-width: 55mm;
         font-size: 9pt;
@@ -377,9 +408,45 @@
               <td>Total (inc. tax)</td>
               <td>{{formatted_total}}</td>
             </tr>
+            {{#has_payments}}
+            <tr>
+              <td>Amount Paid</td>
+              <td>&minus;{{formatted_amount_paid}}</td>
+            </tr>
+            <tr class="total-inc">
+              <td>Balance Due</td>
+              <td>{{formatted_balance_due}}</td>
+            </tr>
+            {{/has_payments}}
           </table>
         </div>
       </div>
+
+      {{#has_payments}}
+      <div class="payments-history">
+        <h4>Payments received</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th style="text-align: right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#payments}}
+            <tr>
+              <td>{{payment_date}}</td>
+              <td>{{method}}</td>
+              <td>{{reference}}</td>
+              <td style="text-align: right">{{formatted_amount}}</td>
+            </tr>
+            {{/payments}}
+          </tbody>
+        </table>
+      </div>
+      {{/has_payments}}
 
       {{#notes}}
       <div style="margin-top: 4mm; font-size: 9pt; color: #444">

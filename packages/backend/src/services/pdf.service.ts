@@ -5,6 +5,7 @@ import { formatCurrency } from "../utils/currency";
 import { escapeMultiline } from "../utils/html";
 import { qrToDataUri } from "../utils/qr-code";
 import { getInvoice } from "./invoice.service";
+import { listPayments } from "./payment.service";
 import { getQuote } from "./quote.service";
 import { getAllSettings } from "./settings.service";
 import { getDefaultTemplate, getTemplate } from "./template.service";
@@ -118,6 +119,10 @@ export function buildInvoiceContext(invoiceId: string) {
   const dateFormat = settings.date_format || undefined;
   const numberFormat = settings.number_format || undefined;
 
+  const payments = listPayments(invoiceId);
+  const amountPaid = invoice.amount_paid || 0;
+  const balanceDue = Math.max(0, invoice.total - amountPaid);
+
   return {
     invoice_number: invoice.invoice_number,
     issue_date: formatDateStr(invoice.issue_date, dateFormat, localeOverride),
@@ -173,6 +178,15 @@ export function buildInvoiceContext(invoiceId: string) {
       formatted_amount: formatCurrency(t.amount, currency, numberFormat, localeOverride),
     })),
     formatted_total: formatCurrency(invoice.total, currency, numberFormat, localeOverride),
+    has_payments: amountPaid > 0,
+    formatted_amount_paid: formatCurrency(amountPaid, currency, numberFormat, localeOverride),
+    formatted_balance_due: formatCurrency(balanceDue, currency, numberFormat, localeOverride),
+    payments: payments.map((p) => ({
+      payment_date: formatDateStr(p.payment_date, dateFormat, localeOverride),
+      method: p.method,
+      reference: p.reference,
+      formatted_amount: formatCurrency(p.amount, currency, numberFormat, localeOverride),
+    })),
     payment_terms: invoice.payment_terms,
     notes: invoice.notes,
     currency,
