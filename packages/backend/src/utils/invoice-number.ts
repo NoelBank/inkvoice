@@ -12,7 +12,7 @@ export function isDraftNumber(invoiceNumber: string): boolean {
 
 const DEFAULT_INVOICE_NUMBER_PATTERN = "INV-{YYYY}-{SEQ4}";
 const DEFAULT_QUOTE_NUMBER_PATTERN = "QT-{YYYY}-{SEQ4}";
-const CREDIT_NOTE_NUMBER_PATTERN = "CN-{YYYY}-{SEQ4}";
+const DEFAULT_CREDIT_NOTE_NUMBER_PATTERN = "CN-{YYYY}-{SEQ4}";
 
 function renderPattern(pattern: string, nextSequence: (pattern: string) => number): string {
   const now = new Date();
@@ -46,7 +46,10 @@ export function generateInvoiceNumber(): string {
 }
 
 export function generateCreditNoteNumber(): string {
-  return renderPattern(CREDIT_NOTE_NUMBER_PATTERN, getNextSequenceNumber);
+  return renderPattern(
+    getSetting("credit_note_number_pattern") || DEFAULT_CREDIT_NOTE_NUMBER_PATTERN,
+    getNextSequenceNumber,
+  );
 }
 
 export function generateQuoteNumber(): string {

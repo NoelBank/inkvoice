@@ -921,6 +921,21 @@ export default function Settings() {
                   </p>
                 )}
               </FormField>
+              <FormField label={t("settings.credit_note_number_pattern")}>
+                <Input
+                  value={settings.credit_note_number_pattern || ""}
+                  onChange={set("credit_note_number_pattern")}
+                  placeholder="CN-{YYYY}-{SEQ4}"
+                />
+                {settings.credit_note_number_pattern && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.preview")}{" "}
+                    <span className="font-medium text-foreground">
+                      {previewNumberPattern(settings.credit_note_number_pattern)}
+                    </span>
+                  </p>
+                )}
+              </FormField>
               <p className="text-xs text-muted-foreground">{t("settings.pattern_variables")}</p>
             </CardContent>
           </Card>

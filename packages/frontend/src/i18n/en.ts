@@ -933,6 +933,7 @@ const en = {
     number_patterns: "Number Patterns",
     invoice_number_pattern: "Invoice Number Pattern",
     quote_number_pattern: "Quote Number Pattern",
+    credit_note_number_pattern: "Credit Note Number Pattern",
     pattern_variables:
       "{YYYY} year, {YY} short year, {MM} month, {DD} day, {SEQ} sequence, {SEQ4} padded sequence, {RAND4} random 4 digits",
     preview: "Preview:",

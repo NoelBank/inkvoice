@@ -107,6 +107,7 @@ export async function seed(): Promise<void> {
       ["tax_label", "Tax"],
       ["invoice_number_pattern", "INV-{YYYY}-{SEQ4}"],
       ["quote_number_pattern", "QT-{YYYY}-{SEQ4}"],
+      ["credit_note_number_pattern", "CN-{YYYY}-{SEQ4}"],
       ["default_payment_terms", "Net 30"],
       ["default_notes", ""],
       ["locale", "en-US"],
@@ -139,6 +140,7 @@ export async function seed(): Promise<void> {
       ["einvoice_kleinunternehmer", "false"],
       ["company_peppol_scheme", "0208"],
       ["quote_number_pattern", "QT-{YYYY}-{SEQ4}"],
+      ["credit_note_number_pattern", "CN-{YYYY}-{SEQ4}"],
     ];
     const stmt = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
     for (const [key, value] of newDefaults) stmt.run(key, value);

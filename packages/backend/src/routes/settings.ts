@@ -43,6 +43,7 @@ const ALLOWED_SETTINGS = new Set([
   "tax_label",
   "invoice_number_pattern",
   "quote_number_pattern",
+  "credit_note_number_pattern",
   "default_payment_terms",
   "default_notes",
   "locale",

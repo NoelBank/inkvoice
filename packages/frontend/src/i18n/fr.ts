@@ -948,6 +948,7 @@ const fr: TranslationKeys = {
     number_patterns: "Modèles de numérotation",
     invoice_number_pattern: "Modèle de numérotation des factures",
     quote_number_pattern: "Modèle de numérotation des devis",
+    credit_note_number_pattern: "Modèle de numérotation des avoirs",
     pattern_variables:
       "{YYYY} année, {YY} année courte, {MM} mois, {DD} jour, {SEQ} séquence, {SEQ4} séquence complétée, {RAND4} 4 chiffres aléatoires",
     preview: "Aperçu :",
