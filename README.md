@@ -62,6 +62,12 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 - Online card payments via **Stripe** & **PayPal**
 - Manual and partial payment tracking
 
+**German e-invoicing (E-Rechnung)**
+- Opt-in module, **off by default** — only German users need it, everyone else never sees it
+- Emit **EN 16931**-compliant e-invoices: **ZUGFeRD 2.2 hybrid PDF**, **XRechnung (UBL)** and **PEPPOL BIS**
+- **E-invoice inbox** — import, parse and process incoming XRechnung / ZUGFeRD files
+- Auto-attach the e-invoice to sent invoice emails (per-invoice or globally)
+
 **Money & books**
 - **Multi-currency** with live exchange rates + base-currency consolidated reporting
 - **Expense tracking** — billable expenses, receipts and categories
@@ -198,6 +204,7 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 
 - [Architecture overview](./docs/ARCHITECTURE.md) — components, data flow, where to add features.
 - [Template variables](./docs/TEMPLATE_VARIABLES.md) — every `{{token}}` available in invoice/quote/email templates.
+- [E-Invoicing (E-Rechnung)](./docs/features/e-invoicing.md) — German ZUGFeRD/XRechnung/PEPPOL emission and inbox, step by step.
 - [Contributing](./CONTRIBUTING.md) — setup, conventions, and PR checklist.
 - Full docs: **[docs.inkvoice.app](https://docs.inkvoice.app)**
 

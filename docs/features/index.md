@@ -15,6 +15,10 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 - **[Online Payments](/features/payments)** — Accept Stripe and PayPal payments directly from invoice links
 - **Tax Management** — Define tax rates (VAT, GST, etc.) and apply them automatically to line items
 
+## Compliance
+
+- **[E-Invoicing (E-Rechnung)](/features/e-invoicing)** — German ZUGFeRD 2.2 / XRechnung / PEPPOL emission, hybrid PDFs, and an inbox for incoming e-invoices (opt-in module)
+
 ## Tools
 
 - **[Templates](/features/templates)** — Customize invoice appearance with Mustache HTML templates

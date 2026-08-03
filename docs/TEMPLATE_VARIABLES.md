@@ -1,8 +1,16 @@
+::: v-pre
+
 # Template Variables
 
 The reference list of every `{{token}}` you can use in invoice / quote templates and email templates.
 
-Inkvoice templates are rendered by [Mustache](https://mustache.github.io/), so the syntax is identical: `{{name}}` for plain output, `{{#section}}…{{/section}}` for loops/conditionals, `{{^section}}…{{/section}}` for the "empty" branch.
+Inkvoice templates are rendered by [Mustache](https://mustache.github.io/), so the syntax is identical to the examples below: plain variables for output, section tags for loops/conditionals, and inverted section tags for the "empty" branch.
+
+```mustache
+{{name}}
+{{#section}}…{{/section}}
+{{^section}}…{{/section}}
+```
 
 The actual context is built in `packages/backend/src/services/pdf.service.ts` (`buildInvoiceContext`, `buildQuoteContext`) and `packages/backend/src/services/email-templates.ts`. If a value isn't listed below, it isn't available — adding a new one means extending those builders and re-deploying.
 
@@ -155,3 +163,5 @@ The footer pulls from the `email_footer_text` setting if set.
 1. Add the field to the relevant context builder (`buildInvoiceContext`, `buildQuoteContext`, or one of the email-template functions).
 2. Update **this file** so template authors can find it.
 3. If your new field needs locale-aware formatting, do it in the builder — never expect templates to do `Intl.*` themselves.
+
+:::
