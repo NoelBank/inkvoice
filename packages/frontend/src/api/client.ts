@@ -202,6 +202,39 @@ export const api = {
   listXmlProfiles: () =>
     request<{ success: boolean; data: { id: string; name: string }[] }>("/invoices/xml-profiles"),
   downloadXml: (id: string, profileId: string) => `${API_BASE}/invoices/${id}/xml/${profileId}`,
+  emitEinvoice: (id: string) =>
+    request<{ success: boolean; data: any }>(`/invoices/${id}/einvoice/emit`, { method: "POST" }),
+  listEinvoiceRecords: (id: string) =>
+    request<{ success: boolean; data: any[] }>(`/invoices/${id}/einvoices`),
+  downloadEinvoiceXml: (id: string, recordId: string) =>
+    `${API_BASE}/invoices/${id}/einvoices/${recordId}/xml`,
+  downloadEinvoicePdf: (id: string, recordId: string) =>
+    `${API_BASE}/invoices/${id}/einvoices/${recordId}/pdf`,
+  deleteEinvoiceRecord: (id: string, recordId: string) =>
+    request<{ success: boolean }>(`/invoices/${id}/einvoices/${recordId}`, { method: "DELETE" }),
+  listEinvoiceInbox: (status?: string) =>
+    request<{ success: boolean; data: any[] }>(
+      `/einvoices/inbox${status ? `?status=${status}` : ""}`,
+    ),
+  importEinvoiceFile: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ success: boolean; data: { id: string; duplicate: boolean } }>(
+      "/einvoices/inbox/import",
+      { method: "POST", body: form },
+    );
+  },
+  setEinvoiceInboxStatus: (id: string, status: string) =>
+    request<{ success: boolean }>(`/einvoices/inbox/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }),
+  linkEinvoiceInbox: (id: string, customerId: string | null) =>
+    request<{ success: boolean }>(`/einvoices/inbox/${id}/link`, {
+      method: "POST",
+      body: JSON.stringify({ customer_id: customerId }),
+    }),
+  downloadEinvoiceInboxRaw: (id: string) => `${API_BASE}/einvoices/inbox/${id}/raw`,
   createCreditNote: (id: string) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/credit-note`, { method: "POST" }),
   listCreditNotes: (id: string) =>
@@ -223,6 +256,7 @@ export const api = {
       message?: string;
       from?: string;
       reply_to?: string;
+      attach_einvoice?: boolean;
     },
   ) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/send`, {

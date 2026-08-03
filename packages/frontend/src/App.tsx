@@ -22,6 +22,7 @@ const Customers = lazy(() => import("@/pages/Customers"));
 const CustomerView = lazy(() => import("@/pages/CustomerView"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
+const Einvoices = lazy(() => import("@/pages/Einvoices"));
 const Invoices = lazy(() => import("@/pages/Invoices"));
 const Products = lazy(() => import("@/pages/Products"));
 const QuoteForm = lazy(() => import("@/pages/QuoteForm"));
@@ -70,6 +71,16 @@ function ProtectedRoute({
     location.pathname !== "/onboarding"
   ) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function RequireEinvoice({ children }: { children: React.ReactNode }) {
+  const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
+
+  if (!einvoiceEnabled) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -183,6 +194,14 @@ function App() {
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/expenses/new" element={<Expenses />} />
               <Route path="/expenses/:id" element={<Expenses />} />
+              <Route
+                path="/einvoices"
+                element={
+                  <RequireEinvoice>
+                    <Einvoices />
+                  </RequireEinvoice>
+                }
+              />
               {/* Convenience entry point — templates live under Settings. */}
               <Route path="/templates" element={<Navigate to="/settings/templates" replace />} />
               <Route

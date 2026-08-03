@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api } from "@/api/client";
 import { FormField } from "@/components/shared/FormField";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
+import { useSettingsStore } from "@/stores/settings.store";
 
 interface Props {
   open: boolean;
@@ -36,12 +38,14 @@ export function SendInvoiceDialog({
   type = "invoice",
 }: Props) {
   const { t } = useTranslation();
+  const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const [to, setTo] = useState(customerEmail || "");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [from, setFrom] = useState("");
   const [replyTo, setReplyTo] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [attachEinvoice, setAttachEinvoice] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -58,6 +62,7 @@ export function SendInvoiceDialog({
         message: message || undefined,
         from: from || undefined,
         reply_to: replyTo || undefined,
+        ...(type === "invoice" ? { attach_einvoice: attachEinvoice } : {}),
       });
       toast.success(type === "quote" ? t("send_dialog.quote_sent") : t("send_dialog.invoice_sent"));
       onOpenChange(false);
@@ -129,6 +134,22 @@ export function SendInvoiceDialog({
                   placeholder="support@example.com"
                 />
               </FormField>
+              {type === "invoice" && einvoiceEnabled && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    id="attach-einvoice"
+                    checked={attachEinvoice}
+                    onCheckedChange={(checked) => setAttachEinvoice(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="attach-einvoice">
+                    <span className="font-medium">{t("send_dialog.attach_einvoice")}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t("send_dialog.attach_einvoice_hint")}
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           )}
         </div>

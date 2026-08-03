@@ -14,13 +14,25 @@ export interface XmlInvoiceData {
   discount_amount: number;
   total: number;
 
+  /** EU VAT category for the whole document (overrides per-line when set). */
+  document_category_code?: string;
+  /** True when the seller is a German Kleinunternehmer (§ 19 UStG). */
+  kleinunternehmer?: boolean;
+
   supplier: {
     name: string;
     email: string | null;
     phone: string | null;
     address: string | null;
-    tax_id: string | null;
+    street: string | null;
+    city: string | null;
+    postal_code: string | null;
+    /** ISO 3166-1 alpha-2, e.g. "DE". */
     country: string | null;
+    /** USt-IdNr (VAT id). */
+    tax_id: string | null;
+    /** German Steuernummer (tax number; not the USt-IdNr). */
+    tax_number: string | null;
     bank_details: string | null;
     peppol_endpoint_id: string | null;
     peppol_scheme_id: string | null;
@@ -31,11 +43,18 @@ export interface XmlInvoiceData {
     email: string | null;
     phone: string | null;
     address_line1: string | null;
+    address_line2: string | null;
     city: string | null;
     state: string | null;
     postal_code: string | null;
     country: string | null;
     tax_id: string | null;
+    tax_number: string | null;
+    einvoice_format: string | null;
+    /** German Leitweg-ID for B2G (schemeID "0204"). */
+    leitweg_id: string | null;
+    einvoice_receiver_id: string | null;
+    einvoice_receiver_scheme: string | null;
   };
 
   items: XmlLineItem[];

@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
+import { EinvoicePanel } from "@/components/invoices/EinvoicePanel";
 import { PaymentHistory } from "@/components/invoices/PaymentHistory";
 import { RecordPaymentDialog } from "@/components/invoices/RecordPaymentDialog";
 import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
@@ -50,6 +51,7 @@ import { isInvoiceFormEditable, STATUS_COLORS } from "@/lib/constants";
 import { formatApiError } from "@/lib/format-api-error";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings.store";
 
 interface Props {
   onBack: () => void;
@@ -57,6 +59,7 @@ interface Props {
 
 export default function InvoiceView({ onBack }: Props) {
   const { t } = useTranslation();
+  const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
@@ -604,6 +607,9 @@ export default function InvoiceView({ onBack }: Props) {
         currency={invoice.currency}
         onPaymentDeleted={fetchInvoice}
       />
+
+      {/* E-invoice (XRechnung / ZUGFeRD) */}
+      {einvoiceEnabled && <EinvoicePanel invoiceId={id!} />}
 
       {/* Record Payment Dialog */}
       <RecordPaymentDialog

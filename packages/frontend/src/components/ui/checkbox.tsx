@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react"
 import { cn } from "@/lib/utils"
 
 interface CheckboxProps {
+  id?: string
   checked?: boolean
   indeterminate?: boolean
   onCheckedChange?: (checked: boolean) => void
@@ -10,6 +11,7 @@ interface CheckboxProps {
 }
 
 function Checkbox({
+  id,
   checked = false,
   indeterminate = false,
   onCheckedChange,
@@ -27,6 +29,7 @@ function Checkbox({
   return (
     <input
       ref={ref}
+      id={id}
       type="checkbox"
       data-slot="checkbox"
       checked={checked}

@@ -1,6 +1,6 @@
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
@@ -24,14 +24,18 @@ interface Props {
 export default function ProductForm({ onSave }: Props) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const isEdit = !!id && id !== "new";
+  // Set when arriving via "Add product" from another page (e.g. the invoice
+  // form): pre-fill the name and return to the caller on save.
+  const navState = location.state as { returnTo?: string; prefillName?: string } | null;
   const [loading, setLoading] = useState(false);
   const [taxDefs, setTaxDefs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [form, setForm] = useState({
-    name: "",
+    name: navState?.prefillName ?? "",
     description: "",
     sku: "",
     unit_price: 0,
@@ -137,7 +141,7 @@ export default function ProductForm({ onSave }: Props) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => navigate("/products/all")}
+            onClick={() => navigate(navState?.returnTo || "/products/all")}
           >
             {t("common.cancel")}
           </Button>

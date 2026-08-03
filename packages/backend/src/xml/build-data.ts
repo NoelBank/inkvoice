@@ -9,12 +9,16 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
   const invoice = db
     .query(`
     SELECT i.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone,
-           c.address_line1, c.city, c.state, c.postal_code, c.country, c.tax_id as customer_tax_id
+           c.address_line1, c.address_line2, c.city, c.state, c.postal_code, c.country,
+           c.tax_id as customer_tax_id, c.tax_number as customer_tax_number,
+           c.einvoice_format as customer_einvoice_format, c.leitweg_id as customer_leitweg_id,
+           c.einvoice_receiver_id as customer_einvoice_receiver_id,
+           c.einvoice_receiver_scheme as customer_einvoice_receiver_scheme
     FROM invoices i
     LEFT JOIN customers c ON i.customer_id = c.id
     WHERE i.id = ?
   `)
-    .get(invoiceId) as any;
+    .get(invoiceId) as Record<string, unknown>;
 
   if (!invoice) throw new Error("Invoice not found");
 
@@ -37,10 +41,10 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
     line_total: it.line_total,
     tax_rate: it.tax_rate || 0,
     tax_amount: it.tax_amount || 0,
-    tax_category_code: it.category_code || "S",
+    tax_category_code: it.category_code || defaultCategoryForRate(it.tax_rate || 0),
   }));
 
-  // Build tax breakdown from invoice_taxes if available, otherwise aggregate from items
+  // Build tax breakdown from invoice_taxes if available, otherwise aggregate from items.
   let tax_breakdown: XmlTaxBreakdown[];
   const auditTaxes = db
     .query("SELECT * FROM invoice_taxes WHERE invoice_id = ?")
@@ -50,7 +54,7 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
     tax_breakdown = auditTaxes.map((t: any) => ({
       tax_name: t.tax_name,
       tax_rate: t.tax_rate,
-      category_code: t.category_code || "S",
+      category_code: t.category_code || defaultCategoryForRate(t.tax_rate),
       taxable_amount: t.taxable_amount,
       tax_amount: t.tax_amount,
     }));
@@ -77,42 +81,63 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
     }));
   }
 
+  // Kleinunternehmer (§ 19 UStG) → no VAT, categories come out as exempt.
+  const kleinunternehmer = settings.einvoice_kleinunternehmer === "true";
+
   return {
-    invoice_number: invoice.invoice_number,
-    issue_date: invoice.issue_date,
-    due_date: invoice.due_date,
-    currency: invoice.currency || "USD",
-    locale: invoice.locale,
-    type: invoice.type || "invoice",
-    notes: invoice.notes,
-    payment_terms: invoice.payment_terms,
-    subtotal: invoice.subtotal,
-    tax_total: invoice.tax_total,
-    discount_amount: invoice.discount_amount || 0,
-    total: invoice.total,
+    invoice_number: String(invoice.invoice_number),
+    issue_date: String(invoice.issue_date),
+    due_date: invoice.due_date ? String(invoice.due_date) : null,
+    currency: (invoice.currency as string) || "EUR",
+    locale: invoice.locale as string | null,
+    type: (invoice.type as "invoice" | "credit_note") || "invoice",
+    notes: (invoice.notes as string) || null,
+    payment_terms: (invoice.payment_terms as string) || null,
+    subtotal: Number(invoice.subtotal) || 0,
+    tax_total: Number(invoice.tax_total) || 0,
+    discount_amount: Number(invoice.discount_amount) || 0,
+    total: Number(invoice.total) || 0,
+    kleinunternehmer,
     supplier: {
       name: settings.company_name || "",
       email: settings.company_email || null,
       phone: settings.company_phone || null,
       address: settings.company_address || null,
+      street: settings.company_street || null,
+      city: settings.company_city || null,
+      postal_code: settings.company_postal_code || null,
+      country: (settings.company_country || "").toUpperCase() || null,
       tax_id: settings.company_tax_id || null,
-      country: null,
+      tax_number: settings.company_tax_number || null,
       bank_details: settings.company_bank_details || null,
-      peppol_endpoint_id: settings.peppol_endpoint_id || null,
-      peppol_scheme_id: settings.peppol_scheme_id || null,
+      peppol_endpoint_id: settings.company_peppol_id || null,
+      peppol_scheme_id: settings.company_peppol_scheme || null,
     },
     customer: {
-      name: invoice.customer_name || "",
-      email: invoice.customer_email || null,
-      phone: invoice.customer_phone || null,
-      address_line1: invoice.address_line1 || null,
-      city: invoice.city || null,
-      state: invoice.state || null,
-      postal_code: invoice.postal_code || null,
-      country: invoice.country || null,
-      tax_id: invoice.customer_tax_id || null,
+      name: (invoice.customer_name as string) || "",
+      email: (invoice.customer_email as string) || null,
+      phone: (invoice.customer_phone as string) || null,
+      address_line1: (invoice.address_line1 as string) || null,
+      address_line2: (invoice.address_line2 as string) || null,
+      city: (invoice.city as string) || null,
+      state: (invoice.state as string) || null,
+      postal_code: (invoice.postal_code as string) || null,
+      country: (invoice.country as string) || null,
+      tax_id: (invoice.customer_tax_id as string) || null,
+      tax_number: (invoice.customer_tax_number as string) || null,
+      einvoice_format: (invoice.customer_einvoice_format as string) || null,
+      leitweg_id: (invoice.customer_leitweg_id as string) || null,
+      einvoice_receiver_id: (invoice.customer_einvoice_receiver_id as string) || null,
+      einvoice_receiver_scheme: (invoice.customer_einvoice_receiver_scheme as string) || null,
     },
     items,
     tax_breakdown,
   };
+}
+
+/** EN 16931 VAT category by rate for German-style invoices. */
+function defaultCategoryForRate(rate: number): string {
+  if (rate === 0) return "Z";
+  if (rate === 7) return "AA";
+  return "S";
 }

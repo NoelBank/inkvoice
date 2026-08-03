@@ -12,6 +12,7 @@ import { apiTokens } from "./routes/api-tokens";
 import { auth } from "./routes/auth";
 import { customers } from "./routes/customers";
 import { dashboard } from "./routes/dashboard";
+import { einvoices } from "./routes/einvoice";
 import { exchangeRate } from "./routes/exchange-rate";
 import { expenses } from "./routes/expenses";
 import { exportRoutes } from "./routes/export";
@@ -138,6 +139,7 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.use("/api/v1/export", adminOnly);
 
   app.route("/api/v1/invoices", invoices);
+  app.route("/api/v1/einvoices", einvoices);
   app.route("/api/v1/quotes", quotes);
   app.route("/api/v1/customers", customers);
   app.route("/api/v1/products", products);

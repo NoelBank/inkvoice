@@ -114,6 +114,12 @@ export async function seed(): Promise<void> {
       ["fiscal_year_start_month", "1"],
       ["public_url", ""],
       ["pdf_qr_code_enabled", "false"],
+      ["company_country", ""],
+      ["einvoice_format", "zugferd"],
+      ["einvoice_enabled", "false"],
+      ["einvoice_attach_pdf", "true"],
+      ["einvoice_kleinunternehmer", "false"],
+      ["company_peppol_scheme", "0208"],
     ];
     const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
     for (const [key, value] of defaults) {
@@ -125,6 +131,12 @@ export async function seed(): Promise<void> {
     const newDefaults: [string, string][] = [
       ["public_url", ""],
       ["pdf_qr_code_enabled", "false"],
+      ["company_country", ""],
+      ["einvoice_format", "zugferd"],
+      ["einvoice_enabled", "false"],
+      ["einvoice_attach_pdf", "true"],
+      ["einvoice_kleinunternehmer", "false"],
+      ["company_peppol_scheme", "0208"],
     ];
     const stmt = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
     for (const [key, value] of newDefaults) stmt.run(key, value);
@@ -135,12 +147,46 @@ export async function seed(): Promise<void> {
     count: number;
   };
   if (taxCount.count === 0) {
-    const id = crypto.randomBytes(16).toString("hex");
-    db.run(
-      "INSERT INTO tax_definitions (id, name, rate, description, is_default, is_active) VALUES (?, ?, ?, ?, 1, 1)",
-      [id, "No Tax", 0, "No tax applied"],
-    );
-    logger.info("Default tax definition created.");
+    // Prefer German VAT presets when the locale/country points at Germany,
+    // otherwise fall back to a generic "No Tax" definition (existing behavior).
+    const country = (
+      (
+        db.query("SELECT value FROM settings WHERE key = 'company_country'").get() as {
+          value: string;
+        } | null
+      )?.value || ""
+    ).toUpperCase();
+    const locale = (
+      (
+        db.query("SELECT value FROM settings WHERE key = 'locale'").get() as {
+          value: string;
+        } | null
+      )?.value || ""
+    ).toLowerCase();
+    const german = country === "DE" || locale.startsWith("de");
+
+    if (german) {
+      const presets: [string, number, string, string, number][] = [
+        ["Umsatzsteuer 19% (Standard)", 19, "S", "Umsatzsteuer regelsatz", 1],
+        ["Umsatzsteuer 7 % (ermäßigt)", 7, "AA", "Ermäßigter Steuersatz (z. B. Lebensmittel)", 0],
+        ["Umsatzsteuer 0 %", 0, "Z", "Steuerfreie Lieferungen (z. B. innergemeinschaftlich)", 0],
+        ["Steuerbefreit (§ 4 UStG)", 0, "E", "Steuerbefreite Leistungen", 0],
+      ];
+      const stmt = db.prepare(
+        "INSERT INTO tax_definitions (id, name, rate, description, category_code, is_default, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+      );
+      for (const [name, rate, code, desc, isDefault] of presets) {
+        stmt.run(crypto.randomBytes(16).toString("hex"), name, rate, desc, code, isDefault);
+      }
+      logger.info("German VAT presets created (19 %/7 %/0 %/exempt).");
+    } else {
+      const id = crypto.randomBytes(16).toString("hex");
+      db.run(
+        "INSERT INTO tax_definitions (id, name, rate, description, is_default, is_active) VALUES (?, ?, ?, ?, 1, 1)",
+        [id, "No Tax", 0, "No tax applied"],
+      );
+      logger.info("Default tax definition created.");
+    }
   }
 
   // Seed product categories

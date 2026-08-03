@@ -108,8 +108,19 @@ export default function Products() {
     return (
       <ProductForm
         onSave={() => {
-          navigate("/products/all");
-          fetchProducts();
+          // When reached via "Add product" from another page, return there and
+          // hand off the new product's id so the caller can auto-select it.
+          const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+          if (returnTo) {
+            const addedProductId = consumeRowHighlight("product");
+            const lineIndex = (location.state as { lineIndex?: number } | null)?.lineIndex;
+            navigate(returnTo, {
+              state: addedProductId ? { addedProductId, lineIndex } : undefined,
+            });
+          } else {
+            navigate("/products/all");
+            fetchProducts();
+          }
         }}
       />
     );

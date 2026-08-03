@@ -640,6 +640,58 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "portal_tokens", "expires_at", "TEXT");
     },
   },
+  {
+    version: 18,
+    name: "einvoice_germany",
+    up: (db) => {
+      // Per-customer e-invoice data (Germany: Leitweg-ID for B2G, receiver id
+      // for PEPPOL/e-invoice addressing, per-customer format override).
+      addColumnIfMissing(db, "customers", "einvoice_format", "TEXT");
+      addColumnIfMissing(db, "customers", "leitweg_id", "TEXT");
+      addColumnIfMissing(db, "customers", "einvoice_receiver_id", "TEXT");
+      addColumnIfMissing(db, "customers", "einvoice_receiver_scheme", "TEXT");
+      addColumnIfMissing(db, "customers", "tax_number", "TEXT");
+
+      // Revision-safe outbox of emitted e-invoices. The XML is always stored
+      // (that is the legal e-invoice); the PDF/A-3 hybrid is optional but kept
+      // so archiving matches what was actually delivered.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS einvoice_documents (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+          format TEXT NOT NULL,             -- zugferd | xrechnung-ubl | xrechnung-cii | peppol | pdf
+          xml_content TEXT,
+          pdf_content BLOB,
+          hash TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_einvoice_documents_invoice ON einvoice_documents(invoice_id);
+        CREATE INDEX IF NOT EXISTS idx_einvoice_documents_created ON einvoice_documents(created_at);
+
+        CREATE TABLE IF NOT EXISTS einvoice_inbox (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          document_number TEXT,
+          issue_date TEXT,
+          supplier_name TEXT,
+          supplier_vat_id TEXT,
+          total REAL,
+          currency TEXT,
+          file_name TEXT,
+          content_type TEXT,
+          raw_content BLOB NOT NULL,
+          raw_hash TEXT NOT NULL,
+          status TEXT DEFAULT 'inbox',      -- inbox | processed | archived
+          customer_id TEXT REFERENCES customers(id),
+          parse_status TEXT DEFAULT 'pending', -- pending | ok | error
+          parse_error TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          processed_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_einvoice_inbox_created ON einvoice_inbox(created_at);
+        CREATE INDEX IF NOT EXISTS idx_einvoice_inbox_status ON einvoice_inbox(status);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -1,5 +1,9 @@
 import type { XmlProfile } from "../base-profile";
-import type { XmlInvoiceData } from "../types";
+import type { XmlInvoiceData, XmlTaxBreakdown } from "../types";
+
+// Factur-X / ZUGFeRD 2.2 — UN/CEFACT Cross Industry Invoice (CII), EN 16931
+// profile. This doubles as the embedded XML part of a ZUGFeRD PDF/A-3 hybrid
+// and as a standalone CII e-invoice.
 
 function esc(s: string | null | undefined): string {
   if (!s) return "";
@@ -39,7 +43,7 @@ export class FacturxZugferdProfile implements XmlProfile {
     lines.push(`  xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"`);
     lines.push(`  xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100">`);
 
-    // ExchangedDocumentContext
+    // ExchangedDocumentContext — EN 16931 profile (works for ZUGFeRD 2.1+/Factur-X)
     lines.push(`  <rsm:ExchangedDocumentContext>`);
     lines.push(`    <ram:GuidelineSpecifiedDocumentContextParameter>`);
     lines.push(`      <ram:ID>urn:cen.eu:en16931:2017</ram:ID>`);
@@ -56,6 +60,16 @@ export class FacturxZugferdProfile implements XmlProfile {
     if (data.notes) {
       lines.push(
         `    <ram:IncludedNote><ram:Content>${esc(data.notes)}</ram:Content></ram:IncludedNote>`,
+      );
+    }
+    if (data.kleinunternehmer) {
+      lines.push(
+        `    <ram:IncludedNote><ram:Content>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</ram:Content></ram:IncludedNote>`,
+      );
+    }
+    if (data.document_category_code === "AE" || data.document_category_code === "K") {
+      lines.push(
+        `    <ram:IncludedNote><ram:Content>Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge).</ram:Content></ram:IncludedNote>`,
       );
     }
     lines.push(`  </rsm:ExchangedDocument>`);
@@ -85,11 +99,13 @@ export class FacturxZugferdProfile implements XmlProfile {
       lines.push(`        <ram:ApplicableTradeTax>`);
       lines.push(`          <ram:TypeCode>VAT</ram:TypeCode>`);
       lines.push(
-        `          <ram:CategoryCode>${esc(item.tax_category_code || "S")}</ram:CategoryCode>`,
+        `          <ram:CategoryCode>${esc(lineCategory(item.tax_category_code))}</ram:CategoryCode>`,
       );
-      lines.push(
-        `          <ram:RateApplicablePercent>${item.tax_rate}</ram:RateApplicablePercent>`,
-      );
+      if (item.tax_rate > 0 || (item.tax_category_code && item.tax_category_code !== "Z")) {
+        lines.push(
+          `          <ram:RateApplicablePercent>${item.tax_rate}</ram:RateApplicablePercent>`,
+        );
+      }
       lines.push(`        </ram:ApplicableTradeTax>`);
       lines.push(`        <ram:SpecifiedTradeSettlementLineMonetarySummation>`);
       lines.push(`          <ram:LineTotalAmount>${amt(item.line_total)}</ram:LineTotalAmount>`);
@@ -98,17 +114,27 @@ export class FacturxZugferdProfile implements XmlProfile {
       lines.push(`    </ram:IncludedSupplyChainTradeLineItem>`);
     }
 
-    // ApplicableHeaderTradeAgreement (Supplier + Customer)
+    // ApplicableHeaderTradeAgreement (Seller + Buyer)
     lines.push(`    <ram:ApplicableHeaderTradeAgreement>`);
     lines.push(`      <ram:SellerTradeParty>`);
     lines.push(`        <ram:Name>${esc(data.supplier.name)}</ram:Name>`);
-    if (data.supplier.address) {
-      lines.push(
-        `        <ram:PostalTradeAddress><ram:LineOne>${esc(data.supplier.address)}</ram:LineOne>`,
-      );
-      if (data.supplier.country) {
+    if (
+      data.supplier.country ||
+      data.supplier.address ||
+      data.supplier.street ||
+      data.supplier.city
+    ) {
+      lines.push(`        <ram:PostalTradeAddress>`);
+      const street = data.supplier.street || data.supplier.address;
+      if (street) lines.push(`          <ram:LineOne>${esc(street)}</ram:LineOne>`);
+      if (data.supplier.city)
+        lines.push(`          <ram:CityName>${esc(data.supplier.city)}</ram:CityName>`);
+      if (data.supplier.postal_code)
+        lines.push(
+          `          <ram:PostcodeCode>${esc(data.supplier.postal_code)}</ram:PostcodeCode>`,
+        );
+      if (data.supplier.country)
         lines.push(`          <ram:CountryID>${esc(data.supplier.country)}</ram:CountryID>`);
-      }
       lines.push(`        </ram:PostalTradeAddress>`);
     }
     if (data.supplier.tax_id) {
@@ -116,37 +142,70 @@ export class FacturxZugferdProfile implements XmlProfile {
         `        <ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${esc(data.supplier.tax_id)}</ram:ID></ram:SpecifiedTaxRegistration>`,
       );
     }
+    if (data.supplier.tax_number) {
+      lines.push(
+        `        <ram:SpecifiedTaxRegistration><ram:ID schemeID="DE-TAX">${esc(data.supplier.tax_number)}</ram:ID></ram:SpecifiedTaxRegistration>`,
+      );
+    }
+    if (data.supplier.peppol_endpoint_id) {
+      lines.push(
+        `        <ram:SpecifiedTaxRegistration><ram:ID schemeID="SEID">${esc(data.supplier.peppol_endpoint_id)}</ram:ID></ram:SpecifiedTaxRegistration>`,
+      );
+    }
     lines.push(`      </ram:SellerTradeParty>`);
     lines.push(`      <ram:BuyerTradeParty>`);
     lines.push(`        <ram:Name>${esc(data.customer.name)}</ram:Name>`);
-    if (data.customer.address_line1) {
+    const buyerStreet = data.customer.address_line1;
+    if (
+      buyerStreet ||
+      data.customer.address_line2 ||
+      data.customer.city ||
+      data.customer.postal_code ||
+      data.customer.country
+    ) {
       lines.push(`        <ram:PostalTradeAddress>`);
-      lines.push(`          <ram:LineOne>${esc(data.customer.address_line1)}</ram:LineOne>`);
+      if (buyerStreet) lines.push(`          <ram:LineOne>${esc(buyerStreet)}</ram:LineOne>`);
+      if (data.customer.address_line2)
+        lines.push(`          <ram:LineTwo>${esc(data.customer.address_line2)}</ram:LineTwo>`);
       if (data.customer.city)
         lines.push(`          <ram:CityName>${esc(data.customer.city)}</ram:CityName>`);
       if (data.customer.postal_code)
         lines.push(
           `          <ram:PostcodeCode>${esc(data.customer.postal_code)}</ram:PostcodeCode>`,
         );
+      if (data.customer.state)
+        lines.push(
+          `          <ram:CountrySubDivisionName>${esc(data.customer.state)}</ram:CountrySubDivisionName>`,
+        );
       if (data.customer.country)
         lines.push(`          <ram:CountryID>${esc(data.customer.country)}</ram:CountryID>`);
       lines.push(`        </ram:PostalTradeAddress>`);
+    }
+    if (data.customer.leitweg_id) {
+      lines.push(`        <ram:ID schemeID="0204">${esc(data.customer.leitweg_id)}</ram:ID>`);
+    } else if (data.customer.einvoice_receiver_id) {
+      lines.push(
+        `        <ram:ID schemeID="${esc(data.customer.einvoice_receiver_scheme || "0088")}">${esc(data.customer.einvoice_receiver_id)}</ram:ID>`,
+      );
     }
     if (data.customer.tax_id) {
       lines.push(
         `        <ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${esc(data.customer.tax_id)}</ram:ID></ram:SpecifiedTaxRegistration>`,
       );
     }
+    if (data.customer.tax_number) {
+      lines.push(
+        `        <ram:SpecifiedTaxRegistration><ram:ID schemeID="DE-TAX">${esc(data.customer.tax_number)}</ram:ID></ram:SpecifiedTaxRegistration>`,
+      );
+    }
     lines.push(`      </ram:BuyerTradeParty>`);
     lines.push(`    </ram:ApplicableHeaderTradeAgreement>`);
 
-    // Delivery
+    // Payment terms (ReceiveRe p.), empty delivery node
     lines.push(`    <ram:ApplicableHeaderTradeDelivery />`);
-
-    // Settlement
     lines.push(`    <ram:ApplicableHeaderTradeSettlement>`);
+    lines.push(`      <ram:PaymentReference>${esc(data.invoice_number)}</ram:PaymentReference>`);
     lines.push(`      <ram:InvoiceCurrencyCode>${esc(data.currency)}</ram:InvoiceCurrencyCode>`);
-
     if (data.payment_terms) {
       lines.push(
         `      <ram:SpecifiedTradePaymentTerms><ram:Description>${esc(data.payment_terms)}</ram:Description></ram:SpecifiedTradePaymentTerms>`,
@@ -159,8 +218,12 @@ export class FacturxZugferdProfile implements XmlProfile {
       lines.push(`        <ram:CalculatedAmount>${amt(tax.tax_amount)}</ram:CalculatedAmount>`);
       lines.push(`        <ram:TypeCode>VAT</ram:TypeCode>`);
       lines.push(`        <ram:BasisAmount>${amt(tax.taxable_amount)}</ram:BasisAmount>`);
-      lines.push(`        <ram:CategoryCode>${esc(tax.category_code || "S")}</ram:CategoryCode>`);
-      lines.push(`        <ram:RateApplicablePercent>${tax.tax_rate}</ram:RateApplicablePercent>`);
+      lines.push(`        <ram:CategoryCode>${esc(taxCategory(tax))}</ram:CategoryCode>`);
+      if (tax.tax_rate > 0 || tax.category_code !== "Z") {
+        lines.push(
+          `        <ram:RateApplicablePercent>${tax.tax_rate}</ram:RateApplicablePercent>`,
+        );
+      }
       lines.push(`      </ram:ApplicableTradeTax>`);
     }
 
@@ -179,6 +242,7 @@ export class FacturxZugferdProfile implements XmlProfile {
       `        <ram:TaxTotalAmount currencyID="${esc(data.currency)}">${amt(data.tax_total)}</ram:TaxTotalAmount>`,
     );
     lines.push(`        <ram:GrandTotalAmount>${amt(data.total)}</ram:GrandTotalAmount>`);
+    lines.push(`        <ram:TotalPrepaidAmount>0.00</ram:TotalPrepaidAmount>`);
     lines.push(`        <ram:DuePayableAmount>${amt(data.total)}</ram:DuePayableAmount>`);
     lines.push(`      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>`);
     lines.push(`    </ram:ApplicableHeaderTradeSettlement>`);
@@ -187,6 +251,18 @@ export class FacturxZugferdProfile implements XmlProfile {
 
     return lines.join("\n");
   }
+}
+
+function lineCategory(code: string | undefined): string {
+  const c = (code || "S").toUpperCase();
+  if (["S", "AA", "Z", "E", "AE", "K", "G", "O", "L", "M"].includes(c)) return c;
+  return "S";
+}
+
+function taxCategory(tax: XmlTaxBreakdown): string {
+  const c = (tax.category_code || "S").toUpperCase();
+  if (["S", "AA", "Z", "E", "AE", "K", "G", "O", "L", "M"].includes(c)) return c;
+  return tax.tax_rate === 0 ? "Z" : "S";
 }
 
 function mapUnitCode(unit: string): string {

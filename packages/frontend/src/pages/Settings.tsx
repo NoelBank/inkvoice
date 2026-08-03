@@ -28,6 +28,7 @@ import { formatApiError } from "@/lib/format-api-error";
 import ProductSettings from "@/pages/ProductSettings";
 import { getSettingsTabs } from "@/pages/settings-tab-registry";
 import Templates from "@/pages/Templates";
+import { useSettingsStore } from "@/stores/settings.store";
 import { extractColors } from "@/utils/color-extractor";
 
 function isLightColor(hex: string): boolean {
@@ -133,6 +134,7 @@ export default function Settings() {
     try {
       const res = await api.updateSettings(settings);
       setSettings(res.data);
+      await useSettingsStore.getState().fetchSettings();
       if (pendingLanguage !== language) {
         setLanguage(pendingLanguage);
       }
@@ -481,6 +483,35 @@ export default function Settings() {
                     );
                   })}
                 </select>
+              </FormField>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-sm">{t("settings.einvoice_section")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                label={t("settings.einvoice_enabled_label")}
+                hint={t("settings.einvoice_enabled_hint")}
+              >
+                <label className="flex items-center gap-2 h-9">
+                  <input
+                    type="checkbox"
+                    checked={settings.einvoice_enabled === "true"}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        einvoice_enabled: e.target.checked ? "true" : "false",
+                      })
+                    }
+                    className="rounded"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {t("settings.einvoice_enabled_checkbox")}
+                  </span>
+                </label>
               </FormField>
             </CardContent>
           </Card>

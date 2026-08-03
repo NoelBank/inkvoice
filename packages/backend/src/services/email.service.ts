@@ -105,6 +105,8 @@ export async function sendEmail(opts: {
   from?: string;
   /** Per-send Reply-To header. */
   replyTo?: string;
+  /** Attachments (e.g. ZUGFeRD hybrid PDF or XRechnung XML). */
+  attachments?: Array<{ filename: string; content: Buffer | Uint8Array; contentType: string }>;
 }): Promise<{ success: true } | { success: false; error: string }> {
   const result = await getTransporterForActiveContext();
   if (!result) {
@@ -125,6 +127,11 @@ export async function sendEmail(opts: {
       html: opts.html,
       text: opts.text,
       replyTo: opts.replyTo,
+      attachments: opts.attachments?.map((a) => ({
+        filename: a.filename,
+        content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content),
+        contentType: a.contentType,
+      })),
     });
     return { success: true };
   } catch (err) {

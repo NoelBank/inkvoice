@@ -1,6 +1,7 @@
 import {
   BarChart3,
   ClipboardList,
+  FileCheck2,
   FileText,
   History,
   LayoutDashboard,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { getNavItems, useNavGate } from "@/nav-registry";
 import { useAuthStore } from "@/stores/auth.store";
+import { useSettingsStore } from "@/stores/settings.store";
 
 const themeCycle: Theme[] = ["light", "dark", "auto"];
 function nextTheme(current: Theme): Theme {
@@ -42,6 +44,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
 
   const themeMeta: Record<Theme, { label: string; icon: typeof Sun }> = {
     light: { label: t("header.theme_light"), icon: Sun },
@@ -73,6 +76,9 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
         { to: "/customers", icon: Users, label: t("nav.customers") },
         { to: "/products", icon: Package, label: t("nav.products") },
         { to: "/expenses", icon: Receipt, label: t("nav.expenses") },
+        ...(einvoiceEnabled
+          ? [{ to: "/einvoices", icon: FileCheck2, label: t("nav.einvoices") }]
+          : []),
         { to: "/reports", icon: BarChart3, label: t("nav.reports") },
       ],
     },

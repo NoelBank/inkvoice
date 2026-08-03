@@ -77,8 +77,10 @@ const es: TranslationKeys = {
     recurring: "Recurrentes",
     customers: "Clientes",
     products: "Productos",
+    einvoices: "E-Rechnungen",
     expenses: "Gastos",
     reports: "Informes",
+
     settings: "Configuración",
     users: "Usuarios",
     activity: "Actividad",
@@ -238,6 +240,9 @@ const es: TranslationKeys = {
     add_new_customer: "Añadir nuevo cliente",
     add_customer_named: 'Añadir "{{name}}"',
     refresh_customers: "Actualizar clientes",
+    search_product: "Buscar productos...",
+    add_new_product: "Añadir nuevo producto",
+    add_product_named: 'Añadir "{{name}}"',
     payment_terms: "Condiciones de pago",
     currency: "Moneda",
     exchange_rate: "Tipo de cambio",
@@ -361,6 +366,21 @@ const es: TranslationKeys = {
     default_currency: "Moneda predeterminada",
     default_currency_hint: "Rellena previamente la moneda en las nuevas facturas de este cliente",
     default_currency_inherit: "Predeterminada del negocio",
+    einvoice_section: "Factura electrónica (E-Rechnung)",
+    einvoice_format: "Formato de factura electrónica",
+    einvoice_format_hint:
+      "Formato usado al emitir una factura electrónica para este cliente (Leitweg-ID fuerza XRechnung).",
+    einvoice_format_inherit: "Usar el valor por defecto del negocio",
+    tax_number: "Número de identificación fiscal (Steuernummer)",
+    tax_number_hint: "Número fiscal del cliente alemán, p. ej. 12/345/67890",
+    leitweg_id: "Leitweg-ID",
+    leitweg_id_hint:
+      "Identificador oficial para clientes del sector público (B2G); habilita XRechnung automáticamente",
+    einvoice_receiver_id: "ID del receptor",
+    einvoice_receiver_id_hint:
+      "Identificador del receptor de la factura electrónica (XRechnung/PEPPOL)",
+    einvoice_receiver_scheme: "Esquema del receptor",
+    einvoice_receiver_scheme_hint: "p. ej. DE:VAT, 0204 (esquema Leitweg-ID)",
     notes_placeholder: "Notas internas sobre este cliente...",
     customer_created: "Cliente creado",
     customer_updated: "Cliente actualizado",
@@ -442,6 +462,49 @@ const es: TranslationKeys = {
   },
 
   // Gastos
+  einvoice: {
+    title: "E-invoices (E-Rechnung)",
+    emit: "Emit",
+    emit_success: "E-invoice emitted ({{format}})",
+    emit_with_issues:
+      "E-invoice emitted with {{count}} validation error(s). Review company settings.",
+    loading: "Loading…",
+    no_records: "No e-invoices emitted for this invoice yet.",
+    format: "Format",
+    emitted_at: "Emitted at",
+    download: "Download",
+    download_xml: "Download XML",
+    download_pdf: "Download hybrid PDF (ZUGFeRD)",
+    delete_record: "Delete e-invoice record",
+    delete_record_desc:
+      "This removes the stored XML/PDF for this revision. Emitted invoices should normally be kept for tax archiving (8 years, §147 AO).",
+    record_deleted: "E-invoice record deleted",
+    inbox_title: "Inbox (incoming e-invoices)",
+    import: "Import",
+    tab_all: "All",
+    tab_inbox: "Inbox",
+    tab_processed: "Processed",
+    tab_archived: "Archived",
+    inbox_empty: "No documents in the inbox. Import XRechnung or ZUGFeRD XML files here.",
+    inbox_imported: "E-invoice imported and parsed",
+    inbox_duplicate: "File already exists in the inbox (duplicate)",
+    document_number: "Document no.",
+    supplier: "Supplier",
+    issue_date: "Issue date",
+    total: "Total",
+    parse_status: "Parse status",
+    parsed_ok: "OK",
+    parsed_error: "Error",
+    parsed_pending: "Pending",
+    download_raw: "Download raw file",
+    link_customer: "Link to customer",
+    link_prompt: "Customer ID (leave empty to unlink):",
+    link_success: "Inbox item linked",
+    archive: "Archive",
+    restore: "Restore to inbox",
+    mark_processed: "Processed",
+    actions: "Actions",
+  },
   expenses: {
     title: "Gastos",
     add_expense: "Añadir gasto",
@@ -759,6 +822,12 @@ const es: TranslationKeys = {
     email_template_variables:
       "Variables: {{customer_name}}, {{company_name}}, {{invoice_number}}, {{total}}, {{currency}}, {{due_date}}, {{public_url}}, {{custom_message}}",
     data_backup: "Datos y copias de seguridad",
+    einvoice_section: "Factura electrónica (E-Rechnung)",
+    einvoice_enabled_label: "Módulo de factura electrónica",
+    einvoice_enabled_hint:
+      "Muestra el panel E-Rechnung en las facturas, la bandeja de entrada de facturas electrónicas en la barra lateral y los campos de factura electrónica del cliente. Solo es necesario para la facturación electrónica alemana (ZUGFeRD/XRechnung/PEPPOL).",
+    einvoice_enabled_checkbox: "Activar módulo de factura electrónica",
+
     backup_description:
       "Descargue una copia de seguridad completa de sus datos. JSON es legible y fácil de inspeccionar; SQLite es una instantánea byte a byte que puede restaurar reemplazando el archivo de base de datos activo.",
     download_backup: "Descargar copia de seguridad",
@@ -1077,6 +1146,9 @@ const es: TranslationKeys = {
     from_hint: "Anular la dirección del remitente (por defecto, la configuración SMTP)",
     reply_to: "Responder a",
     reply_to_hint: "Adónde deben ir las respuestas del cliente",
+    attach_einvoice: "Adjuntar factura electrónica (PDF híbrido ZUGFeRD)",
+    attach_einvoice_hint:
+      "Cuando está activado, se adjunta automáticamente un PDF híbrido ZUGFeRD si el ajuste de factura electrónica está activo",
   },
 
   // Diálogo de registro de pago

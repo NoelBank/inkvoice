@@ -81,8 +81,10 @@ const de: TranslationKeys = {
     recurring: "Wiederkehrend",
     customers: "Kunden",
     products: "Produkte",
+    einvoices: "E-Rechnungen",
     expenses: "Ausgaben",
     reports: "Berichte",
+
     settings: "Einstellungen",
     users: "Benutzer",
     activity: "Aktivität",
@@ -246,6 +248,9 @@ const de: TranslationKeys = {
     add_new_customer: "Neuen Kunden hinzufügen",
     add_customer_named: '"{{name}}" hinzufügen',
     refresh_customers: "Kunden aktualisieren",
+    search_product: "Produkte suchen...",
+    add_new_product: "Neues Produkt hinzufügen",
+    add_product_named: '"{{name}}" hinzufügen',
     payment_terms: "Zahlungsbedingungen",
     currency: "Währung",
     exchange_rate: "Wechselkurs",
@@ -371,6 +376,20 @@ const de: TranslationKeys = {
     default_currency: "Standardwährung",
     default_currency_hint: "Füllt die Währung auf neuen Rechnungen für diesen Kunden vor",
     default_currency_inherit: "Unternehmensstandard",
+    einvoice_section: "E-Rechnung",
+    einvoice_format: "E-Rechnungsformat",
+    einvoice_format_hint:
+      "Format für die E-Rechnung dieses Kunden (Leitweg-ID erzwingt XRechnung).",
+    einvoice_format_inherit: "Unternehmensstandard verwenden",
+    tax_number: "Steuernummer",
+    tax_number_hint: "Steuernummer des deutschen Kunden, z.B. 12/345/67890",
+    leitweg_id: "Leitweg-ID",
+    leitweg_id_hint:
+      "Offizielle ID für öffentliche Auftraggeber (B2G); aktiviert XRechnung automatisch",
+    einvoice_receiver_id: "Empfänger-ID",
+    einvoice_receiver_id_hint: "Empfängerkennung der E-Rechnung (XRechnung/PEPPOL)",
+    einvoice_receiver_scheme: "Empfänger-Schema",
+    einvoice_receiver_scheme_hint: "z.B. DE:VAT, 0204 (Leitweg-ID-Schema)",
     notes_placeholder: "Interne Notizen zu diesem Kunden...",
     customer_created: "Kunde erstellt",
     customer_updated: "Kunde aktualisiert",
@@ -452,6 +471,50 @@ const de: TranslationKeys = {
   },
 
   // Ausgaben
+  einvoice: {
+    title: "E-Rechnungen",
+    emit: "Erstellen",
+    emit_success: "E-Rechnung erstellt ({{format}})",
+    emit_with_issues:
+      "E-Rechnung mit {{count}} Validierungsfehler(n) erstellt. Firmeneinstellungen prüfen.",
+    loading: "Lädt…",
+    no_records: "Für diese Rechnung wurden noch keine E-Rechnungen erstellt.",
+    format: "Format",
+    emitted_at: "Erstellt am",
+    download: "Download",
+    download_xml: "XML herunterladen",
+    download_pdf: "Hybrid-PDF (ZUGFeRD) herunterladen",
+    delete_record: "E-Rechnung löschen",
+    delete_record_desc:
+      "Entfernt das gespeicherte XML/PDF dieser Revision. Erstellte Rechnungen sollten für die Steueraufbewahrung (8 Jahre, §147 AO) normalerweise aufbewahrt werden.",
+    record_deleted: "E-Rechnung gelöscht",
+    inbox_title: "Posteingang (eingehende E-Rechnungen)",
+    import: "Import",
+    tab_all: "Alle",
+    tab_inbox: "Posteingang",
+    tab_processed: "Verarbeitet",
+    tab_archived: "Archiviert",
+    inbox_empty:
+      "Keine Dokumente im Posteingang. XRechnung- oder ZUGFeRD-XML-Dateien hier importieren.",
+    inbox_imported: "E-Rechnung importiert und geparst",
+    inbox_duplicate: "Datei ist bereits im Posteingang (Duplikat)",
+    document_number: "Rechnungs-Nr.",
+    supplier: "Lieferant",
+    issue_date: "Rechnungsdatum",
+    total: "Summe",
+    parse_status: "Parse-Status",
+    parsed_ok: "OK",
+    parsed_error: "Fehler",
+    parsed_pending: "Ausstehend",
+    download_raw: "Rohdatei herunterladen",
+    link_customer: "Kunde zuordnen",
+    link_prompt: "Kunden-ID (leer zum Entfernen):",
+    link_success: "Posteingangseintrag zugeordnet",
+    archive: "Archivieren",
+    restore: "Zurück in den Posteingang",
+    mark_processed: "Verarbeitet",
+    actions: "Aktionen",
+  },
   expenses: {
     title: "Ausgaben",
     add_expense: "Ausgabe hinzufügen",
@@ -770,6 +833,12 @@ const de: TranslationKeys = {
     email_template_variables:
       "Variablen: {{customer_name}}, {{company_name}}, {{invoice_number}}, {{total}}, {{currency}}, {{due_date}}, {{public_url}}, {{custom_message}}",
     data_backup: "Daten & Sicherung",
+    einvoice_section: "E-Rechnung",
+    einvoice_enabled_label: "E-Rechnungsmodul",
+    einvoice_enabled_hint:
+      "Zeigt das E-Rechnungs-Panel auf Rechnungen, den E-Rechnungs-Posteingang in der Seitenleiste und die E-Rechnungsfelder beim Kunden. Nur für die deutsche E-Rechnung (ZUGFeRD/XRechnung/PEPPOL) erforderlich.",
+    einvoice_enabled_checkbox: "E-Rechnungsmodul aktivieren",
+
     backup_description:
       "Laden Sie eine vollständige Sicherung Ihrer Daten herunter. JSON ist menschenlesbar und leicht zu prüfen; SQLite ist ein byteidentischer Snapshot, den Sie durch Ersetzen der Live-Datenbankdatei wiederherstellen können.",
     download_backup: "Sicherung herunterladen",
@@ -1090,6 +1159,9 @@ const de: TranslationKeys = {
     from_hint: "Absenderadresse überschreiben (Standard: SMTP-Einstellung)",
     reply_to: "Antwort an",
     reply_to_hint: "Wohin Antworten des Kunden gehen sollen",
+    attach_einvoice: "E-Rechnung anhängen (ZUGFeRD-Hybrid-PDF)",
+    attach_einvoice_hint:
+      "Wenn aktiviert, wird eine ZUGFeRD-Hybrid-PDF automatisch angehängt, falls die E-Rechnungseinstellung aktiv ist",
   },
 
   // Dialog „Zahlung erfassen“

@@ -26,6 +26,7 @@ import { formatApiError } from "@/lib/format-api-error";
 import { markRowHighlight } from "@/lib/highlight-row";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings.store";
 
 interface Props {
   onSave: () => void;
@@ -33,6 +34,7 @@ interface Props {
 
 export default function CustomerForm({ onSave }: Props) {
   const { t, language } = useTranslation();
+  const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +66,11 @@ export default function CustomerForm({ onSave }: Props) {
     postal_code: "",
     country: "",
     tax_id: "",
+    tax_number: "",
+    einvoice_format: "",
+    leitweg_id: "",
+    einvoice_receiver_id: "",
+    einvoice_receiver_scheme: "",
     notes: "",
     language: "",
     default_template_id: "",
@@ -102,6 +109,11 @@ export default function CustomerForm({ onSave }: Props) {
           postal_code: d.postal_code || "",
           country: d.country || "",
           tax_id: d.tax_id || "",
+          tax_number: d.tax_number || "",
+          einvoice_format: d.einvoice_format || "",
+          leitweg_id: d.leitweg_id || "",
+          einvoice_receiver_id: d.einvoice_receiver_id || "",
+          einvoice_receiver_scheme: d.einvoice_receiver_scheme || "",
           notes: d.notes || "",
           language: d.language || "",
           default_template_id: d.default_template_id || "",
@@ -342,6 +354,66 @@ export default function CustomerForm({ onSave }: Props) {
               </FormField>
             </CardContent>
           </Card>
+
+          {einvoiceEnabled && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">{t("customers.einvoice_section")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  label={t("customers.einvoice_format")}
+                  hint={t("customers.einvoice_format_hint")}
+                >
+                  <select
+                    value={form.einvoice_format}
+                    onChange={(e) => setForm({ ...form, einvoice_format: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="">{t("customers.einvoice_format_inherit")}</option>
+                    <option value="zugferd">ZUGFeRD 2.2</option>
+                    <option value="xrechnung">XRechnung (UBL)</option>
+                    <option value="peppol">PEPPOL BIS 3.0</option>
+                  </select>
+                </FormField>
+                <FormField label={t("customers.tax_number")} hint={t("customers.tax_number_hint")}>
+                  <Input
+                    value={form.tax_number}
+                    onChange={set("tax_number")}
+                    placeholder="12/345/67890"
+                  />
+                </FormField>
+                <FormField label={t("customers.leitweg_id")} hint={t("customers.leitweg_id_hint")}>
+                  <Input
+                    value={form.leitweg_id}
+                    onChange={set("leitweg_id")}
+                    placeholder="99040000000012345678"
+                  />
+                </FormField>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    label={t("customers.einvoice_receiver_id")}
+                    hint={t("customers.einvoice_receiver_id_hint")}
+                  >
+                    <Input
+                      value={form.einvoice_receiver_id}
+                      onChange={set("einvoice_receiver_id")}
+                    />
+                  </FormField>
+                  <FormField
+                    label={t("customers.einvoice_receiver_scheme")}
+                    hint={t("customers.einvoice_receiver_scheme_hint")}
+                  >
+                    <Input
+                      value={form.einvoice_receiver_scheme}
+                      onChange={set("einvoice_receiver_scheme")}
+                      placeholder="DE:VAT"
+                    />
+                  </FormField>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

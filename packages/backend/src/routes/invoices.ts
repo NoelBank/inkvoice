@@ -3,6 +3,13 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getDb } from "../database/connection";
 import { logActivity } from "../services/activity.service";
+import {
+  deleteEinvoiceRecord,
+  emitEinvoice,
+  getEinvoicePdf,
+  getEinvoiceXml,
+  listEinvoiceRecords,
+} from "../services/einvoice.service";
 import { isEmailConfigured, sendEmail } from "../services/email.service";
 import { invoiceDeliveryEmail } from "../services/email-templates";
 import * as invoiceService from "../services/invoice.service";
@@ -15,6 +22,7 @@ import type { Invoice } from "../types/invoice";
 import { buildCsv, type CsvColumn, csvHeaders } from "../utils/csv";
 import { formatCurrency } from "../utils/currency";
 import { todayIso } from "../utils/date";
+import { logger } from "../utils/logger";
 import { buildXmlInvoiceData } from "../xml/build-data";
 import { getProfile, listProfiles } from "../xml/profile-registry";
 
@@ -416,6 +424,36 @@ invoices.post("/:id/send", async (c) => {
     custom_message: body.message,
   });
 
+  // E-invoice delivery: emit and attach the ZUGFeRD hybrid PDF (or XRechnung
+  // XML) when the customer/workspace uses e-invoicing. Errors here must not
+  // block the plain email (the PDF link still works), so we catch and log.
+  const attachments: Array<{
+    filename: string;
+    content: Buffer | Uint8Array;
+    contentType: string;
+  }> = [];
+  const wantEinvoice = body.attach_einvoice !== false && !!settings.einvoice_enabled;
+  if (wantEinvoice && customerEmail) {
+    try {
+      const emitted = await emitEinvoice(invoice.id);
+      if (emitted.pdf) {
+        attachments.push({
+          filename: `${invoice.invoice_number}-zugferd.pdf`,
+          content: emitted.pdf,
+          contentType: "application/pdf",
+        });
+      } else {
+        attachments.push({
+          filename: `${invoice.invoice_number}-${emitted.format}.xml`,
+          content: Buffer.from(emitted.xml, "utf-8"),
+          contentType: "application/xml",
+        });
+      }
+    } catch (err: any) {
+      logger.warn(`E-invoice emission failed for invoice ${invoice.id}: ${err.message}`);
+    }
+  }
+
   const result = await sendEmail({
     to: customerEmail,
     subject: body.subject || email.subject,
@@ -424,6 +462,7 @@ invoices.post("/:id/send", async (c) => {
     from: typeof body.from === "string" && body.from.trim() ? body.from.trim() : undefined,
     replyTo:
       typeof body.reply_to === "string" && body.reply_to.trim() ? body.reply_to.trim() : undefined,
+    attachments,
   });
 
   if (!result.success) {
@@ -543,6 +582,65 @@ invoices.get("/:id/comments", (c) => {
     )
     .all(id);
   return c.json({ success: true, data: comments });
+});
+
+// E-invoice emission (XRechnung / ZUGFeRD). Emit stores the generated XML
+// (and the ZUGFeRD hybrid PDF) in einvoice_documents for later download,
+// email delivery and archival.
+invoices.post("/:id/einvoice/emit", async (c) => {
+  const id = c.req.param("id");
+  const exists = getDb()
+    .query("SELECT id FROM invoices WHERE id = ? AND deleted_at IS NULL")
+    .get(id);
+  if (!exists) return c.json({ success: false, error: "Invoice not found" }, 404);
+
+  try {
+    const result = await emitEinvoice(id);
+    logActivity({
+      action: "create",
+      resource_type: "einvoice",
+      resource_id: id,
+      metadata: { format: result.format },
+    });
+    return c.json({ success: true, data: result });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 400);
+  }
+});
+
+invoices.get("/:id/einvoices", (c) => {
+  const id = c.req.param("id");
+  const exists = getDb()
+    .query("SELECT id FROM invoices WHERE id = ? AND deleted_at IS NULL")
+    .get(id);
+  if (!exists) return c.json({ success: false, error: "Invoice not found" }, 404);
+  return c.json({ success: true, data: listEinvoiceRecords(id) });
+});
+
+invoices.get("/:id/einvoices/:recordId/xml", (c) => {
+  const { recordId } = c.req.param();
+  const xml = getEinvoiceXml(recordId);
+  if (!xml) return c.json({ success: false, error: "E-invoice not found" }, 404);
+  c.header("Content-Type", "application/xml; charset=utf-8");
+  c.header("Content-Disposition", `attachment; filename="einvoice-${recordId}.xml"`);
+  return c.body(xml);
+});
+
+invoices.get("/:id/einvoices/:recordId/pdf", (c) => {
+  const { recordId } = c.req.param();
+  const pdf = getEinvoicePdf(recordId);
+  if (!pdf) return c.json({ success: false, error: "E-invoice PDF not found" }, 404);
+  c.header("Content-Type", "application/pdf");
+  c.header("Content-Disposition", `attachment; filename="einvoice-${recordId}.pdf"`);
+  return c.body(new Uint8Array(pdf));
+});
+
+invoices.delete("/:id/einvoices/:recordId", (c) => {
+  const { recordId } = c.req.param();
+  if (!deleteEinvoiceRecord(recordId)) {
+    return c.json({ success: false, error: "E-invoice not found" }, 404);
+  }
+  return c.json({ success: true });
 });
 
 invoices.post("/:id/comments", async (c) => {

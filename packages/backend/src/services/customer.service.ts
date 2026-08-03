@@ -99,8 +99,8 @@ export function createCustomer(data: Partial<Customer>): Customer {
   const id = crypto.randomBytes(16).toString("hex");
 
   db.run(
-    `INSERT INTO customers (id, name, email, phone, address_line1, address_line2, city, state, postal_code, country, tax_id, notes, language, default_template_id, currency)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO customers (id, name, email, phone, address_line1, address_line2, city, state, postal_code, country, tax_id, tax_number, einvoice_format, leitweg_id, einvoice_receiver_id, einvoice_receiver_scheme, notes, language, default_template_id, currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       data.name!,
@@ -113,6 +113,11 @@ export function createCustomer(data: Partial<Customer>): Customer {
       data.postal_code || null,
       data.country || null,
       data.tax_id || null,
+      data.tax_number || null,
+      data.einvoice_format || null,
+      data.leitweg_id || null,
+      data.einvoice_receiver_id || null,
+      data.einvoice_receiver_scheme || null,
       data.notes || null,
       data.language || null,
       data.default_template_id || null,
@@ -130,8 +135,9 @@ export function updateCustomer(id: string, data: Partial<Customer>): Customer | 
 
   db.run(
     `UPDATE customers SET name = ?, email = ?, phone = ?, address_line1 = ?, address_line2 = ?,
-     city = ?, state = ?, postal_code = ?, country = ?, tax_id = ?, notes = ?, language = ?,
-     default_template_id = ?, currency = ?, updated_at = datetime('now')
+     city = ?, state = ?, postal_code = ?, country = ?, tax_id = ?, tax_number = ?,
+     einvoice_format = ?, leitweg_id = ?, einvoice_receiver_id = ?, einvoice_receiver_scheme = ?,
+     notes = ?, language = ?, default_template_id = ?, currency = ?, updated_at = datetime('now')
      WHERE id = ?`,
     [
       data.name!,
@@ -144,6 +150,11 @@ export function updateCustomer(id: string, data: Partial<Customer>): Customer | 
       data.postal_code || null,
       data.country || null,
       data.tax_id || null,
+      data.tax_number || null,
+      data.einvoice_format || null,
+      data.leitweg_id || null,
+      data.einvoice_receiver_id || null,
+      data.einvoice_receiver_scheme || null,
       data.notes || null,
       data.language || null,
       data.default_template_id || null,

@@ -26,6 +26,7 @@ import { CustomerCombobox } from "@/components/shared/CustomerCombobox";
 import { ExchangeRateField } from "@/components/shared/ExchangeRateField";
 import { FormField } from "@/components/shared/FormField";
 import { PaymentTermsPicker, paymentTermsToDays } from "@/components/shared/PaymentTermsPicker";
+import { ProductCombobox } from "@/components/shared/ProductCombobox";
 import { type SaveStatus, SaveStatusIndicator } from "@/components/shared/SaveStatusIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,7 @@ function SortableLineItem({
   onProductSelect,
   onUpdateItem,
   onRemoveItem,
+  onAddNewProduct,
   t,
 }: {
   id: string;
@@ -84,6 +86,7 @@ function SortableLineItem({
   onProductSelect: (index: number, productId: string) => void;
   onUpdateItem: (index: number, field: string, value: any) => void;
   onRemoveItem: (index: number) => void;
+  onAddNewProduct: (index: number, search: string) => void;
   t: (key: string) => string;
 }) {
   const {
@@ -123,18 +126,12 @@ function SortableLineItem({
           {isFirst && (
             <Label className="text-xs text-muted-foreground">{t("invoices.product")}</Label>
           )}
-          <select
+          <ProductCombobox
+            products={products}
             value={item.product_id}
-            onChange={(e) => onProductSelect(index, e.target.value)}
-            className="form-select"
-          >
-            <option value="">{t("invoices.manual_entry")}</option>
-            {products.map((p: any) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+            onChange={(productId) => onProductSelect(index, productId)}
+            onAddNew={(search) => onAddNewProduct(index, search)}
+          />
         </div>
         <div>
           {isFirst && (
@@ -248,6 +245,17 @@ export default function InvoiceForm({ onSave }: Props) {
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(
     () => (location.state as { addedCustomerId?: string } | null)?.addedCustomerId ?? null,
   );
+  // New product to auto-add to a line item — set when returning from the
+  // product-create page via "Add product" (see handleAddProduct).
+  const [pendingProduct, setPendingProduct] = useState<{
+    id: string;
+    lineIndex: number;
+  } | null>(() => {
+    const state = location.state as { addedProductId?: string; lineIndex?: number } | null;
+    return state?.addedProductId != null
+      ? { id: state.addedProductId, lineIndex: state.lineIndex ?? 0 }
+      : null;
+  });
   const [products, setProducts] = useState<any[]>([]);
   const [taxDefs, setTaxDefs] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -627,6 +635,31 @@ export default function InvoiceForm({ onSave }: Props) {
     });
   };
 
+  // "Add product": detour to the product-create page without losing work.
+  // Mirrors handleAddCustomer (draft snapshot for new invoices, flush for edits)
+  // and returns here with addedProductId + the line index that requested it.
+  const handleAddProduct = async (lineIndex: number, prefillName?: string) => {
+    if (!isEdit) {
+      saveInvoiceDraft(form, items);
+    } else if (Object.keys(validate(form, items)).length === 0) {
+      setSaveStatus("saving");
+      try {
+        await api.updateInvoice(id!, buildPayload());
+        setLastSavedAt(Date.now());
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
+    }
+    navigate("/products/new", {
+      state: {
+        returnTo: location.pathname + location.search,
+        lineIndex,
+        prefillName: prefillName || undefined,
+      },
+    });
+  };
+
   // Auto-select the customer just created via "Add customer", once the
   // refreshed list contains it (and, in edit mode, after the invoice loads so
   // the server fetch can't clobber the selection).
@@ -640,6 +673,22 @@ export default function InvoiceForm({ onSave }: Props) {
     window.history.replaceState({}, "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingCustomerId, customers, isEdit, editLoaded]);
+
+  // Auto-apply the product created via "Add product" to the line item that
+  // requested it, once the refreshed product list contains it (and, in edit
+  // mode, after the invoice loads so the server fetch can't clobber it).
+  useEffect(() => {
+    if (!pendingProduct) return;
+    if (isEdit && !editLoaded) return;
+    const product = products.find((p: any) => p.id === pendingProduct.id);
+    if (!product) return;
+    if (pendingProduct.lineIndex >= items.length) return;
+    handleProductSelect(pendingProduct.lineIndex, pendingProduct.id);
+    setPendingProduct(null);
+    // Drop the nav state so a later manual reload doesn't re-apply it.
+    window.history.replaceState({}, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingProduct, products, items.length, isEdit, editLoaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -888,6 +937,7 @@ export default function InvoiceForm({ onSave }: Props) {
                         onProductSelect={handleProductSelect}
                         onUpdateItem={updateItem}
                         onRemoveItem={removeItem}
+                        onAddNewProduct={handleAddProduct}
                         t={t}
                       />
                     ))}
