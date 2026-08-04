@@ -17,5 +17,9 @@ export function formatCurrency(
   localeOverride?: string,
 ): string {
   const locale = localeOverride || getLocaleForNumberFormat(numberFormat);
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+  try {
+    return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`.trim();
+  }
 }

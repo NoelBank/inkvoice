@@ -21,6 +21,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
+import { CurrencyCombobox } from "@/components/shared/CurrencyCombobox";
 import { FormField } from "@/components/shared/FormField";
 import { type SaveStatus, SaveStatusIndicator } from "@/components/shared/SaveStatusIndicator";
 import { Button } from "@/components/ui/button";
@@ -471,7 +472,7 @@ export default function QuoteForm() {
               />
             </FormField>
             <FormField label={t("invoices.currency")}>
-              <Input value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
+              <CurrencyCombobox value={currency} onChange={setCurrency} />
             </FormField>
             <FormField label={t("invoices.locale")} hint={t("invoices.locale_hint")}>
               <select

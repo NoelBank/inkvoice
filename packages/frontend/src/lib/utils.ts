@@ -29,10 +29,14 @@ function getLocaleForNumberFormat(numberFormat?: string): string {
 
 export function formatCurrency(amount: number, currency = "USD", numberFormat?: string): string {
   const locale = numberFormat ? getLocaleForNumberFormat(numberFormat) : getCurrentLocale();
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`.trim();
+  }
 }
 
 export function formatDate(dateString: string, dateFormat?: string): string {
