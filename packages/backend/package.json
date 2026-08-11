@@ -14,7 +14,7 @@
     "hono": "^4.7.0",
     "jose": "^6.2.3",
     "mustache": "^4.2.0",
-    "nodemailer": "^8.0.4",
+    "nodemailer": "^9.0.5",
     "pdf-lib": "^1.17.1",
     "pino": "^10.3.1",
     "prom-client": "^15.1.3",
