@@ -35,7 +35,18 @@ export function formatCurrency(amount: number, currency = "USD", numberFormat?: 
       currency,
     }).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${currency}`.trim();
+    // Documents predating the currency dropdown can carry a half-typed code
+    // like "EU", which Intl rejects — render the amount with the code appended
+    let formatted: string;
+    try {
+      formatted = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      formatted = amount.toFixed(2);
+    }
+    return `${formatted} ${currency}`.trim();
   }
 }
 

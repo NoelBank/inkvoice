@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 function getLocaleForNumberFormat(numberFormat?: string): string {
   switch (numberFormat) {
     case "1.000,00":
@@ -10,6 +12,22 @@ function getLocaleForNumberFormat(numberFormat?: string): string {
   }
 }
 
+// Documents predating the currency dropdown can carry a half-typed code like
+// "EU", which Intl rejects. Render the amount with the code appended rather
+// than throwing, and log it so the bad data is discoverable.
+function formatFallback(amount: number, currency: string, locale: string): string {
+  let formatted: string;
+  try {
+    formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    formatted = amount.toFixed(2);
+  }
+  return `${formatted} ${currency}`.trim();
+}
+
 export function formatCurrency(
   amount: number,
   currency = "USD",
@@ -19,7 +37,8 @@ export function formatCurrency(
   const locale = localeOverride || getLocaleForNumberFormat(numberFormat);
   try {
     return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`.trim();
+  } catch (err) {
+    logger.warn({ currency, locale, err }, "Falling back on unformattable currency");
+    return formatFallback(amount, currency, locale);
   }
 }

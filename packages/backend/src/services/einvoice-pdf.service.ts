@@ -6,6 +6,7 @@ import {
   rgb,
   StandardFonts,
 } from "pdf-lib";
+import { formatCurrency } from "../utils/currency";
 import type { XmlInvoiceData } from "../xml/types";
 
 // Lightweight A4 renderer for the ZUGFeRD hybrid PDF. It embeds the Factur-X
@@ -366,7 +367,7 @@ function fmtQty(n: number): string {
 }
 
 function fmtMoney(n: number, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(n);
+  return formatCurrency(n, currency, undefined, locale);
 }
 
 function utf8Bytes(s: string): Uint8Array {

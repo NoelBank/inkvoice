@@ -16,4 +16,9 @@ describe("formatCurrency", () => {
   test("falls back instead of throwing on a malformed locale", () => {
     expect(formatCurrency(12.5, "EUR", undefined, "de_DE")).toBe("12.50 EUR");
   });
+
+  test("the fallback still honours the configured number format", () => {
+    expect(formatCurrency(1234.5, "EU", "1.000,00")).toBe("1.234,50 EU");
+    expect(formatCurrency(1234.5, "EU", "1,000.00")).toBe("1,234.50 EU");
+  });
 });

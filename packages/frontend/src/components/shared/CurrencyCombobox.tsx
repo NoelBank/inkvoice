@@ -28,7 +28,7 @@ export function CurrencyCombobox({ value, onChange }: CurrencyComboboxProps) {
       <PopoverTrigger
         render={<Button variant="outline" className="w-full justify-between font-normal" />}
       >
-        {selected ? `${selected.code} — ${selected.name}` : t("common.select_currency")}
+        {selected ? `${selected.code} — ${selected.name}` : value || t("common.select_currency")}
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0">
