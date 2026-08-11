@@ -42,6 +42,8 @@ const fr: TranslationKeys = {
     other: "Autre",
     error_session_expired: "Votre session a expiré. Veuillez vous reconnecter.",
     error_forbidden: "Vous n'avez pas l'autorisation d'effectuer cette action.",
+    error_demo_account_locked:
+      "Il s'agit du compte de démonstration partagé. Son nom d'utilisateur, son mot de passe et son statut sont verrouillés afin que le prochain visiteur puisse se connecter, et il ne peut pas être supprimé.",
     error_request_too_large:
       "Cette requête est trop volumineuse. Essayez un fichier plus petit ou moins d'éléments.",
     error_server: "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.",

@@ -2,8 +2,45 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { logActivity } from "../services/activity.service";
 import * as userService from "../services/user.service";
+import { getEnv } from "../utils/env";
 
 const users = new Hono();
+
+/**
+ * The seeded admin of a public demo instance, or null — including for every
+ * user when DEMO_MODE is off.
+ *
+ * A demo hands the same account to every visitor and the login page advertises
+ * its credentials (GET /public/config), so renaming it, changing its password,
+ * deactivating it or deleting it locks out everyone who arrives afterwards,
+ * until the next scheduled reset (DEMO_RESET_INTERVAL, 24h by default).
+ *
+ * Matched on the seeded username, falling back to the admin+Owner shape `seed()`
+ * gives the account in case ADMIN_USER changed after it was created.
+ */
+function getDemoAccount(id: string): { username: string; is_active: number } | null {
+  const env = getEnv();
+  if (!env.DEMO_MODE) return null;
+
+  const user = userService.getUser(id) as {
+    username: string;
+    is_active: number;
+    is_admin: number;
+    role?: string;
+  } | null;
+  if (!user) return null;
+
+  const isSeededAdmin =
+    user.username === env.ADMIN_USER || (user.is_admin === 1 && user.role === "Owner");
+  return isSeededAdmin ? user : null;
+}
+
+const DEMO_LOCKED_ERROR = {
+  success: false,
+  error:
+    "This is the shared demo account. Its username, password and status are locked so the next visitor can still sign in, and it cannot be deleted.",
+  code: "DEMO_ACCOUNT_LOCKED",
+} as const;
 
 users.get("/", (c) => {
   const data = userService.listUsers();
@@ -49,7 +86,23 @@ const updateUserSchema = z.object({
 users.put("/:id", async (c) => {
   const body = await c.req.json();
   const parsed = updateUserSchema.parse(body);
-  const user = await userService.updateUser(c.req.param("id"), parsed);
+  const id = c.req.param("id");
+
+  // Only the sign-in fields are locked on a demo account; everything else stays
+  // editable so the demo still shows off user management. Compared against the
+  // current row rather than tested for presence, because the edit form always
+  // submits the whole user, changed or not.
+  const demoAccount = getDemoAccount(id);
+  if (
+    demoAccount &&
+    (!!parsed.password ||
+      (parsed.username !== undefined && parsed.username !== demoAccount.username) ||
+      (parsed.is_active !== undefined && parsed.is_active !== demoAccount.is_active))
+  ) {
+    return c.json(DEMO_LOCKED_ERROR, 403);
+  }
+
+  const user = await userService.updateUser(id, parsed);
   if (!user) {
     return c.json({ success: false, error: "User not found" }, 404);
   }
@@ -58,6 +111,9 @@ users.put("/:id", async (c) => {
 
 users.delete("/:id", (c) => {
   const userId = c.get("userId");
+  if (getDemoAccount(c.req.param("id"))) {
+    return c.json(DEMO_LOCKED_ERROR, 403);
+  }
   const result = userService.deleteUser(c.req.param("id"), userId);
   if (!result.success) {
     return c.json({ success: false, error: result.error }, 400);
@@ -80,6 +136,12 @@ users.post("/batch", async (c) => {
   for (const id of parsed.ids) {
     if (id === userId) {
       errors.push({ id, reason: "Cannot modify own account" });
+      continue;
+    }
+    // Same lockout as the single-user routes, reachable here by an admin the
+    // visitor created themselves. Activating is always safe.
+    if (parsed.action !== "activate" && getDemoAccount(id)) {
+      errors.push({ id, reason: DEMO_LOCKED_ERROR.error });
       continue;
     }
     try {
