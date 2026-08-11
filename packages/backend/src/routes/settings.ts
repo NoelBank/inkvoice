@@ -83,13 +83,16 @@ const ALLOWED_SETTINGS = new Set([
   "onboarding_completed",
 ]);
 
-// Number patterns without a varying token render the same string every time, so
-// the second document minted from one trips the UNIQUE number constraint.
-const NUMBER_PATTERN_SETTINGS = new Set([
+// Number patterns with neither a sequence nor a random token render the same
+// string every time, and invoice_number/quote_number are UNIQUE, so the second
+// document would die on insert. An empty value is fine: it means "use the
+// built-in default".
+const NUMBER_PATTERN_SETTINGS = [
   "invoice_number_pattern",
   "quote_number_pattern",
   "credit_note_number_pattern",
-]);
+];
+const PATTERN_COUNTER_TOKEN = /\{SEQ\d*\}|\{RAND4\}/;
 
 settings.put("/", async (c) => {
   const raw = await c.req.json().catch(() => null);
@@ -104,13 +107,24 @@ settings.put("/", async (c) => {
     if (typeof v !== "string") {
       return c.json({ success: false, error: `Setting "${k}" must be a string` }, 400);
     }
-    if (NUMBER_PATTERN_SETTINGS.has(k) && v !== "" && !/\{SEQ\d*\}|\{RAND4\}/.test(v)) {
+    filtered[k] = v;
+  }
+
+  // Only reject values that actually change, so an install that already stored
+  // a bad pattern can still save the rest of its settings (and fix the pattern).
+  const current = getAllSettings();
+  for (const key of NUMBER_PATTERN_SETTINGS) {
+    const value = filtered[key];
+    if (value === undefined || value === current[key] || value === "") continue;
+    if (!PATTERN_COUNTER_TOKEN.test(value)) {
       return c.json(
-        { success: false, error: `Setting "${k}" must contain a {SEQ} or {RAND4} token` },
+        {
+          success: false,
+          error: `Setting "${key}" must contain a {SEQ} or {RAND4} token, otherwise every document would get the same number`,
+        },
         400,
       );
     }
-    filtered[k] = v;
   }
 
   updateSettings(filtered);

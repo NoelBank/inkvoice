@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { api } from "@/api/client";
 import { InkvoiceLogo } from "@/components/InkvoiceLogo";
 import { Slot } from "@/components/layout/slot-registry";
 import { FormField } from "@/components/shared/FormField";
@@ -15,6 +16,7 @@ export default function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demo, setDemo] = useState<{ username: string; password: string } | null>(null);
   const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
@@ -25,10 +27,28 @@ export default function Login() {
     password: [required(t("validation.required", { field: t("auth.password") }))],
   });
 
+  // A public demo runs on throwaway credentials nobody can guess, so the
+  // instance tells us what they are. Fails soft: a deployment that doesn't
+  // serve this endpoint simply gets no hint.
+  useEffect(() => {
+    api
+      .getPublicConfig()
+      .then((res) => setDemo(res.data.demo_credentials))
+      .catch(() => {});
+  }, []);
+
   const update = (field: "username" | "password") => (e: React.ChangeEvent<HTMLInputElement>) => {
     const newForm = { ...form, [field]: e.target.value };
     setForm(newForm);
     onChange(field, newForm);
+  };
+
+  const fillDemo = () => {
+    if (!demo) return;
+    setForm(demo);
+    // Clear any "required" errors already showing on the touched fields.
+    onChange("username", demo);
+    onChange("password", demo);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +85,22 @@ export default function Login() {
         <CardContent>
           {/* Overlay-provided sign-in alternatives (e.g. OAuth buttons). */}
           <Slot name="login-oauth" />
+          {demo && (
+            <div
+              role="status"
+              className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300/40 bg-amber-100 p-3 text-sm text-amber-800 dark:border-amber-700/30 dark:bg-amber-900/40 dark:text-amber-200"
+            >
+              <span>
+                {t("auth.demo_credentials")}{" "}
+                <span className="font-mono font-semibold">
+                  {demo.username} / {demo.password}
+                </span>
+              </span>
+              <Button type="button" variant="outline" size="sm" onClick={fillDemo}>
+                {t("auth.demo_fill")}
+              </Button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {error && (
               <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 animate-slide-down">

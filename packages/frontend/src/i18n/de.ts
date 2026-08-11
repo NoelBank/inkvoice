@@ -42,6 +42,8 @@ const de: TranslationKeys = {
     other: "Sonstiges",
     error_session_expired: "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
     error_forbidden: "Sie haben keine Berechtigung dafür.",
+    error_demo_account_locked:
+      "Dies ist das gemeinsame Demo-Konto. Benutzername, Passwort und Status sind gesperrt, damit sich auch die nächsten Besucher anmelden können, und das Konto kann nicht gelöscht werden.",
     error_request_too_large:
       "Die Anfrage ist zu groß. Versuchen Sie eine kleinere Datei oder weniger Einträge.",
     error_server:
@@ -129,6 +131,8 @@ const de: TranslationKeys = {
     sign_in: "Anmelden",
     signing_in: "Anmeldung läuft...",
     login_failed: "Anmeldung fehlgeschlagen",
+    demo_credentials: "Demo-Zugang:",
+    demo_fill: "Ausfüllen",
     email: "E-Mail",
     forgot_title: "Passwort vergessen?",
     forgot_description:

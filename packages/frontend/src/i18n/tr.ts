@@ -42,6 +42,8 @@ const tr: TranslationKeys = {
     other: "Diğer",
     error_session_expired: "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
     error_forbidden: "Bunu yapmak için yetkiniz yok.",
+    error_demo_account_locked:
+      "Bu, paylaşılan demo hesabıdır. Sonraki ziyaretçilerin de giriş yapabilmesi için kullanıcı adı, parolası ve durumu kilitlidir; hesap silinemez.",
     error_request_too_large: "İstek çok büyük. Daha küçük bir dosya veya daha az öğe deneyin.",
     error_server: "Sunucuda bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
     error_unavailable: "Hizmet geçici olarak kullanılamıyor. Lütfen tekrar deneyin.",
@@ -124,6 +126,8 @@ const tr: TranslationKeys = {
     sign_in: "Giriş Yap",
     signing_in: "Giriş yapılıyor...",
     login_failed: "Giriş başarısız",
+    demo_credentials: "Demo girişi:",
+    demo_fill: "Doldur",
     email: "E-posta",
     forgot_title: "Şifrenizi mi unuttunuz?",
     forgot_description: "Hesap e-postanızı girin, size bir sıfırlama bağlantısı gönderelim.",

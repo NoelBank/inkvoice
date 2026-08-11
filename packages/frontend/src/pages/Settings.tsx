@@ -47,8 +47,9 @@ function previewNumberPattern(pattern: string): string {
   result = result.replace("{YY}", String(now.getFullYear()).slice(-2));
   result = result.replace("{MM}", String(now.getMonth() + 1).padStart(2, "0"));
   result = result.replace("{DD}", String(now.getDate()).padStart(2, "0"));
-  result = result.replace("{SEQ}", "1");
-  result = result.replace("{SEQ4}", "0001");
+  result = result.replace(/\{SEQ(\d*)\}/, (_, pad: string) =>
+    pad ? "1".padStart(parseInt(pad, 10), "0") : "1",
+  );
   result = result.replace("{RAND4}", String(Math.floor(Math.random() * 10000)).padStart(4, "0"));
   return result;
 }

@@ -14,7 +14,7 @@ const DEFAULT_INVOICE_NUMBER_PATTERN = "INV-{YYYY}-{SEQ4}";
 const DEFAULT_QUOTE_NUMBER_PATTERN = "QT-{YYYY}-{SEQ4}";
 const DEFAULT_CREDIT_NOTE_NUMBER_PATTERN = "CN-{YYYY}-{SEQ4}";
 
-function renderPattern(pattern: string, nextSequence: (pattern: string) => number): string {
+function renderPattern(pattern: string, nextSequence: (prefix: string) => number): string {
   const now = new Date();
 
   let result = pattern;
@@ -26,11 +26,14 @@ function renderPattern(pattern: string, nextSequence: (pattern: string) => numbe
   // Random tokens
   result = result.replace("{RAND4}", String(Math.floor(Math.random() * 10000)).padStart(4, "0"));
 
-  // Sequence tokens
+  // Sequence tokens. The lookup prefix comes from the rendered text, not the
+  // raw pattern: every token left of {SEQ} is already substituted here, so a
+  // pattern like "AN-{RAND4}-{SEQ4}" looks its sequence up against the number
+  // it is actually about to produce instead of the literal "AN-{RAND4}-".
   const seqMatch = result.match(/\{SEQ(\d*)\}/);
   if (seqMatch) {
     const padLen = seqMatch[1] ? parseInt(seqMatch[1], 10) : 0;
-    const nextSeq = nextSequence(pattern);
+    const nextSeq = nextSequence(result.slice(0, seqMatch.index));
     const seqStr = padLen > 0 ? String(nextSeq).padStart(padLen, "0") : String(nextSeq);
     result = result.replace(seqMatch[0], seqStr);
   }
@@ -59,25 +62,13 @@ export function generateQuoteNumber(): string {
   );
 }
 
-// Build the static prefix before the sequence token, replacing other tokens
-// with current values. Returns null when the pattern has no sequence token.
-function sequencePrefix(pattern: string): string | null {
-  const seqIndex = pattern.indexOf("{SEQ");
-  if (seqIndex === -1) return null;
-
-  const now = new Date();
-  let prefix = pattern.substring(0, seqIndex);
-  prefix = prefix.replace("{YYYY}", String(now.getFullYear()));
-  prefix = prefix.replace("{YY}", String(now.getFullYear()).slice(-2));
-  prefix = prefix.replace("{MM}", String(now.getMonth() + 1).padStart(2, "0"));
-  prefix = prefix.replace("{DD}", String(now.getDate()).padStart(2, "0"));
-  return prefix;
-}
-
-// Highest sequence seen among numbers sharing the prefix, plus one.
-// Numbers whose remainder does not start with a digit are neighbours that only
-// share the prefix (credit notes counted off the invoices table under a pattern
-// nested inside the invoice prefix, say) — they carry no sequence to continue.
+// Both lookups take the already-rendered prefix (everything left of {SEQ}) and
+// continue from the highest existing number sharing it, so the sequence resets
+// whenever the prefix changes (a new year, month, or day). The highest is taken
+// numerically, and numbers whose remainder does not start with a digit are
+// skipped: those are neighbours that merely share the prefix, such as credit
+// notes counted off the invoices table under a pattern nested inside the
+// invoice prefix. They carry no sequence to continue.
 function nextSequenceFrom(numbers: string[], prefix: string): number {
   let highest = 0;
   for (const number of numbers) {
@@ -89,10 +80,7 @@ function nextSequenceFrom(numbers: string[], prefix: string): number {
   return highest + 1;
 }
 
-function getNextSequenceNumber(pattern: string): number {
-  const prefix = sequencePrefix(pattern);
-  if (prefix === null) return 1;
-
+function getNextSequenceNumber(prefix: string): number {
   const rows = getDb()
     .query("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ?")
     .all(`${prefix}%`) as { invoice_number: string }[];
@@ -103,10 +91,7 @@ function getNextSequenceNumber(pattern: string): number {
   );
 }
 
-function getNextQuoteSequenceNumber(pattern: string): number {
-  const prefix = sequencePrefix(pattern);
-  if (prefix === null) return 1;
-
+function getNextQuoteSequenceNumber(prefix: string): number {
   const rows = getDb()
     .query("SELECT quote_number FROM quotes WHERE quote_number LIKE ?")
     .all(`${prefix}%`) as { quote_number: string }[];

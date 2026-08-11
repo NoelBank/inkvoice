@@ -34,6 +34,14 @@ export interface Env {
   SLACK_WEBHOOK_URL: string;
 }
 
+/**
+ * Well-known throwaway credentials for public demo instances. A visitor has to
+ * be able to sign in, so DEMO_MODE defaults the admin account to these and the
+ * login page advertises them (see routes/public.ts → GET /public/config).
+ */
+export const DEMO_ADMIN_USER = "demo";
+export const DEMO_ADMIN_PASS = "demo";
+
 let cachedEnv: Env | null = null;
 
 export function resetEnvCache(): void {
@@ -43,10 +51,18 @@ export function resetEnvCache(): void {
 export function getEnv(): Env {
   if (cachedEnv) return cachedEnv;
 
+  // Read up front: properties below can't see their siblings mid-literal, and
+  // DEMO_MODE changes what the admin defaults are.
+  const demoMode = process.env.DEMO_MODE === "true";
+
   cachedEnv = {
-    ADMIN_USER: process.env.ADMIN_USER || "admin",
+    ADMIN_USER: process.env.ADMIN_USER || (demoMode ? DEMO_ADMIN_USER : "admin"),
     ADMIN_PASS: (() => {
       const pass = process.env.ADMIN_PASS;
+      // A demo falling back to its throwaway password is deliberate, so the
+      // production warning would just be noise. A demo that sets a password
+      // still gets warned if it's a known-weak one.
+      if (demoMode && !pass) return DEMO_ADMIN_PASS;
       if (!pass || pass === "changeme") {
         logger.warn("WARNING: Using default admin password. Set ADMIN_PASS for production.");
       }
@@ -72,7 +88,7 @@ export function getEnv(): Env {
     RATE_LIMIT_MAX_ATTEMPTS: parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || "5", 10),
     RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW || "900", 10),
     CHROME_PATH: process.env.CHROME_PATH || "",
-    DEMO_MODE: process.env.DEMO_MODE === "true",
+    DEMO_MODE: demoMode,
     DEMO_RESET_INTERVAL: parseInt(process.env.DEMO_RESET_INTERVAL || "86400000", 10),
     ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:3000")
       .split(",")

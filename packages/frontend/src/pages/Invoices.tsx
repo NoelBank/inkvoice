@@ -251,6 +251,41 @@ export default function Invoices() {
         </h1>
         {!isTrash && (
           <div className="flex items-center gap-2">
+            <TagInput
+              value={tags}
+              onChange={(next) => {
+                setTags(next);
+                setPage(1);
+              }}
+              suggestions={tagSuggestions}
+              placeholder={t("tags.filter_placeholder")}
+              ariaLabel={t("tags.filter_placeholder")}
+              className="max-w-xs"
+            />
+            <SavedFiltersMenu
+              storageKey="inkvoice-saved-filters-invoices"
+              current={{
+                segment: statusFilter,
+                date_from: dateRange.from,
+                date_to: dateRange.to,
+                search: search || undefined,
+              }}
+              onApply={(preset: CurrentFilters) => {
+                setSearch(preset.search ?? "");
+                setDateRange({ from: preset.date_from, to: preset.date_to });
+                setPage(1);
+                if (preset.segment !== statusFilter) {
+                  navigate(`/invoices/${preset.segment}`);
+                }
+              }}
+            />
+            <DateRangeFilter
+              value={dateRange}
+              onChange={(r) => {
+                setDateRange(r);
+                setPage(1);
+              }}
+            />
             <Button
               variant="outline"
               onClick={() => {
@@ -311,41 +346,6 @@ export default function Invoices() {
                 className="pl-9"
               />
             </div>
-            <DateRangeFilter
-              value={dateRange}
-              onChange={(r) => {
-                setDateRange(r);
-                setPage(1);
-              }}
-            />
-            <TagInput
-              value={tags}
-              onChange={(next) => {
-                setTags(next);
-                setPage(1);
-              }}
-              suggestions={tagSuggestions}
-              placeholder={t("tags.filter_placeholder")}
-              ariaLabel={t("tags.filter_placeholder")}
-              className="max-w-xs"
-            />
-            <SavedFiltersMenu
-              storageKey="inkvoice-saved-filters-invoices"
-              current={{
-                segment: statusFilter,
-                date_from: dateRange.from,
-                date_to: dateRange.to,
-                search: search || undefined,
-              }}
-              onApply={(preset: CurrentFilters) => {
-                setSearch(preset.search ?? "");
-                setDateRange({ from: preset.date_from, to: preset.date_to });
-                setPage(1);
-                if (preset.segment !== statusFilter) {
-                  navigate(`/invoices/${preset.segment}`);
-                }
-              }}
-            />
           </div>
         )}
       </div>

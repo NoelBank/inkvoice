@@ -484,6 +484,14 @@ export const api = {
     request(`/users/${id}/permissions`, { method: "PUT", body: JSON.stringify({ permissions }) }),
 
   // Public
+  getPublicConfig: () =>
+    request<{
+      success: boolean;
+      data: {
+        demo_mode: boolean;
+        demo_credentials: { username: string; password: string } | null;
+      };
+    }>("/public/config"),
   getPublicInvoice: (shareToken: string) =>
     request<{ success: boolean; data: any }>(`/public/invoices/${shareToken}`),
 
