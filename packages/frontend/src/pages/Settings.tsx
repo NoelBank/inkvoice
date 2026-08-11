@@ -39,7 +39,7 @@ function isLightColor(hex: string): boolean {
   return r * 0.299 + g * 0.587 + b * 0.114 > 160;
 }
 
-function previewInvoiceNumber(pattern: string): string {
+function previewNumberPattern(pattern: string): string {
   if (!pattern) return "";
   const now = new Date();
   let result = pattern;
@@ -47,8 +47,9 @@ function previewInvoiceNumber(pattern: string): string {
   result = result.replace("{YY}", String(now.getFullYear()).slice(-2));
   result = result.replace("{MM}", String(now.getMonth() + 1).padStart(2, "0"));
   result = result.replace("{DD}", String(now.getDate()).padStart(2, "0"));
-  result = result.replace("{SEQ}", "1");
-  result = result.replace("{SEQ4}", "0001");
+  result = result.replace(/\{SEQ(\d*)\}/, (_, pad: string) =>
+    pad ? "1".padStart(parseInt(pad, 10), "0") : "1",
+  );
   result = result.replace("{RAND4}", String(Math.floor(Math.random() * 10000)).padStart(4, "0"));
   return result;
 }
@@ -888,7 +889,7 @@ export default function Settings() {
         <TabsContent value="invoicing" className="max-w-3xl">
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="text-sm">{t("settings.invoice_defaults")}</CardTitle>
+              <CardTitle className="text-sm">{t("settings.number_patterns")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField label={t("settings.invoice_number_pattern")}>
@@ -897,18 +898,39 @@ export default function Settings() {
                   onChange={set("invoice_number_pattern")}
                   placeholder="INV-{YYYY}-{SEQ4}"
                 />
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>{t("settings.pattern_variables")}</p>
-                  {settings.invoice_number_pattern && (
-                    <p>
-                      {t("settings.preview")}{" "}
-                      <span className="font-medium text-foreground">
-                        {previewInvoiceNumber(settings.invoice_number_pattern)}
-                      </span>
-                    </p>
-                  )}
-                </div>
+                {settings.invoice_number_pattern && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.preview")}{" "}
+                    <span className="font-medium text-foreground">
+                      {previewNumberPattern(settings.invoice_number_pattern)}
+                    </span>
+                  </p>
+                )}
               </FormField>
+              <FormField label={t("settings.quote_number_pattern")}>
+                <Input
+                  value={settings.quote_number_pattern || ""}
+                  onChange={set("quote_number_pattern")}
+                  placeholder="QT-{YYYY}-{SEQ4}"
+                />
+                {settings.quote_number_pattern && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.preview")}{" "}
+                    <span className="font-medium text-foreground">
+                      {previewNumberPattern(settings.quote_number_pattern)}
+                    </span>
+                  </p>
+                )}
+              </FormField>
+              <p className="text-xs text-muted-foreground">{t("settings.pattern_variables")}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-sm">{t("settings.invoice_defaults")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormField label={t("settings.default_payment_terms")}>
                 <PaymentTermsPicker
                   value={settings.default_payment_terms || ""}

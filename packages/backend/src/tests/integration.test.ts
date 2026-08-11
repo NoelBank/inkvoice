@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { unlinkSync } from "node:fs";
 import type { Hono } from "hono";
 import { createApp } from "../app";
-import { closeDatabase, initDatabase } from "../database/connection";
+import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { resetEnvCache } from "../utils/env";
@@ -203,6 +203,14 @@ describe("Full Invoice Workflow", () => {
     expect(data.data.total_customers).toBe(2);
   });
 
+  // Later tests create quotes, so the pattern has to go back to the default.
+  function restoreQuotePattern() {
+    getDb().run("UPDATE settings SET value = ? WHERE key = ?", [
+      "QT-{YYYY}-{SEQ4}",
+      "quote_number_pattern",
+    ]);
+  }
+
   test("settings CRUD", async () => {
     const res = await authed("/api/v1/settings", {
       method: "PUT",
@@ -211,6 +219,42 @@ describe("Full Invoice Workflow", () => {
     expect(res.status).toBe(200);
     const data = (await res.json()) as any;
     expect(data.data.company_name).toBe("Test Company");
+  });
+
+  test("rejects a number pattern that cannot produce unique numbers", async () => {
+    const res = await authed("/api/v1/settings", {
+      method: "PUT",
+      body: JSON.stringify({ quote_number_pattern: "AN-{YYYY}" }),
+    });
+    expect(res.status).toBe(400);
+
+    const ok = await authed("/api/v1/settings", {
+      method: "PUT",
+      body: JSON.stringify({ quote_number_pattern: "AN-{YYYY}-{SEQ4}" }),
+    });
+    expect(ok.status).toBe(200);
+    const data = (await ok.json()) as any;
+    expect(data.data.quote_number_pattern).toBe("AN-{YYYY}-{SEQ4}");
+
+    restoreQuotePattern();
+  });
+
+  test("an unchanged bad pattern does not block other settings", async () => {
+    // Only reachable by writing straight to the DB, since the route rejects it.
+    getDb().run("UPDATE settings SET value = ? WHERE key = ?", [
+      "BAD-{YYYY}",
+      "quote_number_pattern",
+    ]);
+
+    const res = await authed("/api/v1/settings", {
+      method: "PUT",
+      body: JSON.stringify({ quote_number_pattern: "BAD-{YYYY}", company_name: "Still Saveable" }),
+    });
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as any;
+    expect(data.data.company_name).toBe("Still Saveable");
+
+    restoreQuotePattern();
   });
 
   test("cannot delete customer with invoices", async () => {

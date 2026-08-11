@@ -949,7 +949,9 @@ const fr: TranslationKeys = {
     auto_fetch_rates_label: "Récupération automatique des taux",
     tax_label: "Libellé de la taxe",
     tax_label_placeholder: "Taxe, TVA, TPS...",
+    number_patterns: "Modèles de numérotation",
     invoice_number_pattern: "Modèle de numérotation des factures",
+    quote_number_pattern: "Modèle de numérotation des devis",
     pattern_variables:
       "{YYYY} année, {YY} année courte, {MM} mois, {DD} jour, {SEQ} séquence, {SEQ4} séquence complétée, {RAND4} 4 chiffres aléatoires",
     preview: "Aperçu :",
