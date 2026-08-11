@@ -451,7 +451,9 @@ CHROME_PATH=                         # Chrome/Chromium path (auto-detected)
 # Optional
 DEMO_MODE=false                      # Enable demo mode with periodic resets; also defaults
                                      # ADMIN_USER/ADMIN_PASS to demo/demo and publishes them
-                                     # via GET /api/v1/public/config for the login-page hint
+                                     # via GET /api/v1/public/config for the login-page hint.
+                                     # Seeds a demo company profile with onboarding pre-completed,
+                                     # and seeds the sample dataset at boot on an empty database
 ```
 
 ---
