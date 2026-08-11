@@ -155,11 +155,12 @@ describe("quote number pattern", () => {
   const yyyy = String(now.getFullYear());
   const yy = yyyy.slice(-2);
   const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
 
   test("uses the configured quote pattern with all tokens", () => {
-    updateSettings({ quote_number_pattern: `AN-{YY}{MM}-{SEQ3}` });
+    updateSettings({ quote_number_pattern: `AN-{YYYY}{YY}{MM}{DD}-{RAND4}-{SEQ3}` });
     const number = generateQuoteNumber();
-    expect(number).toMatch(new RegExp(`^AN-${yy}${mm}-\\d{3}$`));
+    expect(number).toMatch(new RegExp(`^AN-${yyyy}${yy}${mm}${dd}-\\d{4}-\\d{3}$`));
   });
 
   test("falls back to QT- when no pattern is configured", () => {
@@ -208,5 +209,9 @@ describe("quote number pattern", () => {
 
     db.run("DELETE FROM invoices WHERE id = ?", [invId]);
     db.run("DELETE FROM customers WHERE id = ?", [custId]);
+    updateSettings({
+      invoice_number_pattern: `INV-{YYYY}-{SEQ4}`,
+      quote_number_pattern: `QT-{YYYY}-{SEQ4}`,
+    });
   });
 });
