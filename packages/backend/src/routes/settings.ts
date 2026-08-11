@@ -83,6 +83,14 @@ const ALLOWED_SETTINGS = new Set([
   "onboarding_completed",
 ]);
 
+// Number patterns without a varying token render the same string every time, so
+// the second document minted from one trips the UNIQUE number constraint.
+const NUMBER_PATTERN_SETTINGS = new Set([
+  "invoice_number_pattern",
+  "quote_number_pattern",
+  "credit_note_number_pattern",
+]);
+
 settings.put("/", async (c) => {
   const raw = await c.req.json().catch(() => null);
   const parsed = z.record(z.unknown()).safeParse(raw);
@@ -95,6 +103,12 @@ settings.put("/", async (c) => {
     if (!ALLOWED_SETTINGS.has(k)) continue;
     if (typeof v !== "string") {
       return c.json({ success: false, error: `Setting "${k}" must be a string` }, 400);
+    }
+    if (NUMBER_PATTERN_SETTINGS.has(k) && v !== "" && !/\{SEQ\d*\}|\{RAND4\}/.test(v)) {
+      return c.json(
+        { success: false, error: `Setting "${k}" must contain a {SEQ} or {RAND4} token` },
+        400,
+      );
     }
     filtered[k] = v;
   }
