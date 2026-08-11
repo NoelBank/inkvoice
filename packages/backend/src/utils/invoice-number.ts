@@ -59,57 +59,60 @@ export function generateQuoteNumber(): string {
   );
 }
 
-function getNextSequenceNumber(pattern: string): number {
-  const db = getDb();
-
-  // Extract the static prefix before the sequence token to find related invoices
+// Build the static prefix before the sequence token, replacing other tokens
+// with current values. Returns null when the pattern has no sequence token.
+function sequencePrefix(pattern: string): string | null {
   const seqIndex = pattern.indexOf("{SEQ");
-  if (seqIndex === -1) return 1;
+  if (seqIndex === -1) return null;
 
-  // Build prefix from pattern up to the SEQ token, replacing other tokens with current values
   const now = new Date();
   let prefix = pattern.substring(0, seqIndex);
   prefix = prefix.replace("{YYYY}", String(now.getFullYear()));
   prefix = prefix.replace("{YY}", String(now.getFullYear()).slice(-2));
   prefix = prefix.replace("{MM}", String(now.getMonth() + 1).padStart(2, "0"));
   prefix = prefix.replace("{DD}", String(now.getDate()).padStart(2, "0"));
+  return prefix;
+}
 
-  const row = db
-    .query(
-      "SELECT invoice_number FROM invoices WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1",
-    )
-    .get(`${prefix}%`) as { invoice_number: string } | null;
+// Highest sequence seen among numbers sharing the prefix, plus one.
+// Numbers whose remainder does not start with a digit are neighbours that only
+// share the prefix (credit notes counted off the invoices table under a pattern
+// nested inside the invoice prefix, say) — they carry no sequence to continue.
+function nextSequenceFrom(numbers: string[], prefix: string): number {
+  let highest = 0;
+  for (const number of numbers) {
+    const digits = number.substring(prefix.length).match(/^\d+/);
+    if (!digits) continue;
+    const num = parseInt(digits[0], 10);
+    if (num > highest) highest = num;
+  }
+  return highest + 1;
+}
 
-  if (!row) return 1;
+function getNextSequenceNumber(pattern: string): number {
+  const prefix = sequencePrefix(pattern);
+  if (prefix === null) return 1;
 
-  // Extract the numeric part after the prefix
-  const numPart = row.invoice_number.substring(prefix.length);
-  const num = parseInt(numPart, 10);
-  return Number.isNaN(num) ? 1 : num + 1;
+  const rows = getDb()
+    .query("SELECT invoice_number FROM invoices WHERE invoice_number LIKE ?")
+    .all(`${prefix}%`) as { invoice_number: string }[];
+
+  return nextSequenceFrom(
+    rows.map((r) => r.invoice_number),
+    prefix,
+  );
 }
 
 function getNextQuoteSequenceNumber(pattern: string): number {
-  const db = getDb();
+  const prefix = sequencePrefix(pattern);
+  if (prefix === null) return 1;
 
-  const seqIndex = pattern.indexOf("{SEQ");
-  if (seqIndex === -1) return 1;
+  const rows = getDb()
+    .query("SELECT quote_number FROM quotes WHERE quote_number LIKE ?")
+    .all(`${prefix}%`) as { quote_number: string }[];
 
-  const now = new Date();
-  let prefix = pattern.substring(0, seqIndex);
-  prefix = prefix.replace("{YYYY}", String(now.getFullYear()));
-  prefix = prefix.replace("{YY}", String(now.getFullYear()).slice(-2));
-  prefix = prefix.replace("{MM}", String(now.getMonth() + 1).padStart(2, "0"));
-  prefix = prefix.replace("{DD}", String(now.getDate()).padStart(2, "0"));
-
-  const row = db
-    .query(
-      "SELECT quote_number FROM quotes WHERE quote_number LIKE ? ORDER BY quote_number DESC LIMIT 1",
-    )
-    .get(`${prefix}%`) as { quote_number: string } | null;
-
-  if (!row) return 1;
-
-  const numPart = row.quote_number.substring(prefix.length);
-  const num = parseInt(numPart, 10);
-  return Number.isNaN(num) ? 1 : num + 1;
+  return nextSequenceFrom(
+    rows.map((r) => r.quote_number),
+    prefix,
+  );
 }

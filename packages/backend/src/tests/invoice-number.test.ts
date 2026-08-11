@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import crypto from "node:crypto";
 import { unlinkSync } from "node:fs";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
@@ -26,6 +26,16 @@ beforeAll(async () => {
   initDatabase();
   runMigrations();
   await seed();
+});
+
+// Patterns are global settings — restore the defaults so tests stay independent
+// of the order they run in.
+afterEach(() => {
+  updateSettings({
+    invoice_number_pattern: "INV-{YYYY}-{SEQ4}",
+    quote_number_pattern: "QT-{YYYY}-{SEQ4}",
+    credit_note_number_pattern: "CN-{YYYY}-{SEQ4}",
+  });
 });
 
 afterAll(() => {
@@ -245,6 +255,57 @@ describe("credit note number pattern", () => {
     expect(generateCreditNoteNumber()).toBe(`GUTSCHRIFT-${yyyy}-0002`);
 
     db.run("DELETE FROM invoices WHERE id = ?", [invId]);
+    db.run("DELETE FROM customers WHERE id = ?", [custId]);
+  });
+
+  test("a credit note pattern nested under the invoice prefix keeps both sequences intact", () => {
+    const db = getDb();
+    const custId = crypto.randomBytes(16).toString("hex");
+    db.run("INSERT INTO customers (id, name) VALUES (?, ?)", [custId, "NestedPrefixTest"]);
+
+    updateSettings({
+      invoice_number_pattern: `NEST-{YYYY}-{SEQ4}`,
+      credit_note_number_pattern: `NEST-{YYYY}-CN{SEQ4}`,
+    });
+
+    const invId = crypto.randomBytes(16).toString("hex");
+    db.run(
+      "INSERT INTO invoices (id, invoice_number, customer_id, status, issue_date) VALUES (?, ?, ?, 'draft', ?)",
+      [invId, `NEST-${yyyy}-0001`, custId, `${yyyy}-01-01`],
+    );
+    const cnId = crypto.randomBytes(16).toString("hex");
+    db.run(
+      "INSERT INTO invoices (id, invoice_number, customer_id, status, issue_date) VALUES (?, ?, ?, 'draft', ?)",
+      [cnId, `NEST-${yyyy}-CN0001`, custId, `${yyyy}-01-01`],
+    );
+
+    // The credit note sorts above the invoice, but carries no invoice sequence
+    expect(generateInvoiceNumber()).toBe(`NEST-${yyyy}-0002`);
+    expect(generateCreditNoteNumber()).toBe(`NEST-${yyyy}-CN0002`);
+
+    db.run("DELETE FROM invoices WHERE id IN (?, ?)", [invId, cnId]);
+    db.run("DELETE FROM customers WHERE id = ?", [custId]);
+  });
+
+  test("unpadded sequences continue numerically past 9", () => {
+    const db = getDb();
+    const custId = crypto.randomBytes(16).toString("hex");
+    db.run("INSERT INTO customers (id, name) VALUES (?, ?)", [custId, "UnpaddedSeqTest"]);
+
+    updateSettings({ credit_note_number_pattern: `PLAIN-{YYYY}-{SEQ}` });
+    const ids: string[] = [];
+    for (const seq of [9, 10]) {
+      const id = crypto.randomBytes(16).toString("hex");
+      ids.push(id);
+      db.run(
+        "INSERT INTO invoices (id, invoice_number, customer_id, status, issue_date) VALUES (?, ?, ?, 'draft', ?)",
+        [id, `PLAIN-${yyyy}-${seq}`, custId, `${yyyy}-01-01`],
+      );
+    }
+
+    expect(generateCreditNoteNumber()).toBe(`PLAIN-${yyyy}-11`);
+
+    db.run("DELETE FROM invoices WHERE id IN (?, ?)", ids);
     db.run("DELETE FROM customers WHERE id = ?", [custId]);
   });
 });
