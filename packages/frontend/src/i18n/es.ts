@@ -949,6 +949,7 @@ const es: TranslationKeys = {
     number_patterns: "Patrones de numeración",
     invoice_number_pattern: "Patrón de numeración de facturas",
     quote_number_pattern: "Patrón de numeración de presupuestos",
+    credit_note_number_pattern: "Patrón de numeración de notas de crédito",
     pattern_variables:
       "{YYYY} año, {YY} año corto, {MM} mes, {DD} día, {SEQ} secuencia, {SEQ4} secuencia con ceros, {RAND4} 4 dígitos aleatorios",
     preview: "Vista previa:",

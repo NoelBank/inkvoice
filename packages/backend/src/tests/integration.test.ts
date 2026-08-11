@@ -257,6 +257,16 @@ describe("Full Invoice Workflow", () => {
     restoreQuotePattern();
   });
 
+  test("the credit note pattern is validated too", async () => {
+    const res = await authed("/api/v1/settings", {
+      method: "PUT",
+      body: JSON.stringify({ credit_note_number_pattern: "GS-{YYYY}" }),
+    });
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as any;
+    expect(data.error).toContain("credit_note_number_pattern");
+  });
+
   test("cannot delete customer with invoices", async () => {
     const res = await authed(`/api/v1/customers/${customerId}`, { method: "DELETE" });
     expect(res.status).toBe(409);

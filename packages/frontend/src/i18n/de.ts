@@ -961,6 +961,7 @@ const de: TranslationKeys = {
     number_patterns: "Nummernkreise",
     invoice_number_pattern: "Rechnungsnummern-Muster",
     quote_number_pattern: "Angebotsnummern-Muster",
+    credit_note_number_pattern: "Gutschriftsnummern-Muster",
     pattern_variables:
       "{YYYY} Jahr, {YY} kurzes Jahr, {MM} Monat, {DD} Tag, {SEQ} laufende Nummer, {SEQ4} aufgefüllte Nummer, {RAND4} 4 Zufallsziffern",
     preview: "Vorschau:",

@@ -43,6 +43,7 @@ const ALLOWED_SETTINGS = new Set([
   "tax_label",
   "invoice_number_pattern",
   "quote_number_pattern",
+  "credit_note_number_pattern",
   "default_payment_terms",
   "default_notes",
   "locale",
@@ -86,7 +87,11 @@ const ALLOWED_SETTINGS = new Set([
 // string every time, and invoice_number/quote_number are UNIQUE, so the second
 // document would die on insert. An empty value is fine: it means "use the
 // built-in default".
-const NUMBER_PATTERN_SETTINGS = ["invoice_number_pattern", "quote_number_pattern"];
+const NUMBER_PATTERN_SETTINGS = [
+  "invoice_number_pattern",
+  "quote_number_pattern",
+  "credit_note_number_pattern",
+];
 const PATTERN_COUNTER_TOKEN = /\{SEQ\d*\}|\{RAND4\}/;
 
 settings.put("/", async (c) => {

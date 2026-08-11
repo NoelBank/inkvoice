@@ -936,6 +936,7 @@ const tr: TranslationKeys = {
     number_patterns: "Numara Desenleri",
     invoice_number_pattern: "Fatura Numara Deseni",
     quote_number_pattern: "Teklif Numara Deseni",
+    credit_note_number_pattern: "Alacak Dekontu Numara Deseni",
     pattern_variables:
       "{YYYY} yıl, {YY} kısa yıl, {MM} ay, {DD} gün, {SEQ} sıra, {SEQ4} dolgulu sıra, {RAND4} rastgele 4 hane",
     preview: "Önizleme:",
