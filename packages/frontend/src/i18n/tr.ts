@@ -124,6 +124,8 @@ const tr: TranslationKeys = {
     sign_in: "Giriş Yap",
     signing_in: "Giriş yapılıyor...",
     login_failed: "Giriş başarısız",
+    demo_credentials: "Demo girişi:",
+    demo_fill: "Doldur",
     email: "E-posta",
     forgot_title: "Şifrenizi mi unuttunuz?",
     forgot_description: "Hesap e-postanızı girin, size bir sıfırlama bağlantısı gönderelim.",

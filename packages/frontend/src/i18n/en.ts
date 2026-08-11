@@ -122,6 +122,8 @@ const en = {
     sign_in: "Sign In",
     signing_in: "Signing in...",
     login_failed: "Login failed",
+    demo_credentials: "Demo login:",
+    demo_fill: "Fill",
     email: "Email",
     forgot_title: "Forgot your password?",
     forgot_description: "Enter your account email and we'll send you a reset link.",

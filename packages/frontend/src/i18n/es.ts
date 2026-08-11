@@ -125,6 +125,8 @@ const es: TranslationKeys = {
     sign_in: "Iniciar sesión",
     signing_in: "Iniciando sesión...",
     login_failed: "Error al iniciar sesión",
+    demo_credentials: "Acceso de demostración:",
+    demo_fill: "Rellenar",
     email: "Correo electrónico",
     forgot_title: "¿Olvidó su contraseña?",
     forgot_description:

@@ -129,6 +129,8 @@ const de: TranslationKeys = {
     sign_in: "Anmelden",
     signing_in: "Anmeldung läuft...",
     login_failed: "Anmeldung fehlgeschlagen",
+    demo_credentials: "Demo-Zugang:",
+    demo_fill: "Ausfüllen",
     email: "E-Mail",
     forgot_title: "Passwort vergessen?",
     forgot_description:

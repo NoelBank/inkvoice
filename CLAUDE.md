@@ -449,7 +449,9 @@ RATE_LIMIT_WINDOW=900                # Rate limit window in seconds
 CHROME_PATH=                         # Chrome/Chromium path (auto-detected)
 
 # Optional
-DEMO_MODE=false                      # Enable demo mode with periodic resets
+DEMO_MODE=false                      # Enable demo mode with periodic resets; also defaults
+                                     # ADMIN_USER/ADMIN_PASS to demo/demo and publishes them
+                                     # via GET /api/v1/public/config for the login-page hint
 ```
 
 ---
