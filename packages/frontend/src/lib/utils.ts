@@ -29,10 +29,25 @@ function getLocaleForNumberFormat(numberFormat?: string): string {
 
 export function formatCurrency(amount: number, currency = "USD", numberFormat?: string): string {
   const locale = numberFormat ? getLocaleForNumberFormat(numberFormat) : getCurrentLocale();
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(amount);
+  } catch {
+    // Documents predating the currency dropdown can carry a half-typed code
+    // like "EU", which Intl rejects — render the amount with the code appended
+    let formatted: string;
+    try {
+      formatted = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      formatted = amount.toFixed(2);
+    }
+    return `${formatted} ${currency}`.trim();
+  }
 }
 
 export function formatDate(dateString: string, dateFormat?: string): string {
