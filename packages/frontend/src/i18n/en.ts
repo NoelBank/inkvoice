@@ -40,6 +40,8 @@ const en = {
     other: "Other",
     error_session_expired: "Your session expired. Please sign in again.",
     error_forbidden: "You do not have permission to do that.",
+    error_demo_account_locked:
+      "This is the shared demo account. Its username, password and status are locked so the next visitor can still sign in, and it cannot be deleted.",
     error_request_too_large: "That request is too large. Try a smaller file or fewer items.",
     error_server: "Something went wrong on the server. Please try again later.",
     error_unavailable: "This service is temporarily unavailable. Please try again.",
@@ -122,6 +124,8 @@ const en = {
     sign_in: "Sign In",
     signing_in: "Signing in...",
     login_failed: "Login failed",
+    demo_credentials: "Demo login:",
+    demo_fill: "Fill",
     email: "Email",
     forgot_title: "Forgot your password?",
     forgot_description: "Enter your account email and we'll send you a reset link.",
@@ -930,7 +934,10 @@ const en = {
     auto_fetch_rates_label: "Auto-fetch rates",
     tax_label: "Tax Label",
     tax_label_placeholder: "Tax, VAT, GST...",
+    number_patterns: "Number Patterns",
     invoice_number_pattern: "Invoice Number Pattern",
+    quote_number_pattern: "Quote Number Pattern",
+    credit_note_number_pattern: "Credit Note Number Pattern",
     pattern_variables:
       "{YYYY} year, {YY} short year, {MM} month, {DD} day, {SEQ} sequence, {SEQ4} padded sequence, {RAND4} random 4 digits",
     preview: "Preview:",

@@ -42,6 +42,8 @@ const fr: TranslationKeys = {
     other: "Autre",
     error_session_expired: "Votre session a expiré. Veuillez vous reconnecter.",
     error_forbidden: "Vous n'avez pas l'autorisation d'effectuer cette action.",
+    error_demo_account_locked:
+      "Il s'agit du compte de démonstration partagé. Son nom d'utilisateur, son mot de passe et son statut sont verrouillés afin que le prochain visiteur puisse se connecter, et il ne peut pas être supprimé.",
     error_request_too_large:
       "Cette requête est trop volumineuse. Essayez un fichier plus petit ou moins d'éléments.",
     error_server: "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard.",
@@ -125,6 +127,8 @@ const fr: TranslationKeys = {
     sign_in: "Se connecter",
     signing_in: "Connexion...",
     login_failed: "Échec de la connexion",
+    demo_credentials: "Connexion démo :",
+    demo_fill: "Remplir",
     email: "E-mail",
     forgot_title: "Mot de passe oublié ?",
     forgot_description:
@@ -945,7 +949,10 @@ const fr: TranslationKeys = {
     auto_fetch_rates_label: "Récupération automatique des taux",
     tax_label: "Libellé de la taxe",
     tax_label_placeholder: "Taxe, TVA, TPS...",
+    number_patterns: "Modèles de numérotation",
     invoice_number_pattern: "Modèle de numérotation des factures",
+    quote_number_pattern: "Modèle de numérotation des devis",
+    credit_note_number_pattern: "Modèle de numérotation des avoirs",
     pattern_variables:
       "{YYYY} année, {YY} année courte, {MM} mois, {DD} jour, {SEQ} séquence, {SEQ4} séquence complétée, {RAND4} 4 chiffres aléatoires",
     preview: "Aperçu :",
