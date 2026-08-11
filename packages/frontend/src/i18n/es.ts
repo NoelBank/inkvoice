@@ -42,6 +42,8 @@ const es: TranslationKeys = {
     other: "Otro",
     error_session_expired: "Su sesión ha expirado. Inicie sesión de nuevo.",
     error_forbidden: "No tiene permiso para hacer eso.",
+    error_demo_account_locked:
+      "Esta es la cuenta de demostración compartida. Su nombre de usuario, su contraseña y su estado están bloqueados para que el siguiente visitante pueda iniciar sesión, y no se puede eliminar.",
     error_request_too_large:
       "La solicitud es demasiado grande. Pruebe con un archivo más pequeño o menos elementos.",
     error_server: "Algo salió mal en el servidor. Inténtelo de nuevo más tarde.",
@@ -125,6 +127,8 @@ const es: TranslationKeys = {
     sign_in: "Iniciar sesión",
     signing_in: "Iniciando sesión...",
     login_failed: "Error al iniciar sesión",
+    demo_credentials: "Acceso de demostración:",
+    demo_fill: "Rellenar",
     email: "Correo electrónico",
     forgot_title: "¿Olvidó su contraseña?",
     forgot_description:

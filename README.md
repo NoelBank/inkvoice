@@ -44,7 +44,7 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 
 </div>
 
-> Try it right now on the **[live demo](https://demo.inkvoice.app)** — no signup required.
+> Try it right now on the **[live demo](https://demo.inkvoice.app)** — no signup required, sign in with `demo` / `demo`.
 
 ## Features
 
@@ -160,8 +160,8 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 
 | Variable                  | Required | Default               | Description                                                          |
 | ------------------------- | -------- | --------------------- | -------------------------------------------------------------------- |
-| `ADMIN_USER`              | yes      | `admin`               | Initial admin username (created on first boot if no users exist)     |
-| `ADMIN_PASS`              | yes      | `changeme`            | Initial admin password                                               |
+| `ADMIN_USER`              | yes      | `admin`               | Initial admin username (created on first boot if no users exist). `demo` when `DEMO_MODE=true` |
+| `ADMIN_PASS`              | yes      | `changeme`            | Initial admin password. `demo` when `DEMO_MODE=true`                 |
 | `JWT_SECRET`              | yes      | (dev-only fallback)   | JWT signing secret — must be ≥ 32 chars in production                |
 | `DATABASE_PATH`           | no       | `./data/invoice.db`   | SQLite database file path                                            |
 | `PORT`                    | no       | `3000`                | HTTP listen port                                                     |
@@ -187,7 +187,7 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `PAYPAL_SECRET`           | no       | —                     | PayPal REST app secret                                               |
 | `PAYPAL_WEBHOOK_ID`       | no       | —                     | PayPal webhook ID (signature verification)                           |
 | `PAYPAL_ENV`              | no       | `sandbox`             | PayPal environment: `sandbox` or `live`                              |
-| `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys)  |
+| `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys). Also defaults the admin login to `demo`/`demo` and shows it on the sign-in page |
 | `DEMO_RESET_INTERVAL`     | no       | `86400000`            | Demo reset interval in ms (default 24h)                              |
 
 ## Tech Stack

@@ -18,6 +18,8 @@ export function formatApiError(err: unknown, t: TFunction): string {
         return t("common.error_session_expired");
       case "FORBIDDEN":
         return t("common.error_forbidden");
+      case "DEMO_ACCOUNT_LOCKED":
+        return t("common.error_demo_account_locked");
       case "PAYLOAD_TOO_LARGE":
         return t("common.error_request_too_large");
       case "INTERNAL_ERROR":
