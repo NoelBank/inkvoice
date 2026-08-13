@@ -175,4 +175,76 @@ describe("schema migration runner", () => {
     const after = db.query("SELECT COUNT(*) as c FROM schema_migrations").get() as { c: number };
     expect(after.c).toBe(LATEST_MIGRATION_VERSION);
   });
+
+  test("version 24 creates the PEPPOL transport tables and inbox columns", () => {
+    runWith(db, () => runMigrations());
+
+    const tables = [
+      "einvoice_transmissions",
+      "einvoice_transmission_attempts",
+      "peppol_participants",
+      "einvoice_webhook_events",
+    ];
+    for (const name of tables) {
+      const row = db
+        .query("SELECT name FROM sqlite_master WHERE type='table' AND name = ?")
+        .get(name) as { name: string } | null;
+      expect(row?.name, name).toBe(name);
+    }
+
+    // Column additions land on einvoice_inbox without disturbing existing rows.
+    const custCols = db
+      .query(
+        "SELECT name FROM pragma_table_info('einvoice_inbox') WHERE name LIKE 'source' OR name LIKE 'transport_id' OR name LIKE 'provider_message_id' OR name LIKE 'sender_scheme' OR name LIKE 'sender_id'",
+      )
+      .all() as { name: string }[];
+    expect(custCols.map((c) => c.name).sort()).toEqual([
+      "provider_message_id",
+      "sender_id",
+      "sender_scheme",
+      "source",
+      "transport_id",
+    ]);
+
+    const customerCols = db
+      .query("SELECT name FROM pragma_table_info('customers') WHERE name LIKE 'peppol_%'")
+      .all() as { name: string }[];
+    expect(customerCols.map((c) => c.name).sort()).toEqual([
+      "peppol_checked_at",
+      "peppol_reachable",
+    ]);
+
+    // The partial unique index on provider_message_id exists.
+    const idx = db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name = 'idx_einvoice_tx_provider_msg'",
+      )
+      .get() as { name: string } | null;
+    expect(idx?.name).toBe("idx_einvoice_tx_provider_msg");
+  });
+
+  test("version 24 applies on a database already at version 23", () => {
+    // Apply everything except the last migration, then apply the remainder.
+    runWith(db, () => runMigrations());
+    db.exec(`DELETE FROM schema_migrations WHERE version = ${LATEST_MIGRATION_VERSION}`);
+
+    // Simulate a real v23 tip: drop the v24 tables (as if never created).
+    db.exec("DROP TABLE einvoice_webhook_events");
+    db.exec("DROP TABLE peppol_participants");
+    db.exec("DROP TABLE einvoice_transmission_attempts");
+    db.exec("DROP TABLE einvoice_transmissions");
+
+    runWith(db, () => runMigrations());
+
+    const row = db
+      .query("SELECT version FROM schema_migrations WHERE version = ?")
+      .get(LATEST_MIGRATION_VERSION) as { version: number } | null;
+    expect(row?.version).toBe(LATEST_MIGRATION_VERSION);
+    const exists = db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name = 'einvoice_transmissions'",
+      )
+      .get() as { name: string } | null;
+    expect(exists?.name).toBe("einvoice_transmissions");
+  });
 });

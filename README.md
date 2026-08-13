@@ -68,6 +68,12 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 - **E-invoice inbox** — import, parse and process incoming XRechnung / ZUGFeRD files
 - Auto-attach the e-invoice to sent invoice emails (per-invoice or globally)
 
+**PEPPOL transport**
+- Send invoices and credit notes over the **PEPPOL network** (provider-agnostic; peppol.sh driver ships with bring-your-own credentials)
+- **Receive** inbound PEPPOL documents straight into the e-invoice inbox
+- Delivery state machine with retries and per-attempt audit trail
+- Register your business as a PEPPOL receiver, with conflict detection (no accidental access-point takeover)
+
 **Money & books**
 - **Multi-currency** with live exchange rates + base-currency consolidated reporting
 - **Expense tracking** — billable expenses, receipts and categories
@@ -187,6 +193,9 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `PAYPAL_SECRET`           | no       | —                     | PayPal REST app secret                                               |
 | `PAYPAL_WEBHOOK_ID`       | no       | —                     | PayPal webhook ID — required for PayPal (signature verification)     |
 | `PAYPAL_ENV`              | no       | `sandbox`             | PayPal environment: `sandbox` or `live`                              |
+| `PEPPOL_SH_API_KEY`       | no       | —                     | peppol.sh API key — enables the PEPPOL transport driver             |
+| `PEPPOL_SH_WEBHOOK_SECRET`| no       | —                     | HMAC secret verifying inbound PEPPOL callbacks (required to receive)|
+| `PEPPOL_SH_BASE_URL`      | no       | `https://api.peppol.sh`| Provider base URL override (sandbox/proxy). Must be https            |
 | `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys). Also defaults the admin login to `demo`/`demo` and shows it on the sign-in page |
 | `DEMO_RESET_INTERVAL`     | no       | `86400000`            | Demo reset interval in ms (default 24h)                              |
 

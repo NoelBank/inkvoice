@@ -1,4 +1,4 @@
-import { Clock, Copy, DollarSign, FileText, Save } from "lucide-react";
+import { Clock, Copy, DollarSign, FileText, Loader2, Save, SearchCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ interface Props {
 export default function CustomerForm({ onSave }: Props) {
   const { t, language } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
+  const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,6 +58,11 @@ export default function CustomerForm({ onSave }: Props) {
     token: null,
   });
   const [portalBusy, setPortalBusy] = useState(false);
+  const [peppolChecking, setPeppolChecking] = useState(false);
+  const [peppolResult, setPeppolResult] = useState<{
+    ok: "reachable" | "unreachable" | "conflict" | "error";
+    detail: string;
+  } | null>(null);
   const [form, setForm] = useState({
     name: navState?.prefillName ?? "",
     email: "",
@@ -416,6 +422,76 @@ export default function CustomerForm({ onSave }: Props) {
                     />
                   </FormField>
                 </div>
+                {peppolEnabled && (
+                  <div className="pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        peppolChecking ||
+                        !form.einvoice_receiver_id ||
+                        !form.einvoice_receiver_scheme
+                      }
+                      onClick={async () => {
+                        setPeppolChecking(true);
+                        setPeppolResult(null);
+                        try {
+                          const res = await api.lookupPeppolParticipant(
+                            form.einvoice_receiver_scheme,
+                            form.einvoice_receiver_id,
+                            isEdit ? id : undefined,
+                          );
+                          const cap = res.data;
+                          if (cap.servedElsewhere) {
+                            setPeppolResult({
+                              ok: "conflict",
+                              detail: cap.accessPointName
+                                ? t("peppol.lookup_conflict_with", {
+                                    name: cap.accessPointName,
+                                  })
+                                : t("peppol.lookup_conflict"),
+                            });
+                          } else if (cap.exists) {
+                            setPeppolResult({
+                              ok: "reachable",
+                              detail: t("peppol.lookup_reachable", {
+                                types: cap.documentTypes.join(", ") || "invoice",
+                              }),
+                            });
+                          } else {
+                            setPeppolResult({
+                              ok: "unreachable",
+                              detail: t("peppol.lookup_unreachable"),
+                            });
+                          }
+                        } catch (err) {
+                          setPeppolResult({ ok: "error", detail: formatApiError(err, t) });
+                        } finally {
+                          setPeppolChecking(false);
+                        }
+                      }}
+                    >
+                      {peppolChecking ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <SearchCheck className="h-4 w-4" />
+                      )}
+                      {t("peppol.check_button")}
+                    </Button>
+                    {peppolResult && (
+                      <p
+                        className={`mt-2 text-sm ${
+                          peppolResult.ok === "reachable"
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}
+                      >
+                        {peppolResult.detail}
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

@@ -347,11 +347,13 @@ export default function Settings() {
           <TabsTrigger value="products">{t("settings.tab_products")}</TabsTrigger>
           <TabsTrigger value="templates">{t("settings.tab_templates")}</TabsTrigger>
           <TabsTrigger value="api">{t("settings.tab_api")}</TabsTrigger>
-          {getSettingsTabs().map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {t(tab.label)}
-            </TabsTrigger>
-          ))}
+          {getSettingsTabs()
+            .filter((tab) => !(tab.hidden?.() ?? false))
+            .map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id}>
+                {t(tab.label)}
+              </TabsTrigger>
+            ))}
         </TabsList>
 
         <TabsContent value="general" className="max-w-3xl">
@@ -1412,11 +1414,13 @@ export default function Settings() {
           <ApiTokensCard />
         </TabsContent>
 
-        {getSettingsTabs().map((spec) => (
-          <TabsContent key={spec.id} value={spec.id} className="space-y-4">
-            {spec.content}
-          </TabsContent>
-        ))}
+        {getSettingsTabs()
+          .filter((spec) => !(spec.hidden?.() ?? false))
+          .map((spec) => (
+            <TabsContent key={spec.id} value={spec.id} className="space-y-4">
+              {spec.content}
+            </TabsContent>
+          ))}
       </Tabs>
 
       {tab !== "templates" &&

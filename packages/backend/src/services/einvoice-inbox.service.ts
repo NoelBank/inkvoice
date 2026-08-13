@@ -25,6 +25,12 @@ export interface InboxItem {
   customer_id: string | null;
   parse_status: ParseStatus;
   parse_error: string | null;
+  /** "upload" (manual) or "peppol" (network arrival). */
+  source: string;
+  transport_id: string | null;
+  provider_message_id: string | null;
+  sender_scheme: string | null;
+  sender_id: string | null;
   created_at: string;
   processed_at: string | null;
 }
@@ -42,6 +48,12 @@ export function importEinvoiceFile(opts: {
   fileName: string;
   contentType: string;
   bytes: Uint8Array;
+  /** "upload" (default) or "peppol". */
+  source?: string;
+  transportId?: string;
+  providerMessageId?: string;
+  senderScheme?: string;
+  senderId?: string;
 }): { id: string; duplicate: boolean } {
   const db = getDb();
   const raw = Buffer.from(opts.bytes);
@@ -62,8 +74,9 @@ export function importEinvoiceFile(opts: {
   db.query(
     `INSERT INTO einvoice_inbox
        (id, document_number, issue_date, supplier_name, supplier_vat_id, total, currency,
-        file_name, content_type, raw_content, raw_hash, status, parse_status, parse_error)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?)`,
+        file_name, content_type, raw_content, raw_hash, status, parse_status, parse_error,
+        source, transport_id, provider_message_id, sender_scheme, sender_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     parsed?.document_number ?? null,
@@ -82,6 +95,11 @@ export function importEinvoiceFile(opts: {
       : text
         ? "Could not extract invoice data from XML (unsupported structure)."
         : "Only XML e-invoices can be parsed; the raw file was stored for archiving.",
+    opts.source ?? "upload",
+    opts.transportId ?? null,
+    opts.providerMessageId ?? null,
+    opts.senderScheme ?? null,
+    opts.senderId ?? null,
   );
   return { id, duplicate: false };
 }
@@ -146,6 +164,11 @@ function toItem(row: Record<string, unknown>): InboxItem {
     customer_id: row.customer_id != null ? String(row.customer_id) : null,
     parse_status: row.parse_status as ParseStatus,
     parse_error: row.parse_error != null ? String(row.parse_error) : null,
+    source: row.source != null ? String(row.source) : "upload",
+    transport_id: row.transport_id != null ? String(row.transport_id) : null,
+    provider_message_id: row.provider_message_id != null ? String(row.provider_message_id) : null,
+    sender_scheme: row.sender_scheme != null ? String(row.sender_scheme) : null,
+    sender_id: row.sender_id != null ? String(row.sender_id) : null,
     created_at: String(row.created_at),
     processed_at: row.processed_at != null ? String(row.processed_at) : null,
   };

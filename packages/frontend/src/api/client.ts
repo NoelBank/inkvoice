@@ -245,6 +245,89 @@ export const api = {
       body: JSON.stringify({ customer_id: customerId }),
     }),
   downloadEinvoiceInboxRaw: (id: string) => `${API_BASE}/einvoices/inbox/${id}/raw`,
+  transmitEinvoice: (invoiceId: string) =>
+    request<{ success: boolean; data: { transmission_id: string } }>(
+      `/einvoices/${invoiceId}/transmit`,
+      { method: "POST" },
+    ),
+  listEinvoiceTransmissions: (invoiceId: string) =>
+    request<{
+      success: boolean;
+      data: {
+        transmissions: Array<{
+          id: string;
+          transport_id: string;
+          document_type: string;
+          status: "queued" | "sending" | "sent" | "delivered" | "rejected" | "failed";
+          status_detail: string | null;
+          provider_message_id: string | null;
+          attempt_count: number;
+          created_at: string;
+          sent_at: string | null;
+          delivered_at: string | null;
+        }>;
+        attempts: Record<
+          string,
+          Array<{
+            id: string;
+            attempt_number: number;
+            status_code: number | null;
+            error_message: string | null;
+            response_body: string | null;
+            created_at: string;
+          }>
+        >;
+      };
+    }>(`/einvoices/${invoiceId}/transmissions`),
+  retryEinvoiceTransmission: (transmissionId: string) =>
+    request<{ success: boolean }>(`/einvoices/transmissions/${transmissionId}/retry`, {
+      method: "POST",
+    }),
+  cancelEinvoiceTransmission: (transmissionId: string) =>
+    request<{ success: boolean }>(`/einvoices/transmissions/${transmissionId}/cancel`, {
+      method: "POST",
+    }),
+  getPeppolParticipant: () =>
+    request<{ success: boolean; data: any }>("/einvoices/peppol/participant"),
+  registerPeppolParticipant: (data: {
+    scheme: string;
+    identifier: string;
+    legal_name: string;
+    country_code: string;
+    contact_email: string;
+  }) =>
+    request<{ success: boolean; data: any }>("/einvoices/peppol/participant", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  refreshPeppolParticipant: () =>
+    request<{ success: boolean; data: any }>("/einvoices/peppol/participant/refresh", {
+      method: "POST",
+    }),
+  deregisterPeppolParticipant: () =>
+    request<{ success: boolean }>("/einvoices/peppol/participant", { method: "DELETE" }),
+  lookupPeppolParticipant: (scheme: string, identifier: string, customerId?: string) =>
+    request<{
+      success: boolean;
+      data: {
+        exists: boolean;
+        documentTypes: string[];
+        accessPointName: string | null;
+        servedElsewhere: boolean;
+      };
+    }>("/einvoices/peppol/lookup", {
+      method: "POST",
+      body: JSON.stringify({
+        scheme,
+        identifier,
+        ...(customerId ? { customer_id: customerId } : {}),
+      }),
+    }),
+  listPeppolTransports: () =>
+    request<{
+      success: boolean;
+      data: Array<{ id: string; label: string; networks: string[]; configured: boolean }>;
+    }>("/einvoices/peppol/transports"),
   createCreditNote: (id: string) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/credit-note`, { method: "POST" }),
   listCreditNotes: (id: string) =>

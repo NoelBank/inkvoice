@@ -4,6 +4,7 @@ import { runMigrations } from "../database/migrations";
 import { seed, seedDemoData } from "../database/seed";
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
+import { startTransportWorker, stopTransportWorker } from "./einvoice-transport.service";
 import { processAllDue } from "./recurring.service";
 import { processAllReminders } from "./reminder.service";
 
@@ -19,6 +20,10 @@ export function startScheduler(intervalMs = 60 * 60 * 1000): void {
   // Then run periodically
   intervalId = setInterval(runScheduledTasks, intervalMs);
   logger.info({ intervalSec: intervalMs / 1000 }, "Scheduler started");
+
+  // The e-invoice transport queue needs a much faster tick than the hourly
+  // scheduler; it keeps its own 60s worker under the same lifecycle owner.
+  startTransportWorker();
 
   // Start demo reset job if demo mode is enabled
   const env = getEnv();
@@ -37,6 +42,7 @@ export function stopScheduler(): void {
     clearInterval(demoIntervalId);
     demoIntervalId = null;
   }
+  stopTransportWorker();
 }
 
 // Extension point: deleting and re-seeding env.DATABASE_PATH only makes sense

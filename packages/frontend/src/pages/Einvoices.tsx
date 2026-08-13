@@ -33,6 +33,11 @@ interface InboxItem {
   customer_id: string | null;
   parse_status: "pending" | "ok" | "error";
   parse_error: string | null;
+  source?: string;
+  transport_id?: string | null;
+  provider_message_id?: string | null;
+  sender_scheme?: string | null;
+  sender_id?: string | null;
   created_at: string;
 }
 
@@ -168,6 +173,7 @@ export default function Einvoices() {
                   <TableHead>{t("einvoice.supplier")}</TableHead>
                   <TableHead>{t("einvoice.issue_date")}</TableHead>
                   <TableHead className="text-right">{t("einvoice.total")}</TableHead>
+                  <TableHead>{t("einvoice.source")}</TableHead>
                   <TableHead>{t("einvoice.parse_status")}</TableHead>
                   <TableHead>{t("einvoice.actions")}</TableHead>
                 </TableRow>
@@ -192,6 +198,21 @@ export default function Einvoices() {
                       {item.total != null
                         ? formatCurrency(item.total, item.currency || "EUR")
                         : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {item.source === "peppol" ? (
+                        <Badge
+                          variant="outline"
+                          className="text-blue-600 dark:text-blue-400"
+                          title={
+                            item.sender_id ? `${item.sender_scheme}:${item.sender_id}` : undefined
+                          }
+                        >
+                          {t("einvoice.source_peppol")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">{t("einvoice.source_upload")}</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {item.parse_status === "ok" ? (

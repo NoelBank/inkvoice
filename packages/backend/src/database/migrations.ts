@@ -790,6 +790,95 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 24,
+    name: "peppol_transport",
+    up: (db) => {
+      // Outbound transmissions. One row per attempt-set (not per attempt); the
+      // attempt log lives in einvoice_transmission_attempts so a retried send
+      // keeps one stable identity and one idempotency key.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS einvoice_transmissions (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+          einvoice_document_id TEXT NOT NULL REFERENCES einvoice_documents(id) ON DELETE CASCADE,
+          transport_id TEXT NOT NULL,
+          document_type TEXT NOT NULL,            -- invoice | credit-note
+          sender_scheme TEXT NOT NULL,
+          sender_id TEXT NOT NULL,
+          receiver_scheme TEXT NOT NULL,
+          receiver_id TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'queued',  -- queued|sending|sent|delivered|rejected|failed
+          status_detail TEXT,
+          provider_message_id TEXT,
+          attempt_count INTEGER NOT NULL DEFAULT 0,
+          next_attempt_at TEXT,                   -- NULL when terminal
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
+          sent_at TEXT,
+          delivered_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_einvoice_tx_invoice ON einvoice_transmissions(invoice_id);
+        CREATE INDEX IF NOT EXISTS idx_einvoice_tx_status ON einvoice_transmissions(status);
+        CREATE INDEX IF NOT EXISTS idx_einvoice_tx_due ON einvoice_transmissions(next_attempt_at)
+          WHERE next_attempt_at IS NOT NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_einvoice_tx_provider_msg
+          ON einvoice_transmissions(provider_message_id) WHERE provider_message_id IS NOT NULL;
+
+        -- Per-attempt audit trail. Mirrors webhook_deliveries in spirit.
+        CREATE TABLE IF NOT EXISTS einvoice_transmission_attempts (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          transmission_id TEXT NOT NULL REFERENCES einvoice_transmissions(id) ON DELETE CASCADE,
+          attempt_number INTEGER NOT NULL,
+          status_code INTEGER,
+          error_message TEXT,
+          response_body TEXT,                     -- truncated to 4000 chars
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_einvoice_tx_attempts_tx
+          ON einvoice_transmission_attempts(transmission_id);
+
+        -- Our own network identity and its registration lifecycle. One active
+        -- row per (transport, role) in the single-company OSS app; the table
+        -- keeps history.
+        CREATE TABLE IF NOT EXISTS peppol_participants (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          transport_id TEXT NOT NULL,
+          scheme TEXT NOT NULL,
+          identifier TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'receiver',  -- receiver | sender
+          status TEXT NOT NULL DEFAULT 'kyc_pending',
+          status_detail TEXT,
+          provider_ref TEXT,
+          action_url TEXT,
+          registered_at TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_peppol_participants_identity
+          ON peppol_participants(transport_id, scheme, identifier, role);
+
+        -- Idempotency guard for inbound callbacks. Providers retry aggressively.
+        CREATE TABLE IF NOT EXISTS einvoice_webhook_events (
+          id TEXT PRIMARY KEY,                    -- provider event id
+          transport_id TEXT NOT NULL,
+          received_at TEXT DEFAULT (datetime('now'))
+        );
+      `);
+
+      // einvoice_inbox: distinguish network arrivals from manual uploads.
+      addColumnIfMissing(db, "einvoice_inbox", "source", "TEXT DEFAULT 'upload'");
+      addColumnIfMissing(db, "einvoice_inbox", "transport_id", "TEXT");
+      addColumnIfMissing(db, "einvoice_inbox", "provider_message_id", "TEXT");
+      addColumnIfMissing(db, "einvoice_inbox", "sender_scheme", "TEXT");
+      addColumnIfMissing(db, "einvoice_inbox", "sender_id", "TEXT");
+
+      // customers: cache the last network lookup so the invoice form can warn
+      // early.
+      addColumnIfMissing(db, "customers", "peppol_checked_at", "TEXT");
+      addColumnIfMissing(db, "customers", "peppol_reachable", "INTEGER");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

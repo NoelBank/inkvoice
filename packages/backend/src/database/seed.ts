@@ -283,6 +283,8 @@ export function seedDemoData(): void {
       phone: "+46-8-1234",
       city: "Stockholm",
       country: "SE",
+      einvoice_receiver_scheme: "0007",
+      einvoice_receiver_id: "5566778899",
     },
     {
       name: "Berlin Consulting GmbH",
@@ -290,6 +292,8 @@ export function seedDemoData(): void {
       phone: "+49-30-5678",
       city: "Berlin",
       country: "DE",
+      einvoice_receiver_scheme: "9930",
+      einvoice_receiver_id: "DE123456789",
     },
     {
       name: "Tokyo Digital Co",
@@ -305,8 +309,18 @@ export function seedDemoData(): void {
     const id = crypto.randomBytes(16).toString("hex");
     customerIds.push(id);
     db.run(
-      "INSERT INTO customers (id, name, email, phone, city, country) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, c.name, c.email, c.phone, c.city, c.country],
+      `INSERT INTO customers (id, name, email, phone, city, country, einvoice_receiver_scheme, einvoice_receiver_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        c.name,
+        c.email,
+        c.phone,
+        c.city,
+        c.country,
+        c.einvoice_receiver_scheme ?? null,
+        c.einvoice_receiver_id ?? null,
+      ],
     );
   }
 

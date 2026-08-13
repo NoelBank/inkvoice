@@ -81,6 +81,12 @@ const ALLOWED_SETTINGS = new Set([
   "watermark_image",
   "watermark_enabled",
   "onboarding_completed",
+  "peppol_enabled",
+  "peppol_transport",
+  "peppol_sender_scheme",
+  "peppol_sender_id",
+  "peppol_auto_send",
+  "peppol_environment",
 ]);
 
 // Number patterns with neither a sequence nor a random token render the same

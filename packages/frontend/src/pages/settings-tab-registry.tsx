@@ -13,6 +13,8 @@ export interface SettingsTabSpec {
   content: ReactNode;
   /** When true, hide the floating save-settings button on this tab. */
   hideSave?: boolean;
+  /** Evaluated at render time; when true the tab trigger is not shown. */
+  hidden?: () => boolean;
 }
 
 const tabs: SettingsTabSpec[] = [];

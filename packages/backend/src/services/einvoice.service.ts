@@ -51,16 +51,21 @@ function normalizeFormat(fmt: string | null | undefined): EinvoiceFormat {
   return "zugferd";
 }
 
-export async function emitEinvoice(invoiceId: string): Promise<EinvoiceEmitResult> {
+export async function emitEinvoice(
+  invoiceId: string,
+  opts: { forceFormat?: EinvoiceFormat } = {},
+): Promise<EinvoiceEmitResult> {
   const data = buildXmlInvoiceData(invoiceId);
   const issues = validateEinvoice(data);
   const settings = getAllSettings();
 
-  const format = resolveEinvoiceFormat({
-    customerFormat: data.customer.einvoice_format,
-    settingFormat: settings.einvoice_format,
-    leitwegId: data.customer.leitweg_id,
-  });
+  const format =
+    opts.forceFormat ??
+    resolveEinvoiceFormat({
+      customerFormat: data.customer.einvoice_format,
+      settingFormat: settings.einvoice_format,
+      leitwegId: data.customer.leitweg_id,
+    });
 
   const profile = getProfile(formatToProfileId(format));
   if (!profile) {
