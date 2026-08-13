@@ -10,7 +10,7 @@ let stripeClientPromise: Promise<Stripe> | null = null;
 
 export function isStripeConfigured(): boolean {
   const env = getEnv();
-  return !!env.STRIPE_SECRET_KEY;
+  return !!(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET);
 }
 
 function getStripe(): Promise<Stripe> {

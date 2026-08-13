@@ -144,13 +144,32 @@ describe("Gateway registry", () => {
     updateSettings({ paypal_enabled: "true" });
     expect(isGatewayEnabled(paypal)).toBe(false);
 
-    // Credentials present + setting on → enabled.
+    // Credentials without the webhook ID → still disabled (webhooks would fail).
     process.env.PAYPAL_CLIENT_ID = "test-client";
     process.env.PAYPAL_SECRET = "test-secret";
+    resetEnvCache();
+    expect(isGatewayEnabled(paypal)).toBe(false);
+
+    // Full credentials + setting on → enabled.
+    process.env.PAYPAL_WEBHOOK_ID = "wh-test";
     resetEnvCache();
     expect(isGatewayEnabled(paypal)).toBe(true);
 
     expect(listEnabledGatewayMeta()).toEqual([{ id: "paypal", label: "PayPal" }]);
+  });
+
+  test("stripe needs the webhook secret too", () => {
+    const stripe = getGateway("stripe")!;
+    updateSettings({ stripe_enabled: "true" });
+
+    // Secret key alone is not enough.
+    process.env.STRIPE_SECRET_KEY = "sk_test";
+    resetEnvCache();
+    expect(isGatewayEnabled(stripe)).toBe(false);
+
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
+    resetEnvCache();
+    expect(isGatewayEnabled(stripe)).toBe(true);
   });
 });
 
@@ -161,7 +180,10 @@ describe("Public pay endpoint gateway selection", () => {
   });
 
   test("rejects a disabled gateway", async () => {
-    // Stripe has no credentials/setting in this suite.
+    // Stripe gets disabled in this suite regardless of what prior tests set.
+    process.env.STRIPE_SECRET_KEY = "";
+    process.env.STRIPE_WEBHOOK_SECRET = "";
+    resetEnvCache();
     const res = await pay("stripe");
     expect(res.status).toBe(400);
   });

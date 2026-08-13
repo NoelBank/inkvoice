@@ -65,7 +65,9 @@ Optional. Enables sending invoices and quotes by email.
 
 Optional. Enables customers to pay invoices online from the public invoice link.
 Configure either gateway or both; each is enabled per workspace under **Settings →
-Payments** once its credentials are set.
+Payments** once its credentials (including the webhook secret/ID) are set. A
+gateway without its webhook credential will not appear as an option, because
+payments are confirmed server-side via webhooks.
 
 ### Stripe
 
@@ -73,7 +75,7 @@ Payments** once its credentials are set.
 |----------|---------|-------------|
 | `STRIPE_SECRET_KEY` | — | Stripe secret key (`sk_...`) |
 | `STRIPE_PUBLISHABLE_KEY` | — | Stripe publishable key (`pk_...`) |
-| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret (`whsec_...`) |
+| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret (`whsec_...`) — required |
 
 ### PayPal
 
@@ -81,7 +83,7 @@ Payments** once its credentials are set.
 |----------|---------|-------------|
 | `PAYPAL_CLIENT_ID` | — | PayPal REST app client ID |
 | `PAYPAL_SECRET` | — | PayPal REST app secret |
-| `PAYPAL_WEBHOOK_ID` | — | PayPal webhook ID (for signature verification) |
+| `PAYPAL_WEBHOOK_ID` | — | PayPal webhook ID (for signature verification) — required |
 | `PAYPAL_ENV` | `sandbox` | `sandbox` or `live` |
 
 See [Online Payments](/features/payments) for setup instructions.

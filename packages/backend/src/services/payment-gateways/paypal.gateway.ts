@@ -134,7 +134,7 @@ export const paypalGateway: PaymentGateway = {
 
   isConfigured(): boolean {
     const env = getEnv();
-    return !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET);
+    return !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET && env.PAYPAL_WEBHOOK_ID);
   },
 
   async createCheckout(ctx: CheckoutContext): Promise<{ url: string }> {
