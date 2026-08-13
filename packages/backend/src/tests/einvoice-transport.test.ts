@@ -25,6 +25,7 @@ import {
 import { peppolShTransport } from "../services/einvoice-transports/peppol-sh.transport";
 import { getActiveTransport, listTransports } from "../services/einvoice-transports/registry";
 import {
+  type SendContext,
   TransportHttpError,
   type TransportWebhookResult,
 } from "../services/einvoice-transports/types";
@@ -73,6 +74,81 @@ async function makeEnqueueableInvoice() {
     }),
   });
   invoiceId = ((await inv.json()) as any).data.id;
+}
+
+// Minimal structured invoice payload for direct driver calls.
+function sendCtx(number: string): SendContext {
+  return {
+    transmissionId: "tx-42",
+    sender: { scheme: "0208", value: "A" },
+    receiver: { scheme: "0208", value: "B" },
+    documentType: "invoice" as const,
+    xml: "<Invoice/>",
+    hash: "h",
+    documentNumber: number,
+    data: {
+      invoice_number: number,
+      issue_date: "2026-08-01",
+      due_date: null,
+      currency: "EUR",
+      locale: null,
+      type: "invoice" as const,
+      notes: null,
+      payment_terms: null,
+      subtotal: 500,
+      tax_total: 105,
+      discount_amount: 0,
+      total: 605,
+      supplier: {
+        name: "Seller BV",
+        email: null,
+        phone: null,
+        address: null,
+        street: "Hoofdstraat 5",
+        city: "Brussel",
+        postal_code: "1000",
+        country: "BE",
+        tax_id: "BE0123456789",
+        tax_number: null,
+        bank_details: null,
+        peppol_endpoint_id: null,
+        peppol_scheme_id: null,
+      },
+      customer: {
+        name: "Buyer BV",
+        email: null,
+        phone: null,
+        address_line1: "Kerkstraat 1",
+        address_line2: null,
+        city: "Antwerpen",
+        state: null,
+        postal_code: "2000",
+        country: "BE",
+        tax_id: "BE0123456789",
+        tax_number: null,
+        einvoice_format: null,
+        leitweg_id: null,
+        einvoice_receiver_id: null,
+        einvoice_receiver_scheme: null,
+      },
+      items: [
+        {
+          id: "i1",
+          description: "Consulting",
+          quantity: 1,
+          unit_price: 500,
+          unit: "piece",
+          line_total: 500,
+          tax_rate: 21,
+          tax_amount: 105,
+          tax_category_code: "S",
+        },
+      ],
+      tax_breakdown: [
+        { tax_name: "VAT", tax_rate: 21, category_code: "S", taxable_amount: 500, tax_amount: 105 },
+      ],
+    },
+  };
 }
 
 beforeAll(async () => {
@@ -173,6 +249,7 @@ describe("registry", () => {
       xml: "<Invoice/>",
       hash: "abc",
       documentNumber: "INV-1",
+      data: sendCtx("INV-1").data,
     });
     expect(receipt.providerMessageId).toBe("msg-x");
     expect(fakeTransportState.sent[0].transmissionId).toBe("t-1");
@@ -565,6 +642,107 @@ describe("inbound webhooks (§11)", () => {
     expect(res.status).toBe(401);
     updateSettings({ peppol_enabled: "true" });
   });
+
+  test("simulated document.received webhook lands in the inbox through the real peppol.sh driver", async () => {
+    resetFakeTransport();
+    clearTransmissions();
+    // Save/restore (not delete): bun hoists every describe's beforeAll ahead
+    // of the first test, so the "peppol.sh driver" block's env may already be
+    // set when this test runs — deleting would break its later tests.
+    const prevEnv = {
+      key: process.env.PEPPOL_SH_API_KEY,
+      secret: process.env.PEPPOL_SH_WEBHOOK_SECRET,
+      base: process.env.PEPPOL_SH_BASE_URL,
+    };
+    const restorePeppolEnv = () => {
+      for (const [k, v] of [
+        ["PEPPOL_SH_API_KEY", prevEnv.key],
+        ["PEPPOL_SH_WEBHOOK_SECRET", prevEnv.secret],
+        ["PEPPOL_SH_BASE_URL", prevEnv.base],
+      ] as const) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+      resetEnvCache();
+    };
+    process.env.PEPPOL_SH_API_KEY = "test-key";
+    process.env.PEPPOL_SH_WEBHOOK_SECRET = "webhook-secret";
+    process.env.PEPPOL_SH_BASE_URL = "https://api.peppol.sh";
+    resetEnvCache();
+    updateSettings({ peppol_transport: "peppol-sh" });
+    try {
+      // Unique fixture: the inbox dedupes on raw hash, so this must differ
+      // from every XML the fake-transport tests already imported.
+      const xml = `<?xml version="1.0"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
+  <cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">IN-RECV-7777</cbc:ID>
+  <cbc:IssueDate xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">2026-08-11</cbc:IssueDate>
+  <cbc:DocumentCurrencyCode xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">EUR</cbc:DocumentCurrencyCode>
+  <cac:LegalMonetaryTotal xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"><cbc:TaxInclusiveAmount currencyID="EUR">1234.50</cbc:TaxInclusiveAmount></cac:LegalMonetaryTotal>
+</Invoice>`;
+      const body = JSON.stringify({
+        type: "document.received",
+        document: {
+          id: "doc_recv_1",
+          sender: { scheme: "0208", value: "0987654321" },
+          file_name: "IN-RECV-7777.xml",
+          content_type: "application/xml",
+          xml,
+        },
+      });
+      const ts = Math.floor(Date.now() / 1000);
+      const signature = createHmac("sha256", "webhook-secret").update(body).digest("hex");
+
+      // End-to-end: signed HTTP request → driver HMAC verify + parse → inbox insert.
+      const res = await app.request("/api/v1/webhooks/peppol", {
+        method: "POST",
+        headers: {
+          "x-peppol-sh-signature": signature,
+          "x-peppol-sh-timestamp": String(ts),
+          "x-peppol-sh-event-id": "ev-oss-recv-1",
+          "Content-Type": "application/json",
+        },
+        body,
+      });
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { kind: string }).kind).toBe("document");
+
+      const inbox = getDb()
+        .query("SELECT * FROM einvoice_inbox WHERE provider_message_id = 'doc_recv_1'")
+        .all() as Record<string, unknown>[];
+      expect(inbox).toHaveLength(1);
+      expect(inbox[0].source).toBe("peppol");
+      expect(inbox[0].transport_id).toBe("peppol-sh");
+      expect(inbox[0].sender_scheme).toBe("0208");
+      expect(inbox[0].sender_id).toBe("0987654321");
+      expect(inbox[0].file_name).toBe("IN-RECV-7777.xml");
+      expect(inbox[0].document_number).toBe("IN-RECV-7777");
+      expect(inbox[0].parse_status).toBe("ok");
+
+      // Replay of the same event id is a no-op 200 and never duplicates.
+      const replay = await app.request("/api/v1/webhooks/peppol", {
+        method: "POST",
+        headers: {
+          "x-peppol-sh-signature": signature,
+          "x-peppol-sh-timestamp": String(ts),
+          "x-peppol-sh-event-id": "ev-oss-recv-1",
+          "Content-Type": "application/json",
+        },
+        body,
+      });
+      expect(replay.status).toBe(200);
+      const afterReplay = getDb()
+        .query("SELECT COUNT(*) as c FROM einvoice_inbox WHERE provider_message_id = 'doc_recv_1'")
+        .get() as { c: number };
+      expect(afterReplay.c).toBe(1);
+    } finally {
+      // Restore the suite's default transport + env for later describes.
+      updateSettings({ peppol_transport: "fake" });
+      delete process.env.PEPPOL_SH_API_KEY;
+      delete process.env.PEPPOL_SH_WEBHOOK_SECRET;
+      restorePeppolEnv();
+    }
+  });
 });
 
 describe("participant registration (§10)", () => {
@@ -653,64 +831,90 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     resetEnvCache();
   });
 
-  test("send builds the request shape with auth + idempotency headers", async () => {
+  test("send builds the DocumentCreate body with auth + company scoping", async () => {
+    updateSettings({ peppol_company_id: "com_abc" });
     const calls: Array<{ url: string; init: RequestInit }> = [];
     globalThis.fetch = (async (url: unknown, init: unknown) => {
       calls.push({ url: String(url), init: init as RequestInit });
-      return new Response(JSON.stringify({ document: { id: "prov-1", status: "sent" } }), {
-        status: 202,
+      return new Response(JSON.stringify({ id: "prov-1", status: "queued" }), {
+        status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }) as unknown as typeof fetch;
 
-    const receipt = await peppolShTransport.send({
-      transmissionId: "tx-42",
-      sender: { scheme: "0208", value: "A" },
-      receiver: { scheme: "0208", value: "B" },
-      documentType: "invoice",
-      xml: "<Invoice/>",
-      hash: "h",
-      documentNumber: "INV-1",
-    });
+    const receipt = await peppolShTransport.send(sendCtx("INV-1"));
     expect(receipt.providerMessageId).toBe("prov-1");
+    expect(receipt.status).toBe("sent");
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe("https://api.peppol.sh/v1/documents");
     const headers = calls[0].init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer test-key");
-    expect(headers["Idempotency-Key"]).toBe("tx-42");
+    expect(headers["Idempotency-Key"]).toBeUndefined();
+
     const body = JSON.parse(String(calls[0].init.body));
-    expect(body.sender).toEqual({ scheme: "0208", value: "A" });
-    expect(body.document_type).toBe("invoice");
+    expect(body.company_id).toBe("com_abc");
+    expect(body.idempotency_key).toBe("tx-42");
+    expect(body.type).toBe("invoice");
+    expect(body.number).toBe("INV-1");
+    expect(body.issue_date).toBe("2026-08-01");
+    expect(body.currency).toBe("EUR");
+    expect(body.from).toEqual({
+      name: "Seller BV",
+      tax_id: "BE0123456789",
+      peppol_id: "0208:A",
+      address: { street: "Hoofdstraat 5", city: "Brussel", postal_code: "1000" },
+    });
+    expect(body.to).toEqual({
+      name: "Buyer BV",
+      tax_id: "BE0123456789",
+      peppol_id: "0208:B",
+      address: { street: "Kerkstraat 1", city: "Antwerpen", postal_code: "2000" },
+    });
+    expect(body.lines).toEqual([
+      { description: "Consulting", quantity: 1, unit: "C62", unit_price: 500, tax_rate: 21 },
+    ]);
+  });
+
+  test("provisions the sender company lazily and caches its id", async () => {
+    updateSettings({ peppol_company_id: "" });
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    globalThis.fetch = (async (url: unknown, init: unknown) => {
+      calls.push({ url: String(url), init: init as RequestInit });
+      if (String(url).endsWith("/v1/companies")) {
+        return new Response(JSON.stringify({ id: "com_new", name: "Seller BV" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ id: "prov-2", status: "queued" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+
+    const receipt = await peppolShTransport.send(sendCtx("INV-2"));
+    expect(receipt.providerMessageId).toBe("prov-2");
+    expect(calls).toHaveLength(2);
+    expect(calls[0].url).toBe("https://api.peppol.sh/v1/companies");
+    const provision = JSON.parse(String(calls[0].init.body));
+    expect(provision.name).toBe("Seller BV");
+    expect(provision.tax_id).toBe("BE0123456789");
+    expect(provision.country).toBe("BE");
+    const sent = JSON.parse(String(calls[1].init.body));
+    expect(sent.company_id).toBe("com_new");
+    expect(getSetting("peppol_company_id")).toBe("com_new");
   });
 
   test("maps provider errors to TransportHttpError with retryability", async () => {
     globalThis.fetch = (async () =>
       new Response("nope", { status: 400 })) as unknown as typeof fetch;
-    await expect(
-      peppolShTransport.send({
-        transmissionId: "t",
-        sender: { scheme: "0208", value: "A" },
-        receiver: { scheme: "0208", value: "B" },
-        documentType: "invoice",
-        xml: "<x/>",
-        hash: "h",
-        documentNumber: "INV",
-      }),
-    ).rejects.toMatchObject({ statusCode: 400 });
+    await expect(peppolShTransport.send(sendCtx("INV"))).rejects.toMatchObject({
+      statusCode: 400,
+    });
 
     globalThis.fetch = (async () =>
       new Response("busy", { status: 429 })) as unknown as typeof fetch;
-    const err429 = await peppolShTransport
-      .send({
-        transmissionId: "t",
-        sender: { scheme: "0208", value: "A" },
-        receiver: { scheme: "0208", value: "B" },
-        documentType: "invoice",
-        xml: "<x/>",
-        hash: "h",
-        documentNumber: "INV",
-      })
-      .catch((e) => e);
+    const err429 = await peppolShTransport.send(sendCtx("INV")).catch((e) => e);
     expect(err429).toBeInstanceOf(TransportHttpError);
     expect(err429.isRetryable()).toBe(true);
 
@@ -718,17 +922,7 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     globalThis.fetch = (async () => {
       throw new TypeError("fetch failed");
     }) as unknown as typeof fetch;
-    const netErr = await peppolShTransport
-      .send({
-        transmissionId: "t",
-        sender: { scheme: "0208", value: "A" },
-        receiver: { scheme: "0208", value: "B" },
-        documentType: "invoice",
-        xml: "<x/>",
-        hash: "h",
-        documentNumber: "INV",
-      })
-      .catch((e) => e);
+    const netErr = await peppolShTransport.send(sendCtx("INV")).catch((e) => e);
     expect(netErr).toBeInstanceOf(TransportHttpError);
     expect(netErr.statusCode).toBeNull();
     expect(netErr.isRetryable()).toBe(true);
@@ -737,8 +931,12 @@ describe("peppol.sh driver (stubbed fetch)", () => {
   test("parseWebhook verifies HMAC over the raw body with a 5-minute window", async () => {
     const secret = "webhook-secret";
     const body = JSON.stringify({
-      type: "document.status",
-      document: { id: "prov-1", status: "delivered", detail: null },
+      id: "evt-1",
+      type: "delivered",
+      document_id: "prov-1",
+      document_number: "INV-1",
+      to_status: "delivered",
+      created_at: "2026-08-11T10:00:00Z",
     });
     const ts = Math.floor(Date.now() / 1000);
 
@@ -757,11 +955,12 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     expect((ok as Extract<TransportWebhookResult, { kind: "status" }>).providerMessageId).toBe(
       "prov-1",
     );
+    expect((ok as Extract<TransportWebhookResult, { kind: "status" }>).status).toBe("delivered");
 
     // Tampered body fails.
     await expect(
       peppolShTransport.parseWebhook({
-        rawBody: body.replace("delivered", "rejected"),
+        rawBody: body.replace("delivered", "failed"),
         headers: {
           "x-peppol-sh-signature": sign(body),
           "x-peppol-sh-timestamp": String(ts),
@@ -783,15 +982,47 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     ).rejects.toThrow("timestamp");
   });
 
-  test("lookup maps the provider capability shape", async () => {
+  test("a failed delivery event maps to a rejected status with the message as detail", async () => {
+    const secret = "webhook-secret";
+    const body = JSON.stringify({
+      id: "evt-2",
+      type: "failed",
+      document_id: "prov-1",
+      message: "SMP lookup failed: participant not found",
+      to_status: "failed",
+    });
+    const ts = Math.floor(Date.now() / 1000);
+    const sign = (b: string) => createHmac("sha256", secret).update(b).digest("hex");
+
+    const res = await peppolShTransport.parseWebhook({
+      rawBody: body,
+      headers: {
+        "x-peppol-sh-signature": sign(body),
+        "x-peppol-sh-timestamp": String(ts),
+        "x-peppol-sh-event-id": "ev-4",
+      },
+    });
+    expect(res.kind).toBe("status");
+    const st = res as Extract<TransportWebhookResult, { kind: "status" }>;
+    expect(st.status).toBe("rejected");
+    expect(st.detail).toBe("SMP lookup failed: participant not found");
+  });
+
+  test("lookup queries the SMP domain and maps the capability shape", async () => {
+    updateSettings({ peppol_environment: "test" });
     globalThis.fetch = (async (url: unknown) => {
-      expect(String(url)).toBe("https://api.peppol.sh/v1/participants/0208/0456123456");
+      expect(String(url)).toBe("https://api.peppol.sh/v1/lookup/0208:0456123456?domain=smk");
       return new Response(
         JSON.stringify({
-          exists: true,
-          document_types: ["invoice"],
-          access_point_name: "Acme AP",
-          served_elsewhere: true,
+          participant_id: { scheme: "0208", id: "0456123456" },
+          services: [
+            {
+              document_type_id:
+                "busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+              document_type_name: "Peppol BIS Billing UBL Invoice V3",
+              process_id: "cenbii-procid-ubl::urn:fdc:peppol.eu:poacc:billing:3.0",
+            },
+          ],
         }),
         { status: 200 },
       );
@@ -802,7 +1033,192 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     });
     expect(cap.exists).toBe(true);
     expect(cap.documentTypes).toEqual(["invoice"]);
-    expect(cap.accessPointName).toBe("Acme AP");
-    expect(cap.servedElsewhere).toBe(true);
+    expect(cap.accessPointName).toBeNull();
+    expect(cap.servedElsewhere).toBe(false);
+
+    // Production environment queries the sml domain.
+    updateSettings({ peppol_environment: "production" });
+    globalThis.fetch = (async (url: unknown) => {
+      expect(String(url)).toBe("https://api.peppol.sh/v1/lookup/0208:0456123456?domain=sml");
+      return new Response(JSON.stringify({ services: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const prod = await peppolShTransport.lookupParticipant({
+      scheme: "0208",
+      value: "0456123456",
+    });
+    expect(prod.exists).toBe(true);
+    expect(prod.documentTypes).toEqual([]);
+
+    // 404 means "not on the network", not an error.
+    globalThis.fetch = (async () =>
+      new Response("not found", { status: 404 })) as unknown as typeof fetch;
+    const missing = await peppolShTransport.lookupParticipant({
+      scheme: "0208",
+      value: "9999999999",
+    });
+    expect(missing.exists).toBe(false);
+    expect(missing.documentTypes).toEqual([]);
+  });
+
+  test("end-to-end: transmit flows through the real driver (network lookup → send)", async () => {
+    resetFakeTransport();
+    clearTransmissions();
+    const prevCompanyId = getSetting("peppol_company_id");
+    const prevEnvironment = getSetting("peppol_environment");
+    // The lookup test above leaves the environment at "production"; the E2E
+    // flow asserts the test SMP domain, so pin it explicitly.
+    updateSettings({
+      peppol_transport: "peppol-sh",
+      peppol_company_id: "com_e2e",
+      peppol_environment: "test",
+    });
+    try {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      globalThis.fetch = (async (url: unknown, init: unknown) => {
+        const u = String(url);
+        calls.push({ url: u, init: init as RequestInit });
+        if (u.includes("/v1/lookup/")) {
+          return new Response(
+            JSON.stringify({
+              participant_id: { scheme: "0208", id: "0456123456" },
+              services: [
+                {
+                  document_type_id:
+                    "busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+                  document_type_name: "Peppol BIS Billing UBL Invoice V3",
+                },
+              ],
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(JSON.stringify({ id: "doc_e2e_1", status: "queued" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }) as unknown as typeof fetch;
+
+      // Enqueue: the orchestrator runs the real driver's SMP lookup first.
+      const enq = await authed(`/api/v1/einvoices/${invoiceId}/transmit`, { method: "POST" });
+      expect(enq.status).toBe(201);
+      const enqBody = (await enq.json()) as { data: { transmission_id: string } };
+      const transmissionId = enqBody.data.transmission_id;
+
+      // Worker tick: the real driver sends the JSON body to POST /v1/documents.
+      await processTransportQueue();
+
+      expect(statusOf(transmissionId)).toBe("sent");
+      expect(String(row(transmissionId).provider_message_id)).toBe("doc_e2e_1");
+      expect(String(row(transmissionId).transport_id)).toBe("peppol-sh");
+
+      const lookupCall = calls.find((c) => c.url.includes("/v1/lookup/"));
+      expect(lookupCall?.url).toBe("https://api.peppol.sh/v1/lookup/0208:0456123456?domain=smk");
+
+      const sendCall = calls.find((c) => c.url.endsWith("/v1/documents"));
+      expect(sendCall).toBeDefined();
+      const body = JSON.parse(String(sendCall?.init.body));
+      expect(body.company_id).toBe("com_e2e");
+      expect(body.idempotency_key).toBe(transmissionId);
+      expect(body.type).toBe("invoice");
+      expect(body.currency).toBe("EUR");
+      const invoiceNumber = (
+        getDb().query("SELECT invoice_number FROM invoices WHERE id = ?").get(invoiceId) as {
+          invoice_number: string;
+        }
+      ).invoice_number;
+      expect(body.number).toBe(invoiceNumber);
+
+      // Parties come from the tenant's company profile and the customer.
+      expect(body.from).toMatchObject({
+        name: "Seller BV",
+        tax_id: "BE0123456789",
+        peppol_id: "0208:0123456789",
+      });
+      expect(body.to).toMatchObject({
+        name: "Buyer BV",
+        peppol_id: "0208:0456123456",
+      });
+      expect(body.lines).toHaveLength(1);
+      expect(body.lines[0]).toMatchObject({
+        description: "Consulting",
+        quantity: 1,
+        unit_price: 500,
+        unit: "C62",
+        tax_rate: 0,
+      });
+    } finally {
+      updateSettings({ peppol_transport: "fake" });
+      if (prevCompanyId) updateSettings({ peppol_company_id: prevCompanyId });
+      else updateSettings({ peppol_company_id: "" });
+      if (prevEnvironment) updateSettings({ peppol_environment: prevEnvironment });
+      else updateSettings({ peppol_environment: "" });
+    }
+  });
+
+  test("end-to-end: a permanent driver error fails the transmission", async () => {
+    resetFakeTransport();
+    clearTransmissions();
+    const prevCompanyId = getSetting("peppol_company_id");
+    const prevEnvironment = getSetting("peppol_environment");
+    updateSettings({
+      peppol_transport: "peppol-sh",
+      peppol_company_id: "com_fail",
+      peppol_environment: "test",
+    });
+    try {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      globalThis.fetch = (async (url: unknown, init: unknown) => {
+        const u = String(url);
+        calls.push({ url: u, init: init as RequestInit });
+        if (u.includes("/v1/lookup/")) {
+          return new Response(
+            JSON.stringify({
+              participant_id: { scheme: "0208", id: "0456123456" },
+              services: [
+                {
+                  document_type_id:
+                    "busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+                  document_type_name: "Peppol BIS Billing UBL Invoice V3",
+                },
+              ],
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        // Permanent 4xx: the provider accepted nothing and retries would not
+        // plausibly succeed, so the orchestrator must fail the row at once.
+        return new Response("provider says no", { status: 400 });
+      }) as unknown as typeof fetch;
+
+      const enq = await authed(`/api/v1/einvoices/${invoiceId}/transmit`, { method: "POST" });
+      expect(enq.status).toBe(201);
+      const enqBody = (await enq.json()) as { data: { transmission_id: string } };
+      const transmissionId = enqBody.data.transmission_id;
+
+      await processTransportQueue();
+
+      // Terminal after a single attempt: no provider id, no reschedule.
+      expect(statusOf(transmissionId)).toBe("failed");
+      expect(row(transmissionId).provider_message_id).toBeNull();
+      expect(row(transmissionId).next_attempt_at).toBeNull();
+      expect(String(row(transmissionId).status_detail)).toContain(
+        "POST /v1/documents failed (400)",
+      );
+
+      const attempts = listTransmissions(invoiceId).attempts[transmissionId];
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0].status_code).toBe(400);
+      expect(attempts[0].error_message).toContain("POST /v1/documents failed");
+      expect(attempts[0].response_body).toBe("provider says no");
+
+      const sendCalls = calls.filter((c) => c.url.endsWith("/v1/documents"));
+      expect(sendCalls).toHaveLength(1);
+    } finally {
+      updateSettings({ peppol_transport: "fake" });
+      if (prevCompanyId) updateSettings({ peppol_company_id: prevCompanyId });
+      else updateSettings({ peppol_company_id: "" });
+      if (prevEnvironment) updateSettings({ peppol_environment: prevEnvironment });
+      else updateSettings({ peppol_environment: "" });
+    }
   });
 });

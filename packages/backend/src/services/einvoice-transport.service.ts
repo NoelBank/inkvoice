@@ -316,6 +316,7 @@ async function processTransmission(
     xml: doc.xml_content,
     hash: doc.hash,
     documentNumber: invoice.invoice_number,
+    data: buildXmlInvoiceData(row.invoice_id),
   };
 
   try {

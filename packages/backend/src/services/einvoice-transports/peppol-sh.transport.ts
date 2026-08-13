@@ -1,36 +1,38 @@
 // peppol.sh transport driver. Speaks the provider's HTTP API and knows
-// nothing about invoices: it receives an already-generated document and
-// returns receipts / normalised webhook results.
+// nothing about invoices: it receives the structured invoice data (the same
+// model the archived UBL XML is built from) and returns receipts / normalised
+// webhook results.
 //
-// HTTP contract (our side of the peppol.sh integration):
+// HTTP contract (our side of the peppol.sh v1 API, api.peppol.sh/v1/openapi.json):
 //
 //   Auth:            Authorization: Bearer <PEPPOL_SH_API_KEY>
+//   Provision:       POST /v1/companies  → 201 { id, name, tax_id, country }
+//                    (lazy: once per install, id cached in the `peppol_company_id`
+//                    setting; the caller's company must be KYC'd in the
+//                    peppol.sh dashboard before it can send)
 //   Send:            POST /v1/documents
-//                    Headers: Idempotency-Key: <transmissionId>
-//                    Body: { sender: {scheme, value}, receiver: {scheme, value},
-//                           document_type, xml, hash, document_number }
-//                    202 → { document: { id, status } }
-//   Lookup:          GET /v1/participants/:scheme/:value
-//                    → { exists, document_types: string[], access_point_name,
-//                        served_elsewhere }
-//   Register:        POST /v1/participants
-//                    Body: { participant: {scheme, value}, legal_name,
-//                           country_code, contact_email }
-//                    → { registration: { id, status, action_url, detail } }
-//   Registration:    GET  /v1/participants/registrations/:ref
-//                    DELETE /v1/participants/registrations/:ref
+//                    Body: { company_id, idempotency_key, type, number,
+//                           issue_date, due_date, currency, from: Party,
+//                           to: Party, lines: LineItem[], note }
+//                    200 → { id, status: "queued"|"sending"|"delivered"|"failed" }
+//   Lookup:          GET /v1/lookup/{scheme}:{value}?domain=sml|smk
+//                    200 → { participant_id, services: [{ document_type_id, ... }] }
+//                    404 → participant not on the network (exists: false)
+//   Registration:    NOT exposed by the provider API. peppol.sh registers its
+//                    own companies (KYC in the dashboard); the transport throws.
 //
 //   Webhooks (HMAC over the RAW body; any re-serialisation breaks the
 //   signature):
 //     Headers: x-peppol-sh-signature  = hex(HMAC-SHA256(rawBody, secret))
 //              x-peppol-sh-timestamp  = unix seconds (must be within 5 min)
 //              x-peppol-sh-event-id   = provider event id (replay guard)
-//     Payloads:
-//       { type: "document.received", document: { id, sender: {scheme, value},
-//           file_name, content_type, xml } }
-//       { type: "document.status", document: { id, status: "delivered" | "rejected",
-//           detail } }
-//       { type: "participant.status", registration: { id, status, detail } }
+//     Payload (event object, shape of GET /v1/events):
+//       { type: "delivered"|"failed"|"queued"|"sending"|"retry",
+//         document_id, document_number, message, ... }
+//       "delivered" → status delivered; "failed" → rejected (detail = message);
+//       the rest are ignored.
+//     Legacy payload shapes (document.received / document.status /
+//     participant.status) are still parsed for the inbound-receive path.
 //
 // Endpoint paths are isolated below (one line each) so a provider API change
 // is a one-file patch, and the fetch is injected for testability.
@@ -38,6 +40,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getEnv } from "../../utils/env";
 import { logger } from "../../utils/logger";
+import { getSetting, updateSettings } from "../settings.service";
 import {
   type EinvoiceTransport,
   type ParticipantCapability,
@@ -60,14 +63,18 @@ const WEBHOOK_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
 // The provider's raw JSON keys are documented above; the mapping functions at
 // the bottom of this file own the shape-to-type translation.
 const endpoints = {
+  companies: () => "/v1/companies",
   documents: () => "/v1/documents",
-  participant: (scheme: string, value: string) => `/v1/participants/${scheme}/${value}`,
-  participants: () => "/v1/participants",
-  registration: (ref: string) => `/v1/participants/registrations/${ref}`,
+  lookup: (scheme: string, value: string, domain: string) =>
+    `/v1/lookup/${encodeURIComponent(scheme)}:${encodeURIComponent(value)}?domain=${domain}`,
 };
 
 interface PeppolShPayload {
   type?: string;
+  /** Current event shape (GET /v1/events): delivered/failed/queued/sending/retry. */
+  document_id?: string;
+  message?: string | null;
+  /** Legacy inbound-document shape (document.received). */
   document?: {
     id?: string;
     sender?: { scheme?: string; value?: string };
@@ -77,6 +84,7 @@ interface PeppolShPayload {
     status?: string;
     detail?: string | null;
   };
+  /** Legacy registration shape (participant.status). */
   registration?: { id?: string; status?: string; detail?: string | null };
 }
 
@@ -88,66 +96,61 @@ export const peppolShTransport: EinvoiceTransport = {
   isConfigured: () => !!getEnv().PEPPOL_SH_API_KEY,
 
   async send(ctx: SendContext): Promise<SendReceipt> {
+    const companyId = await ensureCompanyId(ctx);
     const res = await callApi("POST", endpoints.documents(), {
-      idempotencyKey: ctx.transmissionId,
-      body: {
-        sender: ctx.sender,
-        receiver: ctx.receiver,
-        document_type: ctx.documentType,
-        xml: ctx.xml,
-        hash: ctx.hash,
-        document_number: ctx.documentNumber,
-      },
+      body: buildDocumentBody(ctx, companyId),
     });
-    const document = (res.document ?? {}) as { id?: string; status?: string };
+    // The spec returns the Document object directly; tolerate a wrapped
+    // { document: ... } as a compat fallback.
+    const document = (res.document ?? res) as { id?: string; status?: string };
     if (!document.id) {
       throw new TransportHttpError(
         "Provider response missing document.id",
-        res.status ?? 200,
+        res.httpStatus ?? 200,
         res.body,
       );
     }
-    const status = normalizeStatus(document.status);
+    const status = normalizeSendStatus(document.status);
     if (status !== "sent") {
       logger.warn(
         { providerStatus: document.status, transmissionId: ctx.transmissionId },
         "Provider accepted document with a non-sent status",
       );
     }
-    return { providerMessageId: document.id, status: "sent" };
+    return { providerMessageId: document.id, status };
   },
 
   async lookupParticipant(id: ParticipantId): Promise<ParticipantCapability> {
-    const res = await callApi("GET", endpoints.participant(id.scheme, id.value));
+    const res = await callApi("GET", endpoints.lookup(id.scheme, id.value, lookupDomain()), {
+      notFoundOk: true,
+    });
+    if (res.httpStatus === 404) {
+      return { exists: false, documentTypes: [], accessPointName: null, servedElsewhere: false };
+    }
+    const services = Array.isArray(res.services)
+      ? (res.services as Array<Record<string, unknown>>)
+      : [];
+    const documentTypes = services
+      .map((s) => mapDocumentType(s.document_type_id, s.document_type_name))
+      .filter((t): t is "invoice" | "credit-note" => t !== null);
     return {
-      exists: !!res.exists,
-      documentTypes: Array.isArray(res.document_types)
-        ? res.document_types.map((t: unknown) => String(t))
-        : [],
-      accessPointName: res.access_point_name != null ? String(res.access_point_name) : null,
-      servedElsewhere: !!res.served_elsewhere,
+      exists: true,
+      documentTypes: [...new Set(documentTypes)],
+      accessPointName: null,
+      servedElsewhere: false,
     };
   },
 
-  async registerParticipant(req: RegisterParticipantRequest): Promise<RegistrationState> {
-    const res = await callApi("POST", endpoints.participants(), {
-      body: {
-        participant: req.participant,
-        legal_name: req.legalName,
-        country_code: req.countryCode,
-        contact_email: req.contactEmail,
-      },
-    });
-    return parseRegistration(res.registration);
+  async registerParticipant(_req: RegisterParticipantRequest): Promise<RegistrationState> {
+    throw notSupported();
   },
 
-  async getRegistration(providerRef: string): Promise<RegistrationState> {
-    const res = await callApi("GET", endpoints.registration(providerRef));
-    return parseRegistration(res.registration ?? { id: providerRef });
+  async getRegistration(): Promise<RegistrationState> {
+    throw notSupported();
   },
 
-  async deregisterParticipant(providerRef: string): Promise<void> {
-    await callApi("DELETE", endpoints.registration(providerRef));
+  async deregisterParticipant(): Promise<void> {
+    throw notSupported();
   },
 
   async parseWebhook(req: TransportWebhookRequest): Promise<TransportWebhookResult> {
@@ -186,6 +189,30 @@ export const peppolShTransport: EinvoiceTransport = {
       throw new Error("Webhook body is not valid JSON");
     }
 
+    // Current event payloads: document.delivered / document.failed.
+    if (payload.document_id) {
+      if (payload.type === "delivered") {
+        return {
+          kind: "status",
+          eventId,
+          providerMessageId: payload.document_id,
+          status: "delivered",
+          detail: payload.message ?? null,
+        };
+      }
+      if (payload.type === "failed") {
+        return {
+          kind: "status",
+          eventId,
+          providerMessageId: payload.document_id,
+          status: "rejected",
+          detail: payload.message ?? null,
+        };
+      }
+      return { kind: "ignored", eventId }; // queued / sending / retry
+    }
+
+    // Legacy inbound-document shape (document.received) — receive path.
     if (payload.type === "document.received" && payload.document?.id) {
       return {
         kind: "document",
@@ -200,6 +227,7 @@ export const peppolShTransport: EinvoiceTransport = {
         xml: payload.document.xml ?? "",
       };
     }
+    // Legacy delivery-status shape (document.status).
     if (payload.type === "document.status" && payload.document?.id) {
       const status = normalizeStatus(payload.document.status);
       if (status !== "delivered" && status !== "rejected") {
@@ -233,13 +261,15 @@ export const peppolShTransport: EinvoiceTransport = {
 interface ApiCallOptions {
   idempotencyKey?: string;
   body?: unknown;
+  /** 404 → return { status: 404 } instead of throwing (lookup miss). */
+  notFoundOk?: boolean;
 }
 
 async function callApi(
   method: "GET" | "POST" | "DELETE",
   path: string,
   opts: ApiCallOptions = {},
-): Promise<Record<string, unknown> & { status?: number; body?: string }> {
+): Promise<Record<string, unknown> & { httpStatus?: number; body?: string }> {
   const env = getEnv();
   const base = env.PEPPOL_SH_BASE_URL.replace(/\/$/, "");
   const headers: Record<string, string> = {
@@ -265,14 +295,14 @@ async function callApi(
     } catch {
       json = {};
     }
-    if (!res.ok) {
+    if (!res.ok && !(opts.notFoundOk && res.status === 404)) {
       throw new TransportHttpError(
         `peppol.sh ${method} ${path} failed (${res.status})`,
         res.status,
         text.slice(0, 4000),
       );
     }
-    return { ...json, status: res.status, body: text.slice(0, 4000) };
+    return { ...json, httpStatus: res.status, body: text.slice(0, 4000) };
   } catch (err) {
     if (err instanceof TransportHttpError) throw err;
     // fetch threw: network failure or timeout. No status code → retryable.
@@ -285,20 +315,121 @@ async function callApi(
   }
 }
 
-function parseRegistration(raw: unknown): RegistrationState {
-  const r = (raw ?? {}) as {
-    id?: string;
-    status?: string;
-    action_url?: string | null;
-    detail?: string | null;
-  };
-  if (!r.id) throw new TransportHttpError("Provider response missing registration.id", 200);
+/** The sender company's provider-side id, provisioning it once per install. */
+async function ensureCompanyId(ctx: SendContext): Promise<string> {
+  const cached = getSetting("peppol_company_id");
+  if (cached) return cached;
+
+  const supplier = ctx.data.supplier;
+  const res = await callApi("POST", endpoints.companies(), {
+    body: {
+      name: supplier.name || "Inkvoice",
+      tax_id: supplier.tax_id ?? undefined,
+      country: supplier.country ?? undefined,
+      address:
+        supplier.city || supplier.street
+          ? {
+              street: supplier.street ?? undefined,
+              city: supplier.city ?? undefined,
+              postal_code: supplier.postal_code ?? undefined,
+            }
+          : undefined,
+    },
+  });
+  const companyId = typeof res.id === "string" ? res.id : null;
+  if (!companyId) {
+    throw new TransportHttpError(
+      "Provider response missing company.id",
+      res.httpStatus ?? 200,
+      res.body,
+    );
+  }
+  updateSettings({ peppol_company_id: companyId });
+  logger.info({ companyId }, "Provisioned peppol.sh company");
+  return companyId;
+}
+
+/** DocumentCreate body for POST /v1/documents (JSON-in; the provider builds UBL). */
+function buildDocumentBody(ctx: SendContext, companyId: string): Record<string, unknown> {
+  const d = ctx.data;
   return {
-    providerRef: r.id,
-    status: normalizeParticipantStatus(r.status),
-    actionUrl: r.action_url ?? null,
-    detail: r.detail ?? null,
+    company_id: companyId,
+    idempotency_key: ctx.transmissionId,
+    type: ctx.documentType === "credit-note" ? "credit_note" : "invoice",
+    number: d.invoice_number,
+    issue_date: d.issue_date,
+    due_date: d.due_date ?? undefined,
+    currency: d.currency || "EUR",
+    from: {
+      name: d.supplier.name,
+      tax_id: d.supplier.tax_id ?? d.supplier.tax_number ?? undefined,
+      peppol_id: `${ctx.sender.scheme}:${ctx.sender.value}`,
+      address:
+        d.supplier.city || d.supplier.street
+          ? {
+              street: d.supplier.street ?? undefined,
+              city: d.supplier.city ?? undefined,
+              postal_code: d.supplier.postal_code ?? undefined,
+            }
+          : undefined,
+      email: d.supplier.email ?? undefined,
+    },
+    to: {
+      name: d.customer.name,
+      tax_id: d.customer.tax_id ?? d.customer.tax_number ?? undefined,
+      peppol_id: `${ctx.receiver.scheme}:${ctx.receiver.value}`,
+      address:
+        d.customer.city || d.customer.address_line1
+          ? {
+              street: d.customer.address_line1 ?? undefined,
+              city: d.customer.city ?? undefined,
+              postal_code: d.customer.postal_code ?? undefined,
+            }
+          : undefined,
+      email: d.customer.email ?? undefined,
+    },
+    lines: d.items.map((i) => ({
+      description: i.description,
+      quantity: i.quantity,
+      unit: mapUnitCode(i.unit),
+      unit_price: i.unit_price,
+      tax_rate: i.tax_rate,
+    })),
+    note: d.notes ?? undefined,
   };
+}
+
+/** Which SMP domain to query: smk (test) or sml (production). */
+function lookupDomain(): string {
+  return getSetting("peppol_environment") === "test" ? "smk" : "sml";
+}
+
+/** Map the provider's full document-type ids to our vocabulary. */
+function mapDocumentType(id: unknown, name: unknown): "invoice" | "credit-note" | null {
+  const haystack = `${String(id ?? "")} ${String(name ?? "")}`.toLowerCase();
+  if (haystack.includes("credit")) return "credit-note";
+  if (haystack.includes("invoice")) return "invoice";
+  return null;
+}
+
+function mapUnitCode(unit: string): string {
+  const map: Record<string, string> = {
+    piece: "C62",
+    hour: "HUR",
+    day: "DAY",
+    kg: "KGM",
+    meter: "MTR",
+    lump_sum: "LS",
+    month: "MON",
+  };
+  return map[unit] || "C62";
+}
+
+function normalizeSendStatus(raw: string | undefined): TransmissionStatus {
+  const s = (raw ?? "").toLowerCase();
+  if (s === "delivered") return "delivered";
+  if (s === "failed") return "failed";
+  return "sent"; // queued / sending / sent → accepted, delivery pending
 }
 
 function normalizeStatus(raw: string | undefined): TransmissionStatus {
@@ -313,6 +444,13 @@ function normalizeParticipantStatus(raw: string | undefined): ParticipantStatus 
     return s as ParticipantStatus;
   }
   return "kyc_pending";
+}
+
+function notSupported(): TransportHttpError {
+  return new TransportHttpError(
+    "peppol.sh no longer exposes participant registration through its API; register the company's participant in the peppol.sh dashboard.",
+    404,
+  );
 }
 
 function lowercaseHeaders(headers: Record<string, string>): Record<string, string> {

@@ -41,10 +41,11 @@ async function handleGatewayWebhook(c: Context, gatewayId: string) {
 webhooks.post("/stripe", (c) => handleGatewayWebhook(c, "stripe"));
 webhooks.post("/paypal", (c) => handleGatewayWebhook(c, "paypal"));
 
-// PEPPOL inbound callbacks (document.received, document.status,
-// participant.status). Public and CSRF-exempt like the gateway webhooks;
-// the transport driver verifies the HMAC over the raw body. Any verification
-// failure returns 401 with no detail — never echo why.
+// PEPPOL inbound callbacks (document.delivered / document.failed event
+// payloads, plus legacy document.received / document.status /
+// participant.status shapes). Public and CSRF-exempt like the gateway
+// webhooks; the transport driver verifies the HMAC over the raw body. Any
+// verification failure returns 401 with no detail — never echo why.
 webhooks.post("/peppol", async (c) => {
   const rawBody = await c.req.text();
   try {

@@ -2,9 +2,12 @@
 //
 // Each network provider (peppol.sh, a managed cloud account, later a French
 // PDP or Polish KSeF gateway) implements `EinvoiceTransport`. The transport
-// service hands it an already-generated document and never inspects how it
+// service hands it the already-generated document (archived XML plus the
+// structured invoice data it was built from) and never inspects how it
 // travels, so the rest of the app is unaware of which network carried a given
 // invoice.
+
+import type { XmlInvoiceData } from "../../xml/types";
 
 /** Scheme + value identifying a business on the network (EAS/ISO 6523). */
 export interface ParticipantId {
@@ -28,6 +31,8 @@ export interface SendContext {
   hash: string;
   /** Human-facing reference shown in provider dashboards. */
   documentNumber: string;
+  /** Structured invoice data the XML was built from (JSON-in providers). */
+  data: XmlInvoiceData;
 }
 
 export type EinvoiceDocumentType = "invoice" | "credit-note";
