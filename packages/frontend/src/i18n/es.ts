@@ -400,6 +400,16 @@ const es: TranslationKeys = {
       "Identificador del receptor de la factura electrónica (XRechnung/PEPPOL)",
     einvoice_receiver_scheme: "Esquema del receptor",
     einvoice_receiver_scheme_hint: "p. ej. DE:VAT, 0204 (esquema Leitweg-ID)",
+    siren: "SIREN (Francia)",
+    siren_hint:
+      "Número de registro mercantil francés de 9 dígitos, utilizado para la entrega de facturas electrónicas.",
+    siret: "SIRET (Francia, opcional)",
+    siret_hint:
+      "Número de establecimiento de 14 dígitos. Solo es necesario si el comprador se dirige a un sitio concreto.",
+    france_check: "Consultar en el Annuaire",
+    france_reachable: "Registrado para la facturación electrónica francesa.",
+    france_unreachable: "No se encuentra en el Annuaire. Compruebe el SIREN.",
+    france_checked_at: "Última comprobación: {{date}}",
     notes_placeholder: "Notas internas sobre este cliente...",
     customer_created: "Cliente creado",
     customer_updated: "Cliente actualizado",

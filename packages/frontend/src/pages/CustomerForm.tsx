@@ -37,6 +37,7 @@ export default function CustomerForm({ onSave }: Props) {
   const { t, language } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
+  const franceEnabled = useSettingsStore((s) => s.settings.france_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -63,6 +64,18 @@ export default function CustomerForm({ onSave }: Props) {
     ok: "reachable" | "unreachable" | "conflict" | "error";
     detail: string;
   } | null>(null);
+  const [checkingFrance, setCheckingFrance] = useState(false);
+  const [franceReachable, setFranceReachable] = useState<boolean | null>(null);
+  async function checkFrance() {
+    if (!form.siren) return;
+    setCheckingFrance(true);
+    try {
+      const res = await api.franceLookup(form.siren, isEdit ? id : undefined);
+      if (res.success) setFranceReachable(res.data.exists);
+    } finally {
+      setCheckingFrance(false);
+    }
+  }
   const [form, setForm] = useState({
     name: navState?.prefillName ?? "",
     email: "",
@@ -79,6 +92,9 @@ export default function CustomerForm({ onSave }: Props) {
     leitweg_id: "",
     einvoice_receiver_id: "",
     einvoice_receiver_scheme: "",
+    siren: "",
+    siret: "",
+    france_reachable: 0,
     notes: "",
     language: "",
     default_template_id: "",
@@ -124,12 +140,16 @@ export default function CustomerForm({ onSave }: Props) {
           leitweg_id: d.leitweg_id || "",
           einvoice_receiver_id: d.einvoice_receiver_id || "",
           einvoice_receiver_scheme: d.einvoice_receiver_scheme || "",
+          siren: d.siren || "",
+          siret: d.siret || "",
+          france_reachable: d.france_reachable ?? 0,
           notes: d.notes || "",
           language: d.language || "",
           default_template_id: d.default_template_id || "",
           currency: d.currency || "",
           tags: d.tags || [],
         });
+        setFranceReachable(d.france_reachable === 1);
         setStats({
           invoice_count: d.invoice_count,
           total_revenue: d.total_revenue,
@@ -422,6 +442,44 @@ export default function CustomerForm({ onSave }: Props) {
                     />
                   </FormField>
                 </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField label={t("customers.siren")} hint={t("customers.siren_hint")}>
+                    <Input
+                      value={form.siren ?? ""}
+                      onChange={set("siren")}
+                      placeholder="123456789"
+                      maxLength={9}
+                    />
+                  </FormField>
+                  <FormField label={t("customers.siret")} hint={t("customers.siret_hint")}>
+                    <Input
+                      value={form.siret ?? ""}
+                      onChange={set("siret")}
+                      placeholder="12345678900012"
+                      maxLength={14}
+                    />
+                  </FormField>
+                </div>
+                {franceEnabled && (
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      {franceReachable === null
+                        ? ""
+                        : franceReachable
+                          ? t("customers.france_reachable")
+                          : t("customers.france_unreachable")}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!form.siren || checkingFrance}
+                      onClick={checkFrance}
+                    >
+                      {t("customers.france_check")}
+                    </Button>
+                  </div>
+                )}
                 {peppolEnabled && (
                   <div className="pt-1">
                     <Button

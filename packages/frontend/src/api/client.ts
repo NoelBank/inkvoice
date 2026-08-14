@@ -323,6 +323,14 @@ export const api = {
         ...(customerId ? { customer_id: customerId } : {}),
       }),
     }),
+  franceLookup: (siren: string, customerId?: string) =>
+    request<{ success: boolean; data: { exists: boolean; documentTypes: string[] } }>(
+      "/einvoices/france/lookup",
+      {
+        method: "POST",
+        body: JSON.stringify({ siren, ...(customerId ? { customer_id: customerId } : {}) }),
+      },
+    ),
   listPeppolTransports: () =>
     request<{
       success: boolean;

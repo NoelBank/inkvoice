@@ -409,6 +409,16 @@ const de: TranslationKeys = {
     einvoice_receiver_id_hint: "Empfängerkennung der E-Rechnung (XRechnung/PEPPOL)",
     einvoice_receiver_scheme: "Empfänger-Schema",
     einvoice_receiver_scheme_hint: "z.B. DE:VAT, 0204 (Leitweg-ID-Schema)",
+    siren: "SIREN (Frankreich)",
+    siren_hint:
+      "9-stellige französische Firmenregisternummer, verwendet für die E-Rechnungszustellung.",
+    siret: "SIRET (Frankreich, optional)",
+    siret_hint:
+      "14-stellige Betriebsnummer. Nur erforderlich, wenn der Käufer einen bestimmten Standort anspricht.",
+    france_check: "Im Annuaire prüfen",
+    france_reachable: "Für die französische E-Rechnung registriert.",
+    france_unreachable: "Im Annuaire nicht gefunden. SIREN prüfen.",
+    france_checked_at: "Zuletzt geprüft: {{date}}",
     notes_placeholder: "Interne Notizen zu diesem Kunden...",
     customer_created: "Kunde erstellt",
     customer_updated: "Kunde aktualisiert",
