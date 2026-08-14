@@ -893,6 +893,22 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "customers", "france_reachable", "INTEGER");
     },
   },
+  {
+    version: 26,
+    name: "oidc_identity",
+    up: (db) => {
+      // SSO identity of a user. NULL on password-only accounts. The partial
+      // unique index keeps at most one account per (issuer, subject) pair
+      // while allowing unlimited NULLs (SQLite treats NULLs as distinct).
+      addColumnIfMissing(db, "users", "oidc_issuer", "TEXT");
+      addColumnIfMissing(db, "users", "oidc_subject", "TEXT");
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oidc
+          ON users(oidc_issuer, oidc_subject)
+          WHERE oidc_issuer IS NOT NULL
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

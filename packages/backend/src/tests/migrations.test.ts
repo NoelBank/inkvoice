@@ -258,4 +258,44 @@ describe("schema migration runner", () => {
       .get() as { name: string } | null;
     expect(exists?.name).toBe("einvoice_transmissions");
   });
+
+  test("version 26 adds OIDC identity columns and the partial unique index", () => {
+    runWith(db, () => runMigrations());
+
+    const cols = db.query("SELECT name FROM pragma_table_info('users')").all() as unknown as Array<{
+      name: string;
+    }>;
+    const names = cols.map((c) => c.name);
+    for (const col of ["oidc_issuer", "oidc_subject"]) {
+      expect(names).toContain(col);
+    }
+
+    const idx = db
+      .query("SELECT name FROM sqlite_master WHERE type='index' AND name = 'idx_users_oidc'")
+      .get() as { name: string } | null;
+    expect(idx?.name).toBe("idx_users_oidc");
+  });
+
+  test("version 26 enforces one (issuer, subject) pair per row", () => {
+    runWith(db, () => runMigrations());
+    // Prepared statements (query().run()) throw on constraint violations;
+    // multi-line db.exec batches silently swallow them in bun:sqlite.
+    db.query(`
+      INSERT INTO users (id, username, password_hash, oidc_issuer, oidc_subject)
+      VALUES ('a1', 'sso-one', 'x', 'https://issuer', 'sub-1');
+    `).run();
+    db.query(`
+      INSERT INTO users (id, username, password_hash, oidc_issuer, oidc_subject)
+      VALUES ('a2', 'sso-two', 'x', 'https://issuer', 'sub-2');
+    `).run();
+    // Duplicate (issuer, subject) must be rejected by the partial index.
+    expect(() =>
+      db
+        .query(`
+        INSERT INTO users (id, username, password_hash, oidc_issuer, oidc_subject)
+        VALUES ('a3', 'sso-three', 'x', 'https://issuer', 'sub-1');
+      `)
+        .run(),
+    ).toThrow();
+  });
 });
