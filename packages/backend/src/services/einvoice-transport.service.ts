@@ -10,7 +10,11 @@ import { buildXmlInvoiceData } from "../xml/build-data";
 import { logActivity } from "./activity.service";
 import { emitEinvoice } from "./einvoice.service";
 import { importEinvoiceFile } from "./einvoice-inbox.service";
-import { getActiveTransport } from "./einvoice-transports/registry";
+import {
+  getActiveTransport,
+  getFranceTransport,
+  listEnabledTransports,
+} from "./einvoice-transports/registry";
 import {
   type EinvoiceTransport,
   type ParticipantCapability,
@@ -77,8 +81,9 @@ export type EnqueueResult =
 export async function enqueueTransmission(invoiceId: string): Promise<EnqueueResult> {
   const db = getDb();
 
-  const transport = getActiveTransport();
-  if (!transport) {
+  const peppolTransport = getActiveTransport();
+  const franceTransport = getFranceTransport();
+  if (!peppolTransport && !franceTransport) {
     return {
       ok: false,
       code: "peppol_not_configured",
@@ -90,7 +95,7 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
   const invoice = db
     .query(
       `SELECT i.id, i.type, i.invoice_number, i.customer_id, c.einvoice_receiver_scheme,
-              c.einvoice_receiver_id
+              c.einvoice_receiver_id, c.siren
        FROM invoices i LEFT JOIN customers c ON c.id = i.customer_id
        WHERE i.id = ? AND i.deleted_at IS NULL`,
     )
@@ -101,29 +106,67 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
     customer_id: string;
     einvoice_receiver_scheme: string | null;
     einvoice_receiver_id: string | null;
+    siren: string | null;
   } | null;
   if (!invoice) {
     return { ok: false, code: "NOT_FOUND", status: 404, error: "Invoice not found" };
   }
 
-  if (!invoice.einvoice_receiver_id || !invoice.einvoice_receiver_scheme) {
-    return {
-      ok: false,
-      code: "receiver_id_missing",
-      status: 422,
-      error: "The customer has no PEPPOL receiver identifier. Add it on the customer form first.",
-      issues: [{ customer_id: invoice.customer_id }],
-    };
+  // France: recipient is identified by SIREN and the tenant's own SIREN is
+  // the sender identity. Priority: France when the customer has a SIREN and
+  // the network is on; PEPPOL otherwise.
+  const useFrance = !!invoice.siren && !!franceTransport;
+  let transport: EinvoiceTransport;
+  let receiver: ParticipantId;
+  let emitFormat: "zugferd" | "peppol";
+  if (useFrance) {
+    const senderSiren = getSetting("france_sender_siren");
+    if (!senderSiren) {
+      return {
+        ok: false,
+        code: "france_sender_missing",
+        status: 422,
+        error: "No sender SIREN configured for France e-invoicing (Settings → France).",
+      };
+    }
+    transport = franceTransport!;
+    receiver = { scheme: "0009", value: invoice.siren! };
+    emitFormat = "zugferd";
+  } else {
+    if (!invoice.einvoice_receiver_id || !invoice.einvoice_receiver_scheme) {
+      return {
+        ok: false,
+        code: "receiver_id_missing",
+        status: 422,
+        error: "The customer has no PEPPOL receiver identifier. Add it on the customer form first.",
+        issues: [{ customer_id: invoice.customer_id }],
+      };
+    }
+    if (!peppolTransport) {
+      return {
+        ok: false,
+        code: "peppol_not_configured",
+        status: 409,
+        error: "PEPPOL is not configured or enabled.",
+      };
+    }
+    transport = peppolTransport;
+    receiver = { scheme: invoice.einvoice_receiver_scheme, value: invoice.einvoice_receiver_id };
+    emitFormat = "peppol";
   }
 
-  const senderScheme = getSetting("peppol_sender_scheme");
-  const senderId = getSetting("peppol_sender_id");
+  const senderScheme = useFrance ? "0009" : (getSetting("peppol_sender_scheme") ?? "");
+  const senderId = useFrance
+    ? (getSetting("france_sender_siren") ?? "")
+    : (getSetting("peppol_sender_id") ?? "");
   if (!senderScheme || !senderId) {
     return {
       ok: false,
       code: "sender_id_missing",
       status: 422,
-      error: "No sender PEPPOL identity configured. Set it under Settings → PEPPOL.",
+      error: useFrance
+        ? "No sender SIREN configured for France e-invoicing (Settings → France)."
+        : "No sender PEPPOL identity configured. Set it under Settings → PEPPOL.",
     };
   }
 
@@ -164,20 +207,17 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
   }
 
   const documentType = invoice.type === "credit_note" ? "credit-note" : "invoice";
-  const receiver: ParticipantId = {
-    scheme: invoice.einvoice_receiver_scheme,
-    value: invoice.einvoice_receiver_id,
-  };
 
   // Receiver capability is checked before any row exists, so an unreachable
   // receiver never leaves a corpse transmission behind.
   let capability: ParticipantCapability;
   try {
     capability = await transport.lookupParticipant(receiver);
+    const cacheUpdate = useFrance
+      ? "UPDATE customers SET france_checked_at = datetime('now'), france_reachable = ? WHERE id = ?"
+      : "UPDATE customers SET peppol_checked_at = datetime('now'), peppol_reachable = ? WHERE id = ?";
     getDb()
-      .query(
-        "UPDATE customers SET peppol_checked_at = datetime('now'), peppol_reachable = ? WHERE id = ?",
-      )
+      .query(cacheUpdate)
       .run(capability.exists ? 1 : 0, invoice.customer_id);
   } catch (err) {
     logger.warn({ err, receiver }, "PEPPOL receiver lookup failed during enqueue");
@@ -193,7 +233,9 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
       ok: false,
       code: "receiver_unreachable",
       status: 422,
-      error: "The receiver is not reachable on the PEPPOL network for this document type.",
+      error: useFrance
+        ? "The receiver is not registered for e-invoicing on the Annuaire (via Qonto)."
+        : "The receiver is not reachable on the PEPPOL network for this document type.",
     };
   }
 
@@ -202,7 +244,7 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
   // transmission is a different legal document.
   let emitted: Awaited<ReturnType<typeof emitEinvoice>>;
   try {
-    emitted = await emitEinvoice(invoiceId, { forceFormat: "peppol" });
+    emitted = await emitEinvoice(invoiceId, { forceFormat: emitFormat });
   } catch (err) {
     return {
       ok: false,
@@ -260,8 +302,9 @@ export function stopTransportWorker(): void {
 
 export async function processTransportQueue(): Promise<{ processed: number }> {
   const db = getDb();
-  const transport = getActiveTransport();
-  if (!transport) return { processed: 0 };
+  const transports = listEnabledTransports();
+  if (transports.length === 0) return { processed: 0 };
+  const transportById = new Map(transports.map((t) => [t.id, t]));
 
   const rows = db
     .query(
@@ -273,6 +316,8 @@ export async function processTransportQueue(): Promise<{ processed: number }> {
     .all(QUEUE_BATCH_SIZE) as unknown as TransmissionRow[];
 
   for (const row of rows) {
+    const transport = transportById.get(row.transport_id);
+    if (!transport) continue; // network disabled mid-flight; row stays queued
     try {
       await processTransmission(row, transport);
     } catch (err) {
@@ -658,12 +703,13 @@ export class TransportWebhookSizeError extends Error {}
 
 export async function handleTransportWebhook(
   req: TransportWebhookRequest,
+  transport?: EinvoiceTransport,
 ): Promise<TransportWebhookResult> {
-  const transport = getActiveTransport();
-  if (!transport) throw new Error("No active transport");
+  const active = transport ?? getActiveTransport();
+  if (!active) throw new Error("No active transport");
 
   // Verification and normalisation live in the driver; persistence lives here.
-  const result = await transport.parseWebhook(req);
+  const result = await active.parseWebhook(req);
 
   // Replay guard: the provider event id is the primary key. A duplicate means
   // we already handled this event, so acknowledge and stop.
@@ -671,7 +717,7 @@ export async function handleTransportWebhook(
   try {
     db.query("INSERT INTO einvoice_webhook_events (id, transport_id) VALUES (?, ?)").run(
       result.eventId,
-      transport.id,
+      active.id,
     );
   } catch {
     return { kind: "ignored", eventId: result.eventId };
@@ -679,7 +725,7 @@ export async function handleTransportWebhook(
 
   switch (result.kind) {
     case "document":
-      handleInboundDocument(result, transport.id);
+      handleInboundDocument(result, active.id);
       return result;
     case "status":
       handleInboundStatus(result);

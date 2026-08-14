@@ -36,3 +36,18 @@ export function getActiveTransport(): EinvoiceTransport | null {
   const t = baseTransports().find((x) => x.id === id);
   return t?.isConfigured() ? t : null;
 }
+
+/** The transport selected in Settings for the France network, if enabled. */
+export function getFranceTransport(): EinvoiceTransport | null {
+  if (getSetting("france_enabled") !== "true") return null;
+  const id = getSetting("france_transport") ?? "qonto-fr";
+  const t = baseTransports().find((x) => x.id === id);
+  return t?.isConfigured() ? t : null;
+}
+
+/** Every enabled + configured transport across networks (worker + webhooks). */
+export function listEnabledTransports(): EinvoiceTransport[] {
+  return [getActiveTransport(), getFranceTransport()].filter(
+    (t): t is EinvoiceTransport => t !== null,
+  );
+}

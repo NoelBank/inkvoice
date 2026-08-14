@@ -1224,3 +1224,124 @@ describe("peppol.sh driver (stubbed fetch)", () => {
     }
   });
 });
+
+describe("France transport selection", () => {
+  let frCustomerId: string;
+  let frInvoiceId: string;
+  const prev: Record<string, string | null> = {};
+
+  // The brief snapshots these at describe scope, but describe bodies run at
+  // module load — before the top-level beforeAll opens the DB. A describe
+  // beforeAll runs after it, so snapshot here instead.
+  beforeAll(() => {
+    prev.france_enabled = getSetting("france_enabled");
+    prev.france_transport = getSetting("france_transport");
+    prev.france_sender_siren = getSetting("france_sender_siren");
+  });
+
+  test("setup French customer + invoice", async () => {
+    const cust = await authed("/api/v1/customers", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Acheteur FR",
+        country: "FR",
+        siren: "123456789",
+        address_line1: "1 rue A",
+        city: "Paris",
+        postal_code: "75001",
+      }),
+    });
+    frCustomerId = ((await cust.json()) as any).data.id;
+    const inv = await authed("/api/v1/invoices", {
+      method: "POST",
+      body: JSON.stringify({
+        customer_id: frCustomerId,
+        issue_date: "2026-08-14",
+        currency: "EUR",
+        items: [{ description: "Service", quantity: 1, unit_price: 100 }],
+      }),
+    });
+    frInvoiceId = ((await inv.json()) as any).data.id;
+  });
+
+  test("enqueue resolves the france transport for a SIREN customer", async () => {
+    updateSettings({
+      france_enabled: "true",
+      france_transport: "fake",
+      france_sender_siren: "987654321",
+    });
+    resetFakeTransport();
+    const res = await authed(`/api/v1/einvoices/${frInvoiceId}/transmit`, { method: "POST" });
+    expect(res.status).toBe(201);
+    const { data } = (await res.json()) as any;
+    const row = getDb()
+      .query(
+        "SELECT transport_id, sender_scheme, sender_id, receiver_scheme, receiver_id FROM einvoice_transmissions WHERE id = ?",
+      )
+      .get(data.transmission_id) as Record<string, unknown>;
+    expect(row.transport_id).toBe("fake");
+    expect(row.sender_scheme).toBe("0009");
+    expect(row.sender_id).toBe("987654321");
+    expect(row.receiver_scheme).toBe("0009");
+    expect(row.receiver_id).toBe("123456789");
+    // emitted as Factur-X (zugferd profile)
+    const doc = getDb()
+      .query(
+        "SELECT format FROM einvoice_documents WHERE id = (SELECT einvoice_document_id FROM einvoice_transmissions WHERE id = ?)",
+      )
+      .get(data.transmission_id) as { format: string };
+    expect(doc.format).toBe("zugferd");
+    // france lookup cache written
+    const cust = getDb()
+      .query("SELECT france_reachable, france_checked_at FROM customers WHERE id = ?")
+      .get(frCustomerId) as Record<string, unknown>;
+    expect(cust.france_reachable).toBe(1);
+    expect(cust.france_checked_at).toBeTruthy();
+  });
+
+  test("france disabled → falls back to PEPPOL or a clear 409", async () => {
+    updateSettings({ france_enabled: "false" });
+    const res = await authed(`/api/v1/einvoices/${frInvoiceId}/transmit`, { method: "POST" });
+    // No PEPPOL receiver on this customer → receiver_id_missing
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as any).code).toBe("receiver_id_missing");
+  });
+
+  test("france sender SIREN missing → 422 france_sender_missing", async () => {
+    updateSettings({ france_enabled: "true", france_transport: "fake", france_sender_siren: "" });
+    const res = await authed(`/api/v1/einvoices/${frInvoiceId}/transmit`, { method: "POST" });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as any).code).toBe("france_sender_missing");
+  });
+
+  test("france/lookup route resolves SIREN through the france transport", async () => {
+    updateSettings({ france_enabled: "true", france_transport: "fake" });
+    resetFakeTransport();
+    fakeTransportState.capability = {
+      exists: true,
+      documentTypes: ["invoice", "credit-note"],
+      accessPointName: "Qonto",
+      servedElsewhere: false,
+    };
+    const res = await authed("/api/v1/einvoices/france/lookup", {
+      method: "POST",
+      body: JSON.stringify({ siren: "123456789", customer_id: frCustomerId }),
+    });
+    expect(res.status).toBe(200);
+    const { data } = (await res.json()) as any;
+    expect(data.exists).toBe(true);
+    expect(fakeTransportState.lookups.at(-1)).toEqual({ scheme: "0009", value: "123456789" });
+    const cust = getDb()
+      .query("SELECT france_reachable FROM customers WHERE id = ?")
+      .get(frCustomerId) as { france_reachable: number };
+    expect(cust.france_reachable).toBe(1);
+  });
+
+  test("restore settings", () => {
+    updateSettings({
+      france_enabled: prev.france_enabled ?? "false",
+      france_transport: prev.france_transport ?? "fake",
+      france_sender_siren: prev.france_sender_siren ?? "",
+    });
+  });
+});

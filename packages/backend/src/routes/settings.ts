@@ -89,6 +89,9 @@ const ALLOWED_SETTINGS = new Set([
   "peppol_auto_send",
   "peppol_environment",
   "peppol_company_id",
+  "france_enabled",
+  "france_transport",
+  "france_sender_siren",
 ]);
 
 // Number patterns with neither a sequence nor a random token render the same

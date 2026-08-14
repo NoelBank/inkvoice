@@ -27,7 +27,7 @@ import {
   TransportError,
   TransportWebhookSizeError,
 } from "../services/einvoice-transport.service";
-import { listTransports } from "../services/einvoice-transports/registry";
+import { getFranceTransport, listTransports } from "../services/einvoice-transports/registry";
 
 // E-invoice inbox: receive, list, inspect and archive incoming
 // XRechnung/ZUGFeRD documents (mandatory in Germany since 1 Jan 2025).
@@ -231,6 +231,46 @@ einvoices.post("/peppol/lookup", requirePermission("customers", "update"), async
       { scheme: parsed.data.scheme, value: parsed.data.identifier },
       parsed.data.customer_id,
     );
+    return c.json({ success: true, data: capability });
+  } catch (err) {
+    return transportError(c, err);
+  }
+});
+
+const franceLookupSchema = z.object({
+  siren: z.string().regex(/^\d{9}$/, "SIREN must be 9 digits"),
+  customer_id: z.string().optional(),
+});
+
+// Check a French recipient on the Annuaire (through the active France transport).
+einvoices.post("/france/lookup", requirePermission("customers", "update"), async (c) => {
+  const parsed = franceLookupSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ success: false, error: "siren (9 digits) is required" }, 400);
+  }
+  const transport = getFranceTransport();
+  if (!transport) {
+    return c.json(
+      {
+        success: false,
+        error: "France e-invoicing is not configured or enabled.",
+        code: "france_not_configured",
+      },
+      409,
+    );
+  }
+  try {
+    const capability = await transport.lookupParticipant({
+      scheme: "0009",
+      value: parsed.data.siren,
+    });
+    if (parsed.data.customer_id) {
+      getDb()
+        .query(
+          "UPDATE customers SET france_checked_at = datetime('now'), france_reachable = ? WHERE id = ?",
+        )
+        .run(capability.exists ? 1 : 0, parsed.data.customer_id);
+    }
     return c.json({ success: true, data: capability });
   } catch (err) {
     return transportError(c, err);
