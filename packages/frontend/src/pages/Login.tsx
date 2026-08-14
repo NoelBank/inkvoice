@@ -29,8 +29,11 @@ export default function Login() {
     "misconfigured",
   ]);
   const oidcErrorParam = new URLSearchParams(window.location.search).get("oidc_error");
-  const oidcError =
-    oidcErrorParam && OIDC_ERROR_CODES.has(oidcErrorParam) ? oidcErrorParam : "auth_failed";
+  const oidcError = oidcErrorParam
+    ? OIDC_ERROR_CODES.has(oidcErrorParam)
+      ? oidcErrorParam
+      : "auth_failed"
+    : null;
   const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
