@@ -66,12 +66,23 @@ export default function CustomerForm({ onSave }: Props) {
   } | null>(null);
   const [checkingFrance, setCheckingFrance] = useState(false);
   const [franceReachable, setFranceReachable] = useState<boolean | null>(null);
+  const [franceResult, setFranceResult] = useState<string | null>(null);
   async function checkFrance() {
     if (!form.siren) return;
     setCheckingFrance(true);
+    setFranceResult(null);
     try {
       const res = await api.franceLookup(form.siren, isEdit ? id : undefined);
-      if (res.success) setFranceReachable(res.data.exists);
+      if (res.success) {
+        setFranceReachable(res.data.exists);
+        setFranceResult(
+          res.data.exists ? t("customers.france_reachable") : t("customers.france_unreachable"),
+        );
+      } else {
+        setFranceResult(t("customers.france_check_error"));
+      }
+    } catch (err) {
+      setFranceResult(formatApiError(err, t));
     } finally {
       setCheckingFrance(false);
     }
@@ -446,7 +457,11 @@ export default function CustomerForm({ onSave }: Props) {
                   <FormField label={t("customers.siren")} hint={t("customers.siren_hint")}>
                     <Input
                       value={form.siren ?? ""}
-                      onChange={set("siren")}
+                      onChange={(e) => {
+                        set("siren")(e);
+                        setFranceReachable(null);
+                        setFranceResult(null);
+                      }}
                       placeholder="123456789"
                       maxLength={9}
                     />
@@ -463,11 +478,12 @@ export default function CustomerForm({ onSave }: Props) {
                 {franceEnabled && (
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground">
-                      {franceReachable === null
-                        ? ""
-                        : franceReachable
-                          ? t("customers.france_reachable")
-                          : t("customers.france_unreachable")}
+                      {franceResult ||
+                        (franceReachable === null
+                          ? ""
+                          : franceReachable
+                            ? t("customers.france_reachable")
+                            : t("customers.france_unreachable"))}
                     </p>
                     <Button
                       type="button"

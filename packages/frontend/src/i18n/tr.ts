@@ -403,6 +403,7 @@ const tr: TranslationKeys = {
     france_reachable: "Fransız e-faturalama sistemine kayıtlı.",
     france_unreachable: "Annuaire'de bulunamadı. SIREN'i kontrol edin.",
     france_checked_at: "Son kontrol: {{date}}",
+    france_check_error: "Annuaire'de kontrol edilemedi. Tekrar deneyin.",
     notes_placeholder: "Bu müşteri hakkında dahili notlar...",
     customer_created: "Müşteri oluşturuldu",
     customer_updated: "Müşteri güncellendi",

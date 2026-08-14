@@ -419,6 +419,7 @@ const de: TranslationKeys = {
     france_reachable: "Für die französische E-Rechnung registriert.",
     france_unreachable: "Im Annuaire nicht gefunden. SIREN prüfen.",
     france_checked_at: "Zuletzt geprüft: {{date}}",
+    france_check_error: "Im Annuaire konnte nicht geprüft werden. Versuchen Sie es erneut.",
     notes_placeholder: "Interne Notizen zu diesem Kunden...",
     customer_created: "Kunde erstellt",
     customer_updated: "Kunde aktualisiert",

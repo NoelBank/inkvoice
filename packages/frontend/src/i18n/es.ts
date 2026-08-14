@@ -410,6 +410,7 @@ const es: TranslationKeys = {
     france_reachable: "Registrado para la facturación electrónica francesa.",
     france_unreachable: "No se encuentra en el Annuaire. Compruebe el SIREN.",
     france_checked_at: "Última comprobación: {{date}}",
+    france_check_error: "No se pudo consultar el Annuaire. Inténtelo de nuevo.",
     notes_placeholder: "Notas internas sobre este cliente...",
     customer_created: "Cliente creado",
     customer_updated: "Cliente actualizado",

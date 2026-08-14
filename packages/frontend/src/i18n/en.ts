@@ -401,6 +401,7 @@ const en = {
     france_reachable: "Registered for French e-invoicing.",
     france_unreachable: "Not found on the Annuaire. Check the SIREN.",
     france_checked_at: "Last checked: {{date}}",
+    france_check_error: "Could not check on the Annuaire. Try again.",
     notes_placeholder: "Internal notes about this customer...",
     customer_created: "Customer created",
     customer_updated: "Customer updated",
