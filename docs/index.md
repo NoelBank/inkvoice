@@ -26,6 +26,8 @@ features:
     details: Accept card payments via Stripe or PayPal. Customers pay directly from their invoice link.
   - title: E-Rechnung (German e-invoicing)
     details: Emit EN 16931-compliant ZUGFeRD 2.2 hybrid PDFs, XRechnung and PEPPOL BIS, and receive incoming e-invoices. An opt-in module, off by default.
+  - title: France E-Invoicing (Factur-X)
+    details: Emit Factur-X with French buyer identifiers (SIREN/SIRET) and the franchise-en-base exemption. On Inkvoice Cloud, deliver through Qonto, a registered PDP/PA.
   - title: Self-Hosted Friendly
     details: Deploy on Dokploy, Coolify, or any Docker host. Your data stays on your server.
 ---
