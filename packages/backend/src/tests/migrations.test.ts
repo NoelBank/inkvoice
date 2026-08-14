@@ -223,10 +223,21 @@ describe("schema migration runner", () => {
     expect(idx?.name).toBe("idx_einvoice_tx_provider_msg");
   });
 
-  test("version 24 applies on a database already at version 23", () => {
-    // Apply everything except the last migration, then apply the remainder.
+  test("france columns exist on customers", () => {
     runWith(db, () => runMigrations());
-    db.exec(`DELETE FROM schema_migrations WHERE version = ${LATEST_MIGRATION_VERSION}`);
+    const cols = db
+      .query("SELECT name FROM pragma_table_info('customers')")
+      .all() as unknown as Array<{ name: string }>;
+    const names = cols.map((c) => c.name);
+    for (const col of ["siren", "siret", "france_checked_at", "france_reachable"]) {
+      expect(names).toContain(col);
+    }
+  });
+
+  test("version 24 applies on a database already at version 23", () => {
+    // Apply everything except the migrations above v23, then apply the remainder.
+    runWith(db, () => runMigrations());
+    db.exec("DELETE FROM schema_migrations WHERE version > 23");
 
     // Simulate a real v23 tip: drop the v24 tables (as if never created).
     db.exec("DROP TABLE einvoice_webhook_events");
@@ -236,10 +247,10 @@ describe("schema migration runner", () => {
 
     runWith(db, () => runMigrations());
 
-    const row = db
-      .query("SELECT version FROM schema_migrations WHERE version = ?")
-      .get(LATEST_MIGRATION_VERSION) as { version: number } | null;
-    expect(row?.version).toBe(LATEST_MIGRATION_VERSION);
+    const row = db.query("SELECT version FROM schema_migrations WHERE version = ?").get(24) as {
+      version: number;
+    } | null;
+    expect(row?.version).toBe(24);
     const exists = db
       .query(
         "SELECT name FROM sqlite_master WHERE type='table' AND name = 'einvoice_transmissions'",

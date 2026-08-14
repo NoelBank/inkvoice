@@ -879,6 +879,20 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "customers", "peppol_reachable", "INTEGER");
     },
   },
+  {
+    version: 25,
+    name: "einvoice_france",
+    up: (db) => {
+      // French e-invoicing (PDP/PA routing). SIREN is the 9-digit business id
+      // used for the annuaire lookup; SIRET is the optional 14-digit
+      // establishment id. france_checked_at/france_reachable cache the last
+      // lookup so the customer form can warn early (mirrors peppol_*).
+      addColumnIfMissing(db, "customers", "siren", "TEXT");
+      addColumnIfMissing(db, "customers", "siret", "TEXT");
+      addColumnIfMissing(db, "customers", "france_checked_at", "TEXT");
+      addColumnIfMissing(db, "customers", "france_reachable", "INTEGER");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
