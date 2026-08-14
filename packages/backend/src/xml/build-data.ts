@@ -13,7 +13,8 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
            c.tax_id as customer_tax_id, c.tax_number as customer_tax_number,
            c.einvoice_format as customer_einvoice_format, c.leitweg_id as customer_leitweg_id,
            c.einvoice_receiver_id as customer_einvoice_receiver_id,
-           c.einvoice_receiver_scheme as customer_einvoice_receiver_scheme
+           c.einvoice_receiver_scheme as customer_einvoice_receiver_scheme,
+           c.siren as customer_siren, c.siret as customer_siret
     FROM invoices i
     LEFT JOIN customers c ON i.customer_id = c.id
     WHERE i.id = ?
@@ -129,6 +130,8 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
       leitweg_id: (invoice.customer_leitweg_id as string) || null,
       einvoice_receiver_id: (invoice.customer_einvoice_receiver_id as string) || null,
       einvoice_receiver_scheme: (invoice.customer_einvoice_receiver_scheme as string) || null,
+      siren: (invoice.customer_siren as string) || null,
+      siret: (invoice.customer_siret as string) || null,
     },
     items,
     tax_breakdown,

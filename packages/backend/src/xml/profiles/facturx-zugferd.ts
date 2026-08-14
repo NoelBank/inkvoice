@@ -183,6 +183,10 @@ export class FacturxZugferdProfile implements XmlProfile {
     }
     if (data.customer.leitweg_id) {
       lines.push(`        <ram:ID schemeID="0204">${esc(data.customer.leitweg_id)}</ram:ID>`);
+    } else if (data.customer.siren) {
+      lines.push(`        <ram:ID schemeID="0009">${esc(data.customer.siren)}</ram:ID>`);
+    } else if (data.customer.siret) {
+      lines.push(`        <ram:ID schemeID="0002">${esc(data.customer.siret)}</ram:ID>`);
     } else if (data.customer.einvoice_receiver_id) {
       lines.push(
         `        <ram:ID schemeID="${esc(data.customer.einvoice_receiver_scheme || "0088")}">${esc(data.customer.einvoice_receiver_id)}</ram:ID>`,

@@ -130,6 +130,8 @@ function sendCtx(number: string): SendContext {
         leitweg_id: null,
         einvoice_receiver_id: null,
         einvoice_receiver_scheme: null,
+        siren: null,
+        siret: null,
       },
       items: [
         {

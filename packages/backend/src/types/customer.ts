@@ -20,6 +20,10 @@ export interface Customer {
   einvoice_receiver_id: string | null;
   /** PEPPOL/e-invoice receiver scheme (e.g. 0208 for EORI/GLN). */
   einvoice_receiver_scheme: string | null;
+  /** French SIREN (9 digits), used for e-invoice delivery on the Annuaire. */
+  siren: string | null;
+  /** French SIRET (14 digits), optional establishment id. */
+  siret: string | null;
   notes: string | null;
   /** BCP 47 tag (e.g. "en-US", "tr-TR"); when set, PDFs render in this locale. */
   language: string | null;

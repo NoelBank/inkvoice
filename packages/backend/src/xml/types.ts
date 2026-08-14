@@ -55,6 +55,10 @@ export interface XmlInvoiceData {
     leitweg_id: string | null;
     einvoice_receiver_id: string | null;
     einvoice_receiver_scheme: string | null;
+    /** French SIREN (9 digits) — buyer id schemeID "0009". */
+    siren: string | null;
+    /** French SIRET (14 digits) — buyer id schemeID "0002". */
+    siret: string | null;
   };
 
   items: XmlLineItem[];

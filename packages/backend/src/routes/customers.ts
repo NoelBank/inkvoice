@@ -152,6 +152,8 @@ const customerSchema = z.object({
   leitweg_id: z.string().max(80).optional().or(z.literal("")),
   einvoice_receiver_id: z.string().max(200).optional().or(z.literal("")),
   einvoice_receiver_scheme: z.string().max(50).optional().or(z.literal("")),
+  siren: z.string().max(9).optional().or(z.literal("")),
+  siret: z.string().max(14).optional().or(z.literal("")),
   notes: z.string().max(2000).optional().or(z.literal("")),
   language: z.string().max(35).optional().or(z.literal("")),
   default_template_id: z.string().max(64).optional().nullable().or(z.literal("")),
