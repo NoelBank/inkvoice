@@ -10,7 +10,7 @@ export interface OidcStateClaims {
 }
 
 // Short TTL: the cookie only has to survive the provider round-trip.
-const STATE_TTL_SECONDS = 600;
+export const STATE_TTL_SECONDS = 600;
 
 /**
  * HMAC-SHA256-signed state container for the OIDC authorization-code flow.
@@ -49,6 +49,7 @@ export function verifyOidcState(token: string): OidcStateClaims | null {
       typeof claims.codeVerifier !== "string" ||
       typeof claims.nonce !== "string" ||
       typeof claims.exp !== "number" ||
+      !Number.isFinite(claims.exp) ||
       claims.exp < Math.floor(Date.now() / 1000)
     ) {
       return null;

@@ -48,6 +48,20 @@ describe("OIDC env configuration", () => {
     );
   });
 
+  test("issuer is trimmed of surrounding whitespace", () => {
+    withEnv(
+      {
+        OIDC_ISSUER_URL: " https://auth.example.com/realms/main/ ",
+        OIDC_CLIENT_ID: "inkvoice",
+        OIDC_CLIENT_SECRET: "s3cret",
+      },
+      () => {
+        const env = getEnv();
+        expect(env.OIDC_ISSUER_URL).toBe("https://auth.example.com/realms/main");
+      },
+    );
+  });
+
   test("https issuer without client id or secret is FATAL", () => {
     withEnv({ OIDC_ISSUER_URL: "https://auth.example.com", OIDC_CLIENT_ID: "inkvoice" }, () => {
       expect(() => getEnv()).toThrow();

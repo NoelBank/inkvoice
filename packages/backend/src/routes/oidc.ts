@@ -11,24 +11,16 @@ import {
   type OidcResolution,
   type OidcUserInfo,
   resolveOrProvisionUser,
+  type OidcErrorCode as ServiceOidcErrorCode,
 } from "../services/oidc.service";
 import { getEnv } from "../utils/env";
 import { signToken } from "../utils/jwt";
 import { logger } from "../utils/logger";
-import { signOidcState, verifyOidcState } from "../utils/oidc-state";
+import { STATE_TTL_SECONDS, signOidcState, verifyOidcState } from "../utils/oidc-state";
 
 const STATE_COOKIE = "oidc_state";
-const STATE_TTL_SECONDS = 600;
 
-type OidcErrorCode =
-  | "invalid_state"
-  | "auth_failed"
-  | "email_required"
-  | "unverified_email"
-  | "domain_not_allowed"
-  | "provisioning_disabled"
-  | "user_inactive"
-  | "misconfigured";
+type OidcErrorCode = ServiceOidcErrorCode | "invalid_state" | "misconfigured";
 
 function errorRedirect(c: Context, code: OidcErrorCode) {
   return c.redirect(`/login?oidc_error=${code}`);

@@ -139,11 +139,11 @@ export function getEnv(): Env {
       return url;
     })(),
     OIDC_ISSUER_URL: (() => {
-      const url = process.env.OIDC_ISSUER_URL || "";
-      if (!url) return "";
+      const raw = (process.env.OIDC_ISSUER_URL || "").trim();
+      if (!raw) return "";
       let parsed: URL;
       try {
-        parsed = new URL(url);
+        parsed = new URL(raw);
       } catch {
         throw new Error("FATAL: OIDC_ISSUER_URL must be a valid URL");
       }
@@ -153,7 +153,7 @@ export function getEnv(): Env {
       if (parsed.username || parsed.password) {
         throw new Error("FATAL: OIDC_ISSUER_URL must not contain credentials");
       }
-      return url.replace(/\/+$/, "");
+      return raw.replace(/\/+$/, "");
     })(),
     OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID || "",
     OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET || "",

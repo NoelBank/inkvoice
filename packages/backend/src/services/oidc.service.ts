@@ -36,9 +36,11 @@ interface DiscoveryCacheEntry {
 }
 
 let discoveryCache: DiscoveryCacheEntry | null = null;
+let jwksCache: { uri: string; set: ReturnType<typeof createRemoteJWKSet> } | null = null;
 
 export function resetOidcServiceForTesting(): void {
   discoveryCache = null;
+  jwksCache = null;
 }
 
 export async function discoverOidc(): Promise<OidcDiscoveryDocument> {
@@ -54,7 +56,11 @@ export async function discoverOidc(): Promise<OidcDiscoveryDocument> {
   if (!res.ok) {
     throw new Error(`OIDC discovery failed: HTTP ${res.status}`);
   }
-  const raw = (await res.json()) as Record<string, unknown>;
+  const text = await res.text();
+  if (text.length > 1024 * 1024) {
+    throw new Error("OIDC discovery document too large");
+  }
+  const raw = JSON.parse(text) as Record<string, unknown>;
   const missing = (
     ["issuer", "authorization_endpoint", "token_endpoint", "jwks_uri"] as const
   ).filter((k) => typeof raw[k] !== "string" || raw[k] === "");
@@ -67,7 +73,7 @@ export async function discoverOidc(): Promise<OidcDiscoveryDocument> {
     token_endpoint: raw.token_endpoint as string,
     jwks_uri: raw.jwks_uri as string,
   };
-  if (doc.issuer !== env.OIDC_ISSUER_URL) {
+  if (doc.issuer.replace(/\/+$/, "") !== env.OIDC_ISSUER_URL) {
     throw new Error("OIDC discovery issuer mismatch");
   }
   discoveryCache = { doc, fetchedAt: Date.now() };
@@ -110,8 +116,10 @@ export function buildOidcAuthorizationUrl(
 export async function validateIdToken(idToken: string, nonce: string): Promise<OidcUserInfo> {
   const env = getEnv();
   const doc = await discoverOidc();
-  const jwks = createRemoteJWKSet(new URL(doc.jwks_uri));
-  const { payload } = await jwtVerify(idToken, jwks, {
+  if (!jwksCache || jwksCache.uri !== doc.jwks_uri) {
+    jwksCache = { uri: doc.jwks_uri, set: createRemoteJWKSet(new URL(doc.jwks_uri)) };
+  }
+  const { payload } = await jwtVerify(idToken, jwksCache.set, {
     issuer: env.OIDC_ISSUER_URL,
     audience: env.OIDC_CLIENT_ID,
   });
@@ -124,7 +132,7 @@ export async function validateIdToken(idToken: string, nonce: string): Promise<O
       ? (payload as { email: string }).email
       : "";
   if (!subject || !email) {
-    throw new Error("OIDC id_token missing sub/email");
+    throw new OidcLoginError("email_required", "OIDC id_token missing sub/email");
   }
   const ev = (payload as { email_verified?: unknown }).email_verified;
   const name =
@@ -164,6 +172,8 @@ export async function exchangeOidcCode(
   if (callbackOverride) return callbackOverride(code, codeVerifier);
   const env = getEnv();
   const client = new OAuth2Client(env.OIDC_CLIENT_ID, env.OIDC_CLIENT_SECRET, redirectUri);
+  // The token-endpoint response is not size-capped: arctic owns the fetch and
+  // it cannot be intercepted without replacing arctic's client.
   const tokens = await client.validateAuthorizationCode(
     doc.token_endpoint,
     code,

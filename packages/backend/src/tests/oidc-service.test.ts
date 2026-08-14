@@ -22,6 +22,8 @@ let privateKey: CryptoKey;
 let publicJwk: Record<string, unknown>;
 let discoveryHits = 0;
 let evilIssuer = false;
+let trailingSlashIssuer = false;
+let hugeDoc = false;
 let nextIdToken = "";
 let certDir: string | null = null;
 let prevTlsRejectUnauthorized: string | undefined;
@@ -82,8 +84,15 @@ beforeAll(async () => {
       const url = new URL(req.url);
       if (url.pathname === "/.well-known/openid-configuration") {
         discoveryHits++;
+        if (hugeDoc) {
+          return Response.json("x".repeat(1100 * 1024));
+        }
         return Response.json({
-          issuer: evilIssuer ? "https://evil.example.com" : issuer,
+          issuer: evilIssuer
+            ? "https://evil.example.com"
+            : trailingSlashIssuer
+              ? `${issuer}/`
+              : issuer,
           authorization_endpoint: `${issuer}/authorize`,
           token_endpoint: `${issuer}/token`,
           jwks_uri: `${issuer}/jwks`,
@@ -143,6 +152,23 @@ describe("discovery", () => {
     evilIssuer = true;
     await expect(discoverOidc()).rejects.toThrow();
     evilIssuer = false;
+    resetOidcServiceForTesting();
+  });
+
+  test("accepts a document whose issuer has a trailing slash", async () => {
+    resetOidcServiceForTesting();
+    trailingSlashIssuer = true;
+    const doc = await discoverOidc();
+    expect(doc.issuer).toBe(`${issuer}/`);
+    trailingSlashIssuer = false;
+    resetOidcServiceForTesting();
+  });
+
+  test("rejects a discovery document over 1 MB", async () => {
+    resetOidcServiceForTesting();
+    hugeDoc = true;
+    await expect(discoverOidc()).rejects.toThrow("OIDC discovery document too large");
+    hugeDoc = false;
     resetOidcServiceForTesting();
   });
 });
@@ -232,7 +258,9 @@ describe("token exchange + id_token validation", () => {
       name: "No Email",
       nonce: "nonce-1",
     });
-    await expect(validateIdToken(idToken, "nonce-1")).rejects.toThrow();
+    await expect(validateIdToken(idToken, "nonce-1")).rejects.toMatchObject({
+      code: "email_required",
+    });
   });
 
   test("missing sub in id_token is rejected", async () => {
@@ -246,7 +274,9 @@ describe("token exchange + id_token validation", () => {
       .setAudience(CLIENT_ID)
       .setExpirationTime("5m")
       .sign(privateKey);
-    await expect(validateIdToken(idToken, "nonce-1")).rejects.toThrow();
+    await expect(validateIdToken(idToken, "nonce-1")).rejects.toMatchObject({
+      code: "email_required",
+    });
   });
 
   test("email_verified accepts boolean and string-true; unverified false", async () => {
