@@ -193,11 +193,26 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `PAYPAL_SECRET`           | no       | —                     | PayPal REST app secret                                               |
 | `PAYPAL_WEBHOOK_ID`       | no       | —                     | PayPal webhook ID — required for PayPal (signature verification)     |
 | `PAYPAL_ENV`              | no       | `sandbox`             | PayPal environment: `sandbox` or `live`                              |
+| `OIDC_ISSUER_URL`          | no       | —                     | OIDC issuer URL. Setting it enables SSO (must be https; requires `OIDC_CLIENT_ID`/`OIDC_CLIENT_SECRET`) |
+| `OIDC_CLIENT_ID`           | no       | —                     | OIDC confidential client id                                             |
+| `OIDC_CLIENT_SECRET`       | no       | —                     | OIDC confidential client secret                                         |
+| `OIDC_SCOPE`               | no       | `openid email profile`| Space-separated OIDC scopes (`openid` is always included)               |
+| `OIDC_ALLOWED_DOMAINS`     | no       | —                     | Comma-separated email domains allowed to self-register (JIT provisioning gate) |
+| `OIDC_AUTO_PROVISION`      | no       | `true`                | Auto-create a read-only Viewer account on first SSO login               |
+| `OIDC_PROVIDER_NAME`       | no       | —                     | Custom label for the login-page SSO button                              |
 | `PEPPOL_SH_API_KEY`       | no       | —                     | peppol.sh API key — enables the PEPPOL transport driver             |
 | `PEPPOL_SH_WEBHOOK_SECRET`| no       | —                     | HMAC secret verifying inbound PEPPOL callbacks (required to receive)|
 | `PEPPOL_SH_BASE_URL`      | no       | `https://api.peppol.sh`| Provider base URL override (sandbox/proxy). Must be https            |
 | `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys). Also defaults the admin login to `demo`/`demo` and shows it on the sign-in page |
 | `DEMO_RESET_INTERVAL`     | no       | `86400000`            | Demo reset interval in ms (default 24h)                              |
+
+### SSO / OIDC
+
+Any standards-compliant OIDC provider (Keycloak, Authentik, Authelia, Entra ID, Okta, Google Workspace, …) can act as the single sign-on source. Set `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` to enable it — everything else is auto-discovered via `/.well-known/openid-configuration`.
+
+1. Register a **confidential** client at your provider with redirect URI `https://your-domain/api/v1/auth/oidc/callback` (use the origin your install is served from, or set `PUBLIC_BASE_URL`).
+2. First-time logins auto-provision a read-only **Viewer** account unless `OIDC_AUTO_PROVISION=false` — promote users in **Users**. Restrict who can self-register with `OIDC_ALLOWED_DOMAINS`.
+3. Existing accounts link automatically on first SSO login only when the provider attests the email (`email_verified` claim). Password login remains available and is the admin recovery path.
 
 ## Tech Stack
 
