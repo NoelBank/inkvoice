@@ -2,7 +2,7 @@
 
 French e-invoicing support: emit EN 16931-compliant **Factur-X** e-invoices with French
 buyer identifiers and, on **Inkvoice Cloud**, deliver them to French businesses through a
-registered Platforme de Dématérialisation Partenaire (PDP). In France, receiving
+registered Plateforme de Dématérialisation Partenaire (PDP). In France, receiving
 e-invoices becomes mandatory for **all businesses** on **1 September 2026**; issuing
 becomes mandatory on **1 September 2026** for grandes entreprises and ETI, and on
 **1 September 2027** for PME, TPE and micro-entreprises.
@@ -11,7 +11,7 @@ becomes mandatory on **1 September 2026** for grandes entreprises and ETI, and o
 
 | Who | Receive | Issue |
 |---|---|---|
-| All businesses | 1 September 2026 | — |
+| All businesses | 1 September 2026 | see below |
 | Grandes entreprises and ETI | 1 September 2026 | 1 September 2026 |
 | PME, TPE and micro-entreprises | 1 September 2026 | 1 September 2027 |
 
@@ -28,7 +28,7 @@ provider for French e-invoicing:
 
 > **Self-hosted (OSS):** delivery is a cloud feature. Self-hosted installs emit Factur-X
 > with French buyer identifiers (SIREN/SIRET) and the franchise-en-base exemption, but do
-> not deliver through a PDP — exchange with French recipients still happens by sending the
+> not deliver through a PDP; exchange with French recipients still happens by sending the
 > hybrid PDF/XML directly, as before.
 
 ## Emission stays Factur-X
@@ -70,11 +70,11 @@ zero-VAT invoices as exempt in the Factur-X XML:
 Under **Settings → France** (visible on Inkvoice Cloud when the France plugin is
 enabled):
 
-- **Master toggle** — enables or disables France e-invoicing
-- **Your SIREN (issuer)** — the sender identity used on the France network
-- **Registration status** — your Qonto registration state, with an onboarding link
+- **Master toggle**: enables or disables France e-invoicing
+- **Your SIREN (issuer)**: the sender identity used on the France network
+- **Registration status**: your Qonto registration state, with an onboarding link
   when KYC is still pending
-- **Monthly usage** — documents sent and received in the current period against the plan
+- **Monthly usage**: documents sent and received in the current period against the plan
   quota
 
 ## Sending via the France network

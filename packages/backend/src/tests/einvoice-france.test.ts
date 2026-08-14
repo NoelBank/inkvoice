@@ -76,7 +76,6 @@ describe("Factur-X French buyer ID", () => {
       body: JSON.stringify({
         name: "Client SARL",
         country: "FR",
-        siren: "987654321",
         siret: "98765432100012",
         address_line1: "2 avenue des Champs",
         city: "Lyon",
@@ -131,14 +130,13 @@ describe("Factur-X French buyer ID", () => {
   });
 
   test("emits buyer SIRET with schemeID 0002 when no SIREN", async () => {
-    // SIREN present → wins; remove it to exercise the SIRET branch.
     const res = await authed(`/api/v1/invoices/${siretInvoiceId}/einvoice/emit`, {
       method: "POST",
     });
     expect(res.status).toBe(200);
     const { data } = (await res.json()) as any;
-    expect(data.xml).toContain(`<ram:ID schemeID="0009">987654321</ram:ID>`);
-    expect(data.xml).not.toContain(`schemeID="0002"`);
+    expect(data.xml).toContain(`<ram:ID schemeID="0002">98765432100012</ram:ID>`);
+    expect(data.xml).not.toContain(`schemeID="0009"`);
   });
 
   describe("Franchise en base de TVA", () => {
@@ -304,5 +302,60 @@ describe("Validator France warnings", () => {
       tax_breakdown: [],
     } as any);
     expect(issues.some((i) => i.code === "buyer_siren_fr")).toBe(false);
+  });
+
+  test("franchise_fr with VAT → error franchise_fr_vat", () => {
+    const issues = validateEinvoice({
+      invoice_number: "INV-FR-3",
+      issue_date: "2026-08-14",
+      due_date: null,
+      currency: "EUR",
+      locale: null,
+      type: "invoice",
+      notes: null,
+      payment_terms: null,
+      subtotal: 100,
+      tax_total: 20,
+      discount_amount: 0,
+      total: 120,
+      franchise_fr: true,
+      supplier: {
+        name: "Editeur FR",
+        email: null,
+        phone: null,
+        address: null,
+        street: "5 rue Test",
+        city: "Paris",
+        postal_code: "75001",
+        country: "FR",
+        tax_id: "FR12345678901",
+        tax_number: null,
+        bank_details: null,
+        peppol_endpoint_id: null,
+        peppol_scheme_id: null,
+      },
+      customer: {
+        name: "Client SAS",
+        email: null,
+        phone: null,
+        address_line1: "1 rue de la Paix",
+        address_line2: null,
+        city: "Paris",
+        state: null,
+        postal_code: "75002",
+        country: "FR",
+        tax_id: null,
+        tax_number: null,
+        einvoice_format: null,
+        leitweg_id: null,
+        einvoice_receiver_id: null,
+        einvoice_receiver_scheme: null,
+        siren: "123456789",
+        siret: null,
+      },
+      items: [],
+      tax_breakdown: [{ tax_rate: 20, taxable_amount: 100, tax_amount: 20 }],
+    } as any);
+    expect(issues.some((i) => i.code === "franchise_fr_vat")).toBe(true);
   });
 });

@@ -220,12 +220,19 @@ export async function enqueueTransmission(invoiceId: string): Promise<EnqueueRes
       .query(cacheUpdate)
       .run(capability.exists ? 1 : 0, invoice.customer_id);
   } catch (err) {
-    logger.warn({ err, receiver }, "PEPPOL receiver lookup failed during enqueue");
+    logger.warn(
+      { err, receiver },
+      useFrance
+        ? "France receiver lookup failed during enqueue"
+        : "PEPPOL receiver lookup failed during enqueue",
+    );
     return {
       ok: false,
       code: "receiver_unreachable",
       status: 422,
-      error: "Could not verify the receiver on the PEPPOL network.",
+      error: useFrance
+        ? "Could not verify the receiver on the Annuaire (via Qonto)."
+        : "Could not verify the receiver on the PEPPOL network.",
     };
   }
   if (!capability.exists || !capability.documentTypes.includes(documentType)) {
@@ -725,7 +732,7 @@ export async function handleTransportWebhook(
 
   switch (result.kind) {
     case "document":
-      handleInboundDocument(result, active.id);
+      handleInboundDocument(result, active);
       return result;
     case "status":
       handleInboundStatus(result);
@@ -740,17 +747,18 @@ export async function handleTransportWebhook(
 
 function handleInboundDocument(
   result: Extract<TransportWebhookResult, { kind: "document" }>,
-  transportId: string,
+  transport: EinvoiceTransport,
 ): void {
   if (Buffer.byteLength(result.xml, "utf-8") > MAX_INBOUND_BYTES) {
     throw new TransportWebhookSizeError("Inbound document exceeds the 10 MB cap");
   }
+  const source = transport.id === "qonto-fr" ? "qonto" : "peppol";
   const { id } = importEinvoiceFile({
     fileName: result.fileName,
     contentType: result.contentType,
     bytes: Buffer.from(result.xml, "utf-8"),
-    source: "peppol",
-    transportId,
+    source,
+    transportId: transport.id,
     providerMessageId: result.providerMessageId,
     senderScheme: result.sender.scheme,
     senderId: result.sender.value,
@@ -759,7 +767,7 @@ function handleInboundDocument(
     action: "create",
     resource_type: "einvoice_inbox",
     resource_id: id,
-    metadata: { source: "peppol", provider_message_id: result.providerMessageId },
+    metadata: { source, provider_message_id: result.providerMessageId },
   });
   void dispatchEvent("einvoice.received", {
     inbox_id: id,

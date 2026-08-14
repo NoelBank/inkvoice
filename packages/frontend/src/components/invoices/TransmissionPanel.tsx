@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
 import { formatDate } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/settings.store";
 
 interface Props {
   invoiceId: string;
@@ -46,6 +47,8 @@ const STATUS_STYLES: Record<Transmission["status"], string> = {
 
 function TransmissionPanel({ invoiceId }: Props) {
   const { t } = useTranslation();
+  const settings = useSettingsStore((s) => s.settings);
+  const networkLabel = settings.peppol_enabled === "true" ? "PEPPOL" : "France (Qonto)";
   const [transmissions, setTransmissions] = useState<Transmission[]>([]);
   const [attempts, setAttempts] = useState<Record<string, Attempt[]>>({});
   const [loading, setLoading] = useState(true);
@@ -110,7 +113,7 @@ function TransmissionPanel({ invoiceId }: Props) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
-          <Share2 className="h-4 w-4" /> {t("peppol.transmission_panel")}
+          <Share2 className="h-4 w-4" /> {t("peppol.transmission_panel", { network: networkLabel })}
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -130,7 +133,9 @@ function TransmissionPanel({ invoiceId }: Props) {
         {loading ? (
           <p className="text-sm text-muted-foreground">{t("einvoice.loading")}</p>
         ) : transmissions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("peppol.no_transmissions")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("peppol.no_transmissions", { network: networkLabel })}
+          </p>
         ) : (
           <ul className="space-y-4">
             {transmissions.map((tr) => (

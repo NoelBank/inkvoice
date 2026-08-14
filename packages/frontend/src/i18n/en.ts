@@ -527,6 +527,7 @@ const en = {
     actions: "Actions",
     source: "Source",
     source_peppol: "PEPPOL",
+    source_qonto: "Qonto (France)",
     source_upload: "Upload",
   },
   expenses: {
@@ -1472,9 +1473,9 @@ const en = {
 
   // PEPPOL network transport
   peppol: {
-    transmission_panel: "PEPPOL delivery",
+    transmission_panel: "{{network}} delivery",
     send_via_peppol: "Send via PEPPOL",
-    no_transmissions: "Nothing sent over PEPPOL yet.",
+    no_transmissions: "Nothing sent over {{network}} yet.",
     transmit_queued: "Transmission queued. It will be sent shortly.",
     status_queued: "Queued",
     status_sending: "Sending",

@@ -528,6 +528,7 @@ const tr: TranslationKeys = {
     actions: "Actions",
     source: "Source",
     source_peppol: "PEPPOL",
+    source_qonto: "Qonto (Fransa)",
     source_upload: "Upload",
   },
   expenses: {
@@ -1474,9 +1475,9 @@ const tr: TranslationKeys = {
 
   // PEPPOL network transport
   peppol: {
-    transmission_panel: "PEPPOL teslimatı",
+    transmission_panel: "{{network}} teslimatı",
     send_via_peppol: "PEPPOL ile gönder",
-    no_transmissions: "Henüz PEPPOL üzerinden gönderim yapılmadı.",
+    no_transmissions: "Henüz {{network}} üzerinden gönderim yapılmadı.",
     transmit_queued: "Gönderim kuyruğa alındı. Kısa süre içinde gönderilecek.",
     status_queued: "Kuyrukta",
     status_sending: "Gönderiliyor",

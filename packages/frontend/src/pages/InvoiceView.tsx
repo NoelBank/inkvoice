@@ -65,6 +65,7 @@ export default function InvoiceView({ onBack }: Props) {
   const { t } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
+  const franceEnabled = useSettingsStore((s) => s.settings.france_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
@@ -676,8 +677,8 @@ export default function InvoiceView({ onBack }: Props) {
       {/* E-invoice (XRechnung / ZUGFeRD) */}
       {einvoiceEnabled && <EinvoicePanel invoiceId={id!} />}
 
-      {/* PEPPOL transport (send + delivery state) */}
-      {peppolEnabled && <TransmissionPanel invoiceId={id!} />}
+      {/* E-invoice transport (send + delivery state) */}
+      {(peppolEnabled || franceEnabled) && <TransmissionPanel invoiceId={id!} />}
 
       {/* Record Payment Dialog */}
       <RecordPaymentDialog

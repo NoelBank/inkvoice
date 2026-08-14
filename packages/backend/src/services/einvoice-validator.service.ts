@@ -122,6 +122,14 @@ export function validateEinvoice(data: XmlInvoiceData): EinvoiceIssue[] {
       ),
     );
   }
+  if (data.franchise_fr && anyVat) {
+    issues.push(
+      error(
+        "franchise_fr_vat",
+        "The seller is flagged as franchise en base (art. 293 B CGI) but the invoice carries VAT.",
+      ),
+    );
+  }
   if (data.document_category_code === "AE" && data.tax_total !== 0) {
     issues.push(
       error("reverse_charge_vat", "Reverse charge invoices must not charge VAT (use the 0% rate)."),
