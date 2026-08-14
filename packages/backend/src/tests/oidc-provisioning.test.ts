@@ -93,6 +93,33 @@ describe("OIDC account resolution", () => {
     expect(row.oidc_subject).toBe("sub-alice");
   });
 
+  test("verified email never rebinds an already-SSO-bound account", async () => {
+    const db = getDb();
+    // alice bound to sub-alice
+    await resolveOrProvisionUser(ISSUER, {
+      subject: "sub-alice",
+      email: "alice@example.com",
+      name: "Alice",
+      emailVerified: true,
+    });
+    // a different subject, same verified email, must NOT rebind the row
+    const res = await resolveOrProvisionUser(ISSUER, {
+      subject: "sub-alice2",
+      email: "alice@example.com",
+      name: "Alice",
+      emailVerified: true,
+    });
+    expect(res.outcome).toBe("provisioned");
+    expect(res.userId).not.toBe(
+      db.query("SELECT id FROM users WHERE oidc_subject = 'sub-alice'").get()!.id,
+    );
+    const bound = db
+      .query("SELECT oidc_issuer, oidc_subject FROM users WHERE oidc_subject = 'sub-alice'")
+      .get() as { oidc_issuer: string; oidc_subject: string };
+    expect(bound.oidc_issuer).toBe(ISSUER);
+    expect(bound.oidc_subject).toBe("sub-alice");
+  });
+
   test("unverified email never links; JIT provisions instead", async () => {
     const db = getDb();
     db.run("UPDATE users SET email = 'bob@example.com' WHERE username = 'alice'");

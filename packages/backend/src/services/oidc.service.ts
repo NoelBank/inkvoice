@@ -246,7 +246,9 @@ export async function resolveOrProvisionUser(
   //    email the provider does not attest).
   if (info.emailVerified) {
     const byEmail = db
-      .query("SELECT id, username, is_admin, is_active FROM users WHERE lower(email) = lower(?)")
+      .query(
+        "SELECT id, username, is_admin, is_active FROM users WHERE lower(email) = lower(?) AND oidc_issuer IS NULL",
+      )
       .get(info.email) as UserRow | null;
     if (byEmail) {
       assertActive(byEmail);
