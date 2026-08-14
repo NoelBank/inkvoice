@@ -1476,6 +1476,7 @@ const tr: TranslationKeys = {
   // PEPPOL network transport
   peppol: {
     transmission_panel: "{{network}} teslimatı",
+    send_via_network: "{{network}} ile gönder",
     send_via_peppol: "PEPPOL ile gönder",
     no_transmissions: "Henüz {{network}} üzerinden gönderim yapılmadı.",
     transmit_queued: "Gönderim kuyruğa alındı. Kısa süre içinde gönderilecek.",

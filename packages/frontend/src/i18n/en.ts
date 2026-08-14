@@ -1474,6 +1474,7 @@ const en = {
   // PEPPOL network transport
   peppol: {
     transmission_panel: "{{network}} delivery",
+    send_via_network: "Send via {{network}}",
     send_via_peppol: "Send via PEPPOL",
     no_transmissions: "Nothing sent over {{network}} yet.",
     transmit_queued: "Transmission queued. It will be sent shortly.",

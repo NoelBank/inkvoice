@@ -1492,6 +1492,7 @@ const es: TranslationKeys = {
   // PEPPOL network transport
   peppol: {
     transmission_panel: "Entrega por {{network}}",
+    send_via_network: "Enviar por {{network}}",
     send_via_peppol: "Enviar por PEPPOL",
     no_transmissions: "Aún no se ha enviado nada por {{network}}.",
     transmit_queued: "Transmisión en cola. Se enviará en breve.",

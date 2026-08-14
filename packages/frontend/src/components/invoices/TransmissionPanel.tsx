@@ -125,7 +125,7 @@ function TransmissionPanel({ invoiceId }: Props) {
             ) : (
               <Send className="h-3.5 w-3.5" />
             )}
-            {t("peppol.send_via_peppol")}
+            {t("peppol.send_via_network", { network: networkLabel })}
           </Button>
         </div>
       </CardHeader>
