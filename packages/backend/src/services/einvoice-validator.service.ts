@@ -98,6 +98,20 @@ export function validateEinvoice(data: XmlInvoiceData): EinvoiceIssue[] {
     );
   }
 
+  // French specifics (buyer SIREN mandatory for French recipients)
+  if (
+    data.france_enabled &&
+    (data.customer.country || "").toUpperCase() === "FR" &&
+    !data.customer.siren
+  ) {
+    issues.push(
+      warning(
+        "buyer_siren_fr",
+        "Buyer SIREN is missing (required to deliver e-invoices to French businesses).",
+      ),
+    );
+  }
+
   // Reverse charge / Kleinunternehmer — tax should be zero
   const anyVat = Math.abs(data.tax_total) > 0.004 || data.tax_breakdown.some((t) => t.tax_rate > 0);
   if (data.kleinunternehmer && anyVat) {

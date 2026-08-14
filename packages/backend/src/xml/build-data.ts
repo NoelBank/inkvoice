@@ -86,6 +86,8 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
   const kleinunternehmer = settings.einvoice_kleinunternehmer === "true";
   // Franchise en base de TVA (art. 293 B CGI) → zero VAT with exemption reason.
   const franchiseFr = settings.einvoice_franchise_fr === "true";
+  // France network enabled → drive FR-specific validation.
+  const franceEnabled = settings.france_enabled === "true";
 
   return {
     invoice_number: String(invoice.invoice_number),
@@ -102,6 +104,7 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
     total: Number(invoice.total) || 0,
     kleinunternehmer,
     franchise_fr: franchiseFr,
+    france_enabled: franceEnabled,
     supplier: {
       name: settings.company_name || "",
       email: settings.company_email || null,

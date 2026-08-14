@@ -5,6 +5,7 @@ import { createApp } from "../app";
 import { closeDatabase, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
+import { validateEinvoice } from "../services/einvoice-validator.service";
 import { resetEnvCache } from "../utils/env";
 
 const TEST_DB = "./data/test-einvoice-france.db";
@@ -191,5 +192,117 @@ describe("Factur-X French buyer ID", () => {
       expect(offData.data.xml).not.toContain(`<ram:CategoryCode>E</ram:CategoryCode>`);
       expect(offData.data.xml).not.toContain("ExemptionReason");
     });
+  });
+});
+
+describe("Validator France warnings", () => {
+  test("FR buyer without SIREN warns when France is enabled", () => {
+    const issues = validateEinvoice({
+      invoice_number: "INV-FR-1",
+      issue_date: "2026-08-14",
+      due_date: null,
+      currency: "EUR",
+      locale: null,
+      type: "invoice",
+      notes: null,
+      payment_terms: null,
+      subtotal: 100,
+      tax_total: 20,
+      discount_amount: 0,
+      total: 120,
+      france_enabled: true,
+      supplier: {
+        name: "Editeur FR",
+        email: null,
+        phone: null,
+        address: null,
+        street: "5 rue Test",
+        city: "Paris",
+        postal_code: "75001",
+        country: "FR",
+        tax_id: "FR12345678901",
+        tax_number: null,
+        bank_details: null,
+        peppol_endpoint_id: null,
+        peppol_scheme_id: null,
+      },
+      customer: {
+        name: "Client SAS",
+        email: null,
+        phone: null,
+        address_line1: "1 rue de la Paix",
+        address_line2: null,
+        city: "Paris",
+        state: null,
+        postal_code: "75002",
+        country: "FR",
+        tax_id: null,
+        tax_number: null,
+        einvoice_format: null,
+        leitweg_id: null,
+        einvoice_receiver_id: null,
+        einvoice_receiver_scheme: null,
+        siren: null,
+        siret: null,
+      },
+      items: [],
+      tax_breakdown: [],
+    } as any);
+    expect(issues.some((i) => i.code === "buyer_siren_fr")).toBe(true);
+  });
+
+  test("no warning when SIREN present", () => {
+    const issues = validateEinvoice({
+      invoice_number: "INV-FR-2",
+      issue_date: "2026-08-14",
+      due_date: null,
+      currency: "EUR",
+      locale: null,
+      type: "invoice",
+      notes: null,
+      payment_terms: null,
+      subtotal: 100,
+      tax_total: 20,
+      discount_amount: 0,
+      total: 120,
+      france_enabled: true,
+      supplier: {
+        name: "Editeur FR",
+        email: null,
+        phone: null,
+        address: null,
+        street: "5 rue Test",
+        city: "Paris",
+        postal_code: "75001",
+        country: "FR",
+        tax_id: "FR12345678901",
+        tax_number: null,
+        bank_details: null,
+        peppol_endpoint_id: null,
+        peppol_scheme_id: null,
+      },
+      customer: {
+        name: "Client SAS",
+        email: null,
+        phone: null,
+        address_line1: "1 rue de la Paix",
+        address_line2: null,
+        city: "Paris",
+        state: null,
+        postal_code: "75002",
+        country: "FR",
+        tax_id: null,
+        tax_number: null,
+        einvoice_format: null,
+        leitweg_id: null,
+        einvoice_receiver_id: null,
+        einvoice_receiver_scheme: null,
+        siren: "123456789",
+        siret: null,
+      },
+      items: [],
+      tax_breakdown: [],
+    } as any);
+    expect(issues.some((i) => i.code === "buyer_siren_fr")).toBe(false);
   });
 });

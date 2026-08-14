@@ -20,6 +20,8 @@ export interface XmlInvoiceData {
   kleinunternehmer?: boolean;
   /** True when the seller is a French franchise en base (art. 293 B CGI). */
   franchise_fr?: boolean;
+  /** True when the France network is enabled (drives FR-specific validation). */
+  france_enabled?: boolean;
 
   supplier: {
     name: string;
