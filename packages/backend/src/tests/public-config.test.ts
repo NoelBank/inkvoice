@@ -120,4 +120,30 @@ describe("GET /api/v1/public/config", () => {
     expect(data.demo_mode).toBe(false);
     expect(data.demo_credentials).toBeNull();
   });
+
+  test("publishes oidc_enabled=false when SSO is not configured", async () => {
+    process.env.OIDC_ISSUER_URL = "";
+    resetEnvCache();
+    const res = await app.request("/api/v1/public/config");
+    const data = (await res.json()) as any;
+    expect(data.data.oidc_enabled).toBe(false);
+    expect(data.data.oidc_provider_name).toBeNull();
+  });
+
+  test("publishes oidc_enabled=true and the provider name when configured", async () => {
+    process.env.OIDC_ISSUER_URL = "https://auth.example.com";
+    process.env.OIDC_CLIENT_ID = "inkvoice";
+    process.env.OIDC_CLIENT_SECRET = "secret";
+    process.env.OIDC_PROVIDER_NAME = "Google Workspace";
+    resetEnvCache();
+    const res = await app.request("/api/v1/public/config");
+    const data = (await res.json()) as any;
+    expect(data.data.oidc_enabled).toBe(true);
+    expect(data.data.oidc_provider_name).toBe("Google Workspace");
+    delete process.env.OIDC_ISSUER_URL;
+    delete process.env.OIDC_CLIENT_ID;
+    delete process.env.OIDC_CLIENT_SECRET;
+    delete process.env.OIDC_PROVIDER_NAME;
+    resetEnvCache();
+  });
 });

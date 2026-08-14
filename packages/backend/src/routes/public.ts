@@ -37,6 +37,8 @@ publicRoutes.get("/config", (c) => {
         env.DEMO_MODE && isThrowawayAdmin
           ? { username: DEMO_ADMIN_USER, password: DEMO_ADMIN_PASS }
           : null,
+      oidc_enabled: env.OIDC_ENABLED,
+      oidc_provider_name: env.OIDC_PROVIDER_NAME || null,
     },
   });
 });
