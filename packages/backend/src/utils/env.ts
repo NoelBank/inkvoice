@@ -35,6 +35,15 @@ export interface Env {
   PEPPOL_SH_API_KEY: string;
   PEPPOL_SH_WEBHOOK_SECRET: string;
   PEPPOL_SH_BASE_URL: string;
+  OIDC_ISSUER_URL: string;
+  OIDC_CLIENT_ID: string;
+  OIDC_CLIENT_SECRET: string;
+  OIDC_SCOPE: string;
+  OIDC_ALLOWED_DOMAINS: string[];
+  OIDC_AUTO_PROVISION: boolean;
+  OIDC_PROVIDER_NAME: string;
+  PUBLIC_BASE_URL: string;
+  OIDC_ENABLED: boolean;
 }
 
 /**
@@ -129,6 +138,46 @@ export function getEnv(): Env {
       }
       return url;
     })(),
+    OIDC_ISSUER_URL: (() => {
+      const url = process.env.OIDC_ISSUER_URL || "";
+      if (!url) return "";
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+      } catch {
+        throw new Error("FATAL: OIDC_ISSUER_URL must be a valid URL");
+      }
+      if (parsed.protocol !== "https:") {
+        throw new Error("FATAL: OIDC_ISSUER_URL must use https");
+      }
+      if (parsed.username || parsed.password) {
+        throw new Error("FATAL: OIDC_ISSUER_URL must not contain credentials");
+      }
+      return url.replace(/\/+$/, "");
+    })(),
+    OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID || "",
+    OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET || "",
+    OIDC_SCOPE: process.env.OIDC_SCOPE || "openid email profile",
+    OIDC_ALLOWED_DOMAINS: (process.env.OIDC_ALLOWED_DOMAINS || "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean),
+    OIDC_AUTO_PROVISION: process.env.OIDC_AUTO_PROVISION !== "false",
+    OIDC_PROVIDER_NAME: process.env.OIDC_PROVIDER_NAME || "",
+    OIDC_ENABLED: (() => {
+      // Computed last so it can see the values above. Presence of the issuer
+      // enables SSO; a half-configured client is a boot-time error, never a
+      // silent login-page surprise.
+      const issuer = process.env.OIDC_ISSUER_URL || "";
+      if (!issuer) return false;
+      if (!process.env.OIDC_CLIENT_ID || !process.env.OIDC_CLIENT_SECRET) {
+        throw new Error(
+          "FATAL: OIDC_ISSUER_URL is set but OIDC_CLIENT_ID/OIDC_CLIENT_SECRET are missing",
+        );
+      }
+      return true;
+    })(),
+    PUBLIC_BASE_URL: (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, ""),
   };
 
   return cachedEnv;
