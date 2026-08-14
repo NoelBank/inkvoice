@@ -139,4 +139,57 @@ describe("Factur-X French buyer ID", () => {
     expect(data.xml).toContain(`<ram:ID schemeID="0009">987654321</ram:ID>`);
     expect(data.xml).not.toContain(`schemeID="0002"`);
   });
+
+  describe("Franchise en base de TVA", () => {
+    let customerId: string;
+    let invoiceId: string;
+
+    test("setup zero-VAT invoice", async () => {
+      const cust = await authed("/api/v1/customers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Micro Entreprise",
+          country: "FR",
+          siren: "111222333",
+          address_line1: "3 rue du Commerce",
+          city: "Nantes",
+          postal_code: "44000",
+        }),
+      });
+      customerId = ((await cust.json()) as any).data.id;
+      const inv = await authed("/api/v1/invoices", {
+        method: "POST",
+        body: JSON.stringify({
+          customer_id: customerId,
+          issue_date: "2026-08-14",
+          currency: "EUR",
+          items: [{ description: "Vente", quantity: 1, unit_price: 200 }],
+          items_tax: [], // no tax definitions → 0% lines
+        }),
+      });
+      invoiceId = ((await inv.json()) as any).data.id;
+    });
+
+    test("franchise on → category E + exemption reason; off → category Z", async () => {
+      await authed("/api/v1/settings", {
+        method: "PUT",
+        body: JSON.stringify({ einvoice_franchise_fr: "true" }),
+      });
+      const on = await authed(`/api/v1/invoices/${invoiceId}/einvoice/emit`, { method: "POST" });
+      const onData = (await on.json()) as any;
+      expect(onData.data.xml).toContain(`<ram:CategoryCode>E</ram:CategoryCode>`);
+      expect(onData.data.xml).toContain(
+        `<ram:ExemptionReason>TVA non applicable, art. 293 B du CGI</ram:ExemptionReason>`,
+      );
+
+      await authed("/api/v1/settings", {
+        method: "PUT",
+        body: JSON.stringify({ einvoice_franchise_fr: "false" }),
+      });
+      const off = await authed(`/api/v1/invoices/${invoiceId}/einvoice/emit`, { method: "POST" });
+      const offData = (await off.json()) as any;
+      expect(offData.data.xml).not.toContain(`<ram:CategoryCode>E</ram:CategoryCode>`);
+      expect(offData.data.xml).not.toContain("ExemptionReason");
+    });
+  });
 });

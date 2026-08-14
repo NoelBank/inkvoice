@@ -32,6 +32,8 @@ export class FacturxZugferdProfile implements XmlProfile {
   generateXml(data: XmlInvoiceData): string {
     const isCredit = data.type === "credit_note";
     const typeCode = isCredit ? "381" : "380";
+    const franchise = data.franchise_fr === true;
+    const exemptionReason = "TVA non applicable, art. 293 B du CGI";
 
     const lines: string[] = [];
     lines.push(`<?xml version="1.0" encoding="UTF-8"?>`);
@@ -99,8 +101,11 @@ export class FacturxZugferdProfile implements XmlProfile {
       lines.push(`        <ram:ApplicableTradeTax>`);
       lines.push(`          <ram:TypeCode>VAT</ram:TypeCode>`);
       lines.push(
-        `          <ram:CategoryCode>${esc(lineCategory(item.tax_category_code))}</ram:CategoryCode>`,
+        `          <ram:CategoryCode>${franchise && item.tax_rate === 0 ? "E" : lineCategory(item.tax_category_code)}</ram:CategoryCode>`,
       );
+      if (franchise && item.tax_rate === 0) {
+        lines.push(`          <ram:ExemptionReason>${exemptionReason}</ram:ExemptionReason>`);
+      }
       if (item.tax_rate > 0 || (item.tax_category_code && item.tax_category_code !== "Z")) {
         lines.push(
           `          <ram:RateApplicablePercent>${item.tax_rate}</ram:RateApplicablePercent>`,
@@ -222,7 +227,12 @@ export class FacturxZugferdProfile implements XmlProfile {
       lines.push(`        <ram:CalculatedAmount>${amt(tax.tax_amount)}</ram:CalculatedAmount>`);
       lines.push(`        <ram:TypeCode>VAT</ram:TypeCode>`);
       lines.push(`        <ram:BasisAmount>${amt(tax.taxable_amount)}</ram:BasisAmount>`);
-      lines.push(`        <ram:CategoryCode>${esc(taxCategory(tax))}</ram:CategoryCode>`);
+      lines.push(
+        `        <ram:CategoryCode>${franchise && tax.tax_rate === 0 ? "E" : taxCategory(tax)}</ram:CategoryCode>`,
+      );
+      if (franchise && tax.tax_rate === 0) {
+        lines.push(`        <ram:ExemptionReason>${exemptionReason}</ram:ExemptionReason>`);
+      }
       if (tax.tax_rate > 0 || tax.category_code !== "Z") {
         lines.push(
           `        <ram:RateApplicablePercent>${tax.tax_rate}</ram:RateApplicablePercent>`,

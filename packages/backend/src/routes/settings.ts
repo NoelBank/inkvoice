@@ -75,6 +75,7 @@ const ALLOWED_SETTINGS = new Set([
   "einvoice_enabled",
   "einvoice_attach_pdf",
   "einvoice_kleinunternehmer",
+  "einvoice_franchise_fr",
   "company_peppol_id",
   "company_peppol_scheme",
   "fiscal_year_start_month",

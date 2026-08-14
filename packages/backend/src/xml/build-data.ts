@@ -84,6 +84,8 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
 
   // Kleinunternehmer (§ 19 UStG) → no VAT, categories come out as exempt.
   const kleinunternehmer = settings.einvoice_kleinunternehmer === "true";
+  // Franchise en base de TVA (art. 293 B CGI) → zero VAT with exemption reason.
+  const franchiseFr = settings.einvoice_franchise_fr === "true";
 
   return {
     invoice_number: String(invoice.invoice_number),
@@ -99,6 +101,7 @@ export function buildXmlInvoiceData(invoiceId: string): XmlInvoiceData {
     discount_amount: Number(invoice.discount_amount) || 0,
     total: Number(invoice.total) || 0,
     kleinunternehmer,
+    franchise_fr: franchiseFr,
     supplier: {
       name: settings.company_name || "",
       email: settings.company_email || null,

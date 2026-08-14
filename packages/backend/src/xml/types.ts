@@ -18,6 +18,8 @@ export interface XmlInvoiceData {
   document_category_code?: string;
   /** True when the seller is a German Kleinunternehmer (§ 19 UStG). */
   kleinunternehmer?: boolean;
+  /** True when the seller is a French franchise en base (art. 293 B CGI). */
+  franchise_fr?: boolean;
 
   supplier: {
     name: string;
