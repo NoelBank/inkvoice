@@ -581,6 +581,8 @@ export const api = {
       data: {
         demo_mode: boolean;
         demo_credentials: { username: string; password: string } | null;
+        oidc_enabled: boolean;
+        oidc_provider_name: string | null;
       };
     }>("/public/config"),
   getPublicInvoice: (shareToken: string) =>

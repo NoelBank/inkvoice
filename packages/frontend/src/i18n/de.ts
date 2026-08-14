@@ -133,6 +133,21 @@ const de: TranslationKeys = {
     login_failed: "Anmeldung fehlgeschlagen",
     demo_credentials: "Demo-Zugang:",
     demo_fill: "Ausfüllen",
+    sign_in_with_sso: "Mit SSO anmelden",
+    sign_in_with_provider: "Mit {{provider}} anmelden",
+    sso_or: "oder",
+    oidc_error: {
+      invalid_state: "Die Anmeldung konnte nicht validiert werden. Bitte erneut versuchen.",
+      auth_failed:
+        "Anmeldung mit SSO fehlgeschlagen. Bitte erneut versuchen oder Ihr Passwort verwenden.",
+      email_required: "Ihr Identitätsanbieter hat keine E-Mail-Adresse geliefert.",
+      unverified_email: "Ihre E-Mail-Adresse konnte vom Identitätsanbieter nicht bestätigt werden.",
+      domain_not_allowed: "Ihre E-Mail-Domain darf sich nicht anmelden.",
+      provisioning_disabled:
+        "Für Sie existiert kein Konto und die Selbstregistrierung ist deaktiviert.",
+      user_inactive: "Ihr Konto wurde deaktiviert.",
+      misconfigured: "SSO ist nicht korrekt konfiguriert. Wenden Sie sich an Ihren Administrator.",
+    },
     email: "E-Mail",
     forgot_title: "Passwort vergessen?",
     forgot_description:

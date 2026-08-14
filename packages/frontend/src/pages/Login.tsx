@@ -17,6 +17,20 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demo, setDemo] = useState<{ username: string; password: string } | null>(null);
+  const [sso, setSso] = useState<{ enabled: boolean; providerName: string | null } | null>(null);
+  const OIDC_ERROR_CODES = new Set([
+    "invalid_state",
+    "auth_failed",
+    "email_required",
+    "unverified_email",
+    "domain_not_allowed",
+    "provisioning_disabled",
+    "user_inactive",
+    "misconfigured",
+  ]);
+  const oidcErrorParam = new URLSearchParams(window.location.search).get("oidc_error");
+  const oidcError =
+    oidcErrorParam && OIDC_ERROR_CODES.has(oidcErrorParam) ? oidcErrorParam : "auth_failed";
   const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
@@ -33,7 +47,13 @@ export default function Login() {
   useEffect(() => {
     api
       .getPublicConfig()
-      .then((res) => setDemo(res.data.demo_credentials))
+      .then((res) => {
+        setDemo(res.data.demo_credentials);
+        setSso({
+          enabled: res.data.oidc_enabled,
+          providerName: res.data.oidc_provider_name,
+        });
+      })
       .catch(() => {});
   }, []);
 
@@ -83,6 +103,32 @@ export default function Login() {
           <CardDescription>{t("auth.sign_in_to")}</CardDescription>
         </CardHeader>
         <CardContent>
+          {sso?.enabled && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = "/api/v1/auth/oidc/start";
+                }}
+              >
+                {sso.providerName
+                  ? t("auth.sign_in_with_provider", { provider: sso.providerName })
+                  : t("auth.sign_in_with_sso")}
+              </Button>
+              <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>{t("auth.sso_or")}</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
+          {oidcError && (
+            <div className="mb-4 text-sm text-destructive bg-destructive/10 rounded-lg p-3 animate-slide-down">
+              {t(`auth.oidc_error.${oidcError}`)}
+            </div>
+          )}
           {/* Overlay-provided sign-in alternatives (e.g. OAuth buttons). */}
           <Slot name="login-oauth" />
           {demo && (

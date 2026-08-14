@@ -129,6 +129,21 @@ const fr: TranslationKeys = {
     login_failed: "Échec de la connexion",
     demo_credentials: "Connexion démo :",
     demo_fill: "Remplir",
+    sign_in_with_sso: "Se connecter avec SSO",
+    sign_in_with_provider: "Se connecter avec {{provider}}",
+    sso_or: "ou",
+    oidc_error: {
+      invalid_state: "La tentative de connexion n'a pas pu être validée. Veuillez réessayer.",
+      auth_failed: "La connexion SSO a échoué. Veuillez réessayer ou utiliser votre mot de passe.",
+      email_required: "Votre fournisseur d'identité n'a pas fourni d'adresse e-mail.",
+      unverified_email:
+        "Votre adresse e-mail n'a pas pu être vérifiée par le fournisseur d'identité.",
+      domain_not_allowed: "Votre domaine de messagerie n'est pas autorisé à se connecter.",
+      provisioning_disabled:
+        "Aucun compte n'existe pour vous et l'auto-inscription est désactivée.",
+      user_inactive: "Votre compte a été désactivé.",
+      misconfigured: "SSO n'est pas configuré correctement. Contactez votre administrateur.",
+    },
     email: "E-mail",
     forgot_title: "Mot de passe oublié ?",
     forgot_description:
