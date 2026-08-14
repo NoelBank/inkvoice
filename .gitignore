@@ -16,3 +16,4 @@ data/
 # Internal / local-only notes — never publish to the OSS repo
 internal/
 .cursor/
+.worktrees/
