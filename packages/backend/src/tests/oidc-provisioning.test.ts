@@ -22,6 +22,12 @@ beforeAll(async () => {
 
 afterAll(() => {
   closeDatabase();
+  delete process.env.OIDC_ISSUER_URL;
+  delete process.env.OIDC_CLIENT_ID;
+  delete process.env.OIDC_CLIENT_SECRET;
+  delete process.env.OIDC_AUTO_PROVISION;
+  delete process.env.OIDC_ALLOWED_DOMAINS;
+  resetEnvCache();
   for (const f of [TEST_DB, `${TEST_DB}-wal`, `${TEST_DB}-shm`]) {
     try {
       unlinkSync(f);
@@ -111,7 +117,9 @@ describe("OIDC account resolution", () => {
     });
     expect(res.outcome).toBe("provisioned");
     expect(res.userId).not.toBe(
-      db.query("SELECT id FROM users WHERE oidc_subject = 'sub-alice'").get()!.id,
+      (db.query("SELECT id FROM users WHERE oidc_subject = 'sub-alice'").get() as {
+        id: string;
+      } | null)!.id,
     );
     const bound = db
       .query("SELECT oidc_issuer, oidc_subject FROM users WHERE oidc_subject = 'sub-alice'")

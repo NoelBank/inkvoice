@@ -106,6 +106,12 @@ afterAll(() => {
   setOidcCallbackOverride(null);
   server.stop(true);
   closeDatabase();
+  delete process.env.OIDC_ISSUER_URL;
+  delete process.env.OIDC_CLIENT_ID;
+  delete process.env.OIDC_CLIENT_SECRET;
+  delete process.env.OIDC_AUTO_PROVISION;
+  delete process.env.PUBLIC_BASE_URL;
+  resetEnvCache();
   for (const f of [TEST_DB, `${TEST_DB}-wal`, `${TEST_DB}-shm`]) {
     try {
       unlinkSync(f);

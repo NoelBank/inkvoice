@@ -108,6 +108,10 @@ beforeAll(async () => {
 afterAll(() => {
   server.stop(true);
   resetOidcServiceForTesting();
+  delete process.env.OIDC_ISSUER_URL;
+  delete process.env.OIDC_CLIENT_ID;
+  delete process.env.OIDC_CLIENT_SECRET;
+  delete process.env.OIDC_SCOPE;
   resetEnvCache();
   delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
   if (prevTlsRejectUnauthorized !== undefined) {
