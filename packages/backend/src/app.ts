@@ -19,6 +19,7 @@ import { exportRoutes } from "./routes/export";
 import { feedback } from "./routes/feedback";
 import { healthRoute } from "./routes/health";
 import { invoices } from "./routes/invoices";
+import { oidcRoutes } from "./routes/oidc";
 import { outgoingWebhooks } from "./routes/outgoing-webhooks";
 import { products } from "./routes/products";
 import { publicRoutes } from "./routes/public";
@@ -113,6 +114,7 @@ export function createApp(options?: CreateAppOptions): Hono {
 
   // Public routes (no auth required)
   app.route("/api/v1/auth", auth);
+  app.route("/api/v1/auth/oidc", oidcRoutes);
   app.route("/api/v1/public", publicRoutes);
   app.route("/api/v1/webhooks", webhooks);
 
