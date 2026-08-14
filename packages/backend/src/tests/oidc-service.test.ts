@@ -24,6 +24,7 @@ let discoveryHits = 0;
 let evilIssuer = false;
 let nextIdToken = "";
 let certDir: string | null = null;
+let prevTlsRejectUnauthorized: string | undefined;
 
 async function signIdToken(claims: Record<string, unknown>): Promise<string> {
   return new SignJWT(claims)
@@ -99,6 +100,7 @@ beforeAll(async () => {
   process.env.OIDC_CLIENT_ID = CLIENT_ID;
   process.env.OIDC_CLIENT_SECRET = CLIENT_SECRET;
   process.env.JWT_SECRET = "test-secret-key-that-is-at-least-32-chars-long";
+  prevTlsRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
   resetEnvCache();
 });
@@ -108,6 +110,9 @@ afterAll(() => {
   resetOidcServiceForTesting();
   resetEnvCache();
   delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+  if (prevTlsRejectUnauthorized !== undefined) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTlsRejectUnauthorized;
+  }
   if (certDir) rmSync(certDir, { recursive: true, force: true });
 });
 
@@ -218,12 +223,20 @@ describe("token exchange + id_token validation", () => {
   });
 
   test("missing email in id_token is rejected", async () => {
-    const idToken = await signIdToken({ email_verified: true, name: "No Email" });
+    const idToken = await signIdToken({
+      email_verified: true,
+      name: "No Email",
+      nonce: "nonce-1",
+    });
     await expect(validateIdToken(idToken, "nonce-1")).rejects.toThrow();
   });
 
   test("missing sub in id_token is rejected", async () => {
-    const idToken = await new SignJWT({ email: "a@b.c", email_verified: true })
+    const idToken = await new SignJWT({
+      email: "a@b.c",
+      email_verified: true,
+      nonce: "nonce-1",
+    })
       .setProtectedHeader({ alg: "ES256", kid: "test-kid" })
       .setIssuer(issuer)
       .setAudience(CLIENT_ID)
