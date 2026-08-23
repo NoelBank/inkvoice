@@ -39,6 +39,14 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     file: "template-minimal.html",
     isDefault: false,
   },
+  {
+    slug: "deutsch",
+    name: "Deutsch",
+    description:
+      "German A4 invoice with a clear line-item table and an explicit early-payment discount box",
+    file: "template-deutsch.html",
+    isDefault: false,
+  },
 ];
 
 export function readTemplateFile(filename: string): string {

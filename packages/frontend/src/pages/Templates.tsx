@@ -398,7 +398,14 @@ const TEMPLATE_VARIABLES = [
         tag: "cash_discount_deadline",
         desc: "Formatted date by which payment must arrive to claim the discount",
       },
+      { tag: "cash_discount_value", desc: "Configured discount value" },
+      { tag: "cash_discount_is_percentage", desc: "Boolean — discount is a percentage" },
+      { tag: "cash_discount_is_amount", desc: "Boolean — discount is a fixed amount" },
       { tag: "formatted_cash_discount", desc: "Formatted amount saved by paying early" },
+      {
+        tag: "formatted_cash_discounted_total",
+        desc: "Formatted amount due when paid within the discount period",
+      },
       {
         tag: "has_cash_discount_applied",
         desc: "Boolean — the early-payment discount was already applied",

@@ -124,6 +124,13 @@ export function buildInvoiceContext(invoiceId: string) {
   const amountPaid = invoice.amount_paid || 0;
   const cashDiscountApplied = invoice.cash_discount_applied || 0;
   const balanceDue = Math.max(0, invoice.total - amountPaid - cashDiscountApplied);
+  const cashDiscountConfig = {
+    type: invoice.cash_discount_type,
+    value: invoice.cash_discount_value,
+    days: invoice.cash_discount_days,
+  };
+  const cashDiscountAvailable = hasCashDiscount(cashDiscountConfig);
+  const cashDiscountAmount = cashDiscountOn(balanceDue, cashDiscountConfig);
 
   return {
     invoice_number: invoice.invoice_number,
@@ -219,10 +226,13 @@ export function buildInvoiceContext(invoiceId: string) {
     has_payments: amountPaid > 0,
     formatted_amount_paid: formatCurrency(amountPaid, currency, numberFormat, localeOverride),
     formatted_balance_due: formatCurrency(balanceDue, currency, numberFormat, localeOverride),
-    has_cash_discount: hasCashDiscount(invoice) && balanceDue > 0,
+    has_cash_discount: cashDiscountAvailable && balanceDue > 0,
+    cash_discount_type: invoice.cash_discount_type,
+    cash_discount_is_percentage: invoice.cash_discount_type === "percentage",
+    cash_discount_is_amount: invoice.cash_discount_type === "amount",
     cash_discount_value: invoice.cash_discount_value,
     cash_discount_days: invoice.cash_discount_days,
-    cash_discount_deadline: hasCashDiscount(invoice)
+    cash_discount_deadline: cashDiscountAvailable
       ? formatDateStr(
           cashDiscountDeadline(invoice.issue_date, invoice.cash_discount_days),
           dateFormat,
@@ -230,11 +240,13 @@ export function buildInvoiceContext(invoiceId: string) {
         )
       : null,
     formatted_cash_discount: formatCurrency(
-      cashDiscountOn(balanceDue, {
-        type: invoice.cash_discount_type,
-        value: invoice.cash_discount_value,
-        days: invoice.cash_discount_days,
-      }),
+      cashDiscountAmount,
+      currency,
+      numberFormat,
+      localeOverride,
+    ),
+    formatted_cash_discounted_total: formatCurrency(
+      Math.max(0, balanceDue - cashDiscountAmount),
       currency,
       numberFormat,
       localeOverride,

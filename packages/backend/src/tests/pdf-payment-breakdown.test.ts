@@ -32,6 +32,27 @@ afterAll(() => {
 });
 
 describe("PDF payment breakdown", () => {
+  test("exposes a percentage cash discount for explicit template wording", () => {
+    const customer = createCustomer({ name: "Skonto Customer" });
+    const inv = createInvoice({
+      customer_id: customer.id,
+      issue_date: "2026-01-01",
+      items: [{ description: "Work", quantity: 1, unit_price: 200 }],
+      cash_discount_type: "percentage",
+      cash_discount_value: 2,
+      cash_discount_days: 14,
+    });
+
+    const ctx = buildInvoiceContext(inv.id)!;
+    expect(ctx.has_cash_discount).toBe(true);
+    expect(ctx.cash_discount_is_percentage).toBe(true);
+    expect(ctx.cash_discount_is_amount).toBe(false);
+    expect(ctx.cash_discount_value).toBe(2);
+    expect(ctx.cash_discount_deadline).toContain("2026");
+    expect(ctx.formatted_cash_discount).toContain("4");
+    expect(ctx.formatted_cash_discounted_total).toContain("196");
+  });
+
   test("buildInvoiceContext exposes payments, amount paid, and balance due", () => {
     const customer = createCustomer({ name: "Acme" });
     const inv = createInvoice({

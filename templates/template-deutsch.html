@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no,address=no,date=no" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @page {
+        size: A4;
+        margin: 14mm 14mm 12mm 20mm;
+      }
+
+      :root {
+        --ink: #333333;
+        --strong: #1a1a1a;
+        --soft: #6b6b6b;
+        --rule: #dddddd;
+        --shade: #f5f5f5;
+        --discount-bg: #f6f8fb;
+        --discount-border: #cfd7e3;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.5;
+        color: var(--ink);
+        background: #ffffff;
+        font-variant-numeric: tabular-nums;
+        padding: 0 0 30mm !important;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      @media screen {
+        .sheet {
+          padding: 12mm;
+        }
+      }
+
+      p {
+        margin: 0;
+      }
+
+      strong {
+        font-weight: 600;
+        color: var(--strong);
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16mm;
+        margin-bottom: 12mm;
+      }
+
+      .head .logo {
+        display: block;
+        max-height: 15mm;
+        max-width: 45mm;
+        margin-bottom: 3mm;
+      }
+
+      .doc {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .doc .title {
+        margin-bottom: 3mm;
+        color: var(--strong);
+        font-size: 20pt;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+      }
+
+      .doc .hint {
+        margin-top: 1.5mm;
+        color: var(--soft);
+        font-size: 8.5pt;
+      }
+
+      .recipient {
+        margin-bottom: 10mm;
+      }
+
+      .intro {
+        margin-bottom: 6mm;
+      }
+
+      table.items {
+        width: 100%;
+        margin-bottom: 6mm;
+        border-collapse: collapse;
+        border-bottom: 1px solid var(--rule);
+        counter-reset: pos;
+      }
+
+      table.items th,
+      table.items td {
+        padding: 2.2mm 2mm;
+        border-top: 1px solid var(--rule);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      table.items th {
+        color: var(--strong);
+        background: var(--shade);
+        font-size: 9.5pt;
+        font-weight: 600;
+      }
+
+      table.items th.r,
+      table.items td.r {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      table.items tr {
+        break-inside: avoid;
+      }
+
+      table.items td.pos::before {
+        content: counter(pos);
+        counter-increment: pos;
+      }
+
+      col.pos {
+        width: 8mm;
+      }
+
+      col.qty {
+        width: 15mm;
+      }
+
+      col.unit {
+        width: 20mm;
+      }
+
+      col.price,
+      col.sum {
+        width: 25mm;
+      }
+
+      .unit[data-unit] {
+        font-size: 0;
+      }
+
+      .unit::after {
+        font-size: 10pt;
+      }
+
+      .unit[data-unit="piece"]::after {
+        content: "Stück";
+      }
+
+      .unit[data-unit="hour"]::after {
+        content: "Std.";
+      }
+
+      .unit[data-unit="day"]::after {
+        content: "Tage";
+      }
+
+      .unit[data-unit="kg"]::after {
+        content: "kg";
+      }
+
+      .unit[data-unit="meter"]::after {
+        content: "m";
+      }
+
+      .unit[data-unit="lump_sum"]::after {
+        content: "Pauschale";
+      }
+
+      .totals-wrap {
+        display: flex;
+        justify-content: flex-end;
+        break-inside: avoid;
+      }
+
+      .totals-column {
+        width: 86mm;
+      }
+
+      table.totals {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      table.totals td {
+        padding: 1.2mm 0;
+      }
+
+      table.totals td.v {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      table.totals tr.total td {
+        padding-top: 2mm;
+        border-top: 1px solid var(--rule);
+        color: var(--strong);
+        font-size: 11pt;
+        font-weight: 600;
+      }
+
+      table.totals tr.gap td {
+        padding-top: 3mm;
+      }
+
+      table.totals tr.open td {
+        color: var(--strong);
+        font-weight: 600;
+      }
+
+      .cash-discount {
+        margin-top: 4mm;
+        padding: 3mm 3.5mm;
+        border: 1px solid var(--discount-border);
+        border-radius: 2mm;
+        background: var(--discount-bg);
+        break-inside: avoid;
+      }
+
+      .cash-discount .discount-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 4mm;
+        color: var(--strong);
+        font-weight: 600;
+      }
+
+      .cash-discount .discount-meta {
+        margin-top: 1mm;
+        color: var(--soft);
+        font-size: 8.5pt;
+      }
+
+      .cash-discount .discount-payable {
+        margin-top: 1.5mm;
+        padding-top: 1.5mm;
+        border-top: 1px solid var(--discount-border);
+        display: flex;
+        justify-content: space-between;
+        gap: 4mm;
+      }
+
+      .note {
+        clear: both;
+        margin: 12mm 0;
+        text-align: center;
+        color: var(--soft);
+      }
+
+      .note p + p {
+        margin-top: 1.5mm;
+      }
+
+      .bottom {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 12mm;
+        padding-top: 3mm;
+        border-top: 1px solid var(--rule);
+        color: var(--soft);
+        background: #ffffff;
+        font-size: 8.5pt;
+        line-height: 1.55;
+        break-inside: avoid;
+      }
+
+      .bottom .bank {
+        text-align: right;
+      }
+
+      .bottom .qr {
+        flex: 0 0 auto;
+      }
+
+      .bottom .qr img {
+        width: 18mm;
+        height: 18mm;
+      }
+
+      .watermark {
+        position: fixed;
+        z-index: -1;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .watermark img {
+        max-width: 60%;
+        opacity: 0.07;
+      }
+    </style>
+  </head>
+  <body>
+    {{#watermark}}
+    <div class="watermark"><img src="{{image}}" alt="{{status}}" /></div>
+    {{/watermark}}
+
+    <div class="sheet">
+      <div class="head">
+        <div>
+          {{#company.logo}}<img class="logo" src="{{company.logo}}" alt="{{company.name}}" />{{/company.logo}}
+          <div><strong>{{company.name}}</strong></div>
+          {{#company.address}}<div>{{{company.address}}}</div>{{/company.address}}
+        </div>
+        <div class="doc">
+          <div class="title">Rechnung</div>
+          <div><strong>Rechnung Nr.:</strong> {{invoice_number}}</div>
+          <div><strong>Datum:</strong> {{issue_date}}</div>
+          {{#due_date}}<div><strong>Zahlbar bis:</strong> {{due_date}}</div>{{/due_date}}
+          {{#notes}}<div><strong>Leistungszeitraum:</strong> {{notes}}</div>{{/notes}}
+          {{^notes}}<div><strong>Leistungsdatum:</strong> entspricht dem Rechnungsdatum</div>{{/notes}}
+          <div class="hint">Bitte bei Zahlungen und Schriftverkehr angeben.</div>
+        </div>
+      </div>
+
+      <div class="recipient">
+        <div><strong>{{customer.name}}</strong></div>
+        {{#customer.address_line1}}<div>{{customer.address_line1}}</div>{{/customer.address_line1}}
+        {{#customer.address_line2}}<div>{{customer.address_line2}}</div>{{/customer.address_line2}}
+        {{#customer.city}}<div>{{customer.postal_code}} {{customer.city}}</div>{{/customer.city}}
+        {{#customer.country_name}}<div>{{customer.country_name}}</div>{{/customer.country_name}}
+        {{^customer.country_name}}{{#customer.country}}<div>{{customer.country}}</div>{{/customer.country}}{{/customer.country_name}}
+        {{#customer.tax_id}}<div>USt-IdNr.: {{customer.tax_id}}</div>{{/customer.tax_id}}
+      </div>
+
+      <p class="intro">
+        Vielen Dank für die gute Zusammenarbeit. Vereinbarungsgemäß stelle ich die folgenden
+        Leistungen in Rechnung.
+      </p>
+
+      <table class="items">
+        <colgroup>
+          <col class="pos" />
+          <col />
+          <col class="qty" />
+          <col class="unit" />
+          <col class="price" />
+          <col class="sum" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Pos.</th>
+            <th>Beschreibung</th>
+            <th class="r">Menge</th>
+            <th>Einheit</th>
+            <th class="r">Einzelpreis</th>
+            <th class="r">Gesamtpreis</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#items}}
+          <tr>
+            <td class="pos"></td>
+            <td>{{description}}</td>
+            <td class="r">{{quantity}}</td>
+            <td><span class="unit" data-unit="{{unit}}">{{unit}}</span></td>
+            <td class="r">{{formatted_unit_price}}</td>
+            <td class="r">{{formatted_line_total}}</td>
+          </tr>
+          {{/items}}
+        </tbody>
+      </table>
+
+      <div class="totals-wrap">
+        <div class="totals-column">
+          <table class="totals">
+            <tr>
+              <td>Zwischensumme:</td>
+              <td class="v">{{formatted_subtotal}}</td>
+            </tr>
+            {{#has_discount}}
+            <tr>
+              <td>Rabatt:</td>
+              <td class="v">&minus;{{formatted_discount}}</td>
+            </tr>
+            {{/has_discount}}
+            {{#tax_summary}}
+            <tr>
+              <td>zzgl. {{rate}} % {{name}}:</td>
+              <td class="v">{{formatted_amount}}</td>
+            </tr>
+            {{/tax_summary}}
+            {{#has_cash_discount_applied}}
+            <tr>
+              <td>Gewährtes Skonto:</td>
+              <td class="v">&minus;{{formatted_cash_discount_applied}}</td>
+            </tr>
+            {{/has_cash_discount_applied}}
+            <tr class="total">
+              <td>Rechnungsbetrag:</td>
+              <td class="v">{{formatted_total}}</td>
+            </tr>
+            {{#has_payments}}
+            <tr class="gap">
+              <td>Bereits gezahlt:</td>
+              <td class="v">&minus;{{formatted_amount_paid}}</td>
+            </tr>
+            <tr class="open">
+              <td>Offener Betrag:</td>
+              <td class="v">{{formatted_balance_due}}</td>
+            </tr>
+            {{/has_payments}}
+          </table>
+
+          {{#has_cash_discount}}
+          <div class="cash-discount">
+            <div class="discount-title">
+              <span>
+                {{#cash_discount_is_percentage}}{{cash_discount_value}} % Skonto{{/cash_discount_is_percentage}}
+                {{#cash_discount_is_amount}}Skonto{{/cash_discount_is_amount}}
+              </span>
+              <span>&minus;{{formatted_cash_discount}}</span>
+            </div>
+            <div class="discount-meta">bei Zahlung bis zum {{cash_discount_deadline}}</div>
+            <div class="discount-payable">
+              <span>Reduzierter Zahlbetrag</span>
+              <strong>{{formatted_cash_discounted_total}}</strong>
+            </div>
+          </div>
+          {{/has_cash_discount}}
+        </div>
+      </div>
+
+      <div class="note">
+        {{^tax_summary}}<p>Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.</p>{{/tax_summary}}
+        {{#has_cash_discount}}
+        <p>
+          Für den Skontoabzug muss der reduzierte Zahlbetrag bis zum
+          {{cash_discount_deadline}} auf dem unten genannten Konto eingegangen sein.
+        </p>
+        {{/has_cash_discount}}
+        {{^has_cash_discount}}
+          {{#due_date}}<p>Bitte überweise den Rechnungsbetrag ohne Abzug bis zum {{due_date}} auf das unten genannte Konto.</p>{{/due_date}}
+          {{^due_date}}<p>Bitte überweise den Rechnungsbetrag innerhalb von 14 Tagen ohne Abzug auf das unten genannte Konto.</p>{{/due_date}}
+        {{/has_cash_discount}}
+      </div>
+
+      <div class="bottom">
+        <div class="sender">
+          {{#company.phone}}Tel. {{company.phone}}<br />{{/company.phone}}
+          {{#company.email}}{{company.email}}<br />{{/company.email}}
+          {{#company.tax_id}}Steuernummer {{company.tax_id}}{{/company.tax_id}}
+          {{^company.tax_id}}Steuernummer beim Finanzamt beantragt, wird nachgereicht{{/company.tax_id}}
+        </div>
+        {{#qr}}<div class="qr"><img src="{{qr.image}}" alt="" /></div>{{/qr}}
+        {{#company.bank_details}}
+        <div class="bank">
+          {{{company.bank_details}}}<br />
+          Alle Beträge in {{currency}}.
+        </div>
+        {{/company.bank_details}}
+      </div>
+    </div>
+  </body>
+</html>

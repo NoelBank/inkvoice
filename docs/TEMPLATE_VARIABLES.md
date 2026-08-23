@@ -52,7 +52,11 @@ All `formatted_*` values are pre-formatted with the active locale, currency, and
 | --------------------------------- | -------- | ------------------------------------------------------------------ |
 | `{{#has_cash_discount}}`          | boolean  | True when an early-payment discount is offered and a balance remains. |
 | `{{cash_discount_deadline}}`      | string   | Locale-formatted date by which payment must arrive to claim the discount. |
+| `{{cash_discount_value}}`         | number   | Configured percentage or fixed discount value.                       |
+| `{{#cash_discount_is_percentage}}` | boolean | True for a percentage-based discount.                                |
+| `{{#cash_discount_is_amount}}`    | boolean  | True for a fixed-amount discount.                                     |
 | `{{formatted_cash_discount}}`     | string   | Pre-formatted amount saved by paying early.                        |
+| `{{formatted_cash_discounted_total}}` | string | Pre-formatted amount due when paid within the discount period.   |
 | `{{#has_cash_discount_applied}}`  | boolean  | True once the early-payment discount has been applied.             |
 | `{{formatted_cash_discount_applied}}` | string | Pre-formatted discount amount given up.                           |
 
