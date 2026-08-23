@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { unlinkSync } from "node:fs";
-import { closeDatabase, initDatabase } from "../database/connection";
+import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { createCustomer } from "../services/customer.service";
@@ -51,6 +51,33 @@ describe("PDF payment breakdown", () => {
     expect(ctx.cash_discount_deadline).toContain("2026");
     expect(ctx.formatted_cash_discount).toContain("4");
     expect(ctx.formatted_cash_discounted_total).toContain("196");
+  });
+
+  test("bundled German template renders explicit cash discount payment terms", () => {
+    const template = getDb()
+      .query("SELECT id FROM templates WHERE type = 'builtin' AND name = 'Deutsch'")
+      .get() as { id: string } | null;
+    expect(template).not.toBeNull();
+
+    const customer = createCustomer({ name: "Deutscher Kunde" });
+    const inv = createInvoice({
+      customer_id: customer.id,
+      issue_date: "2026-08-23",
+      currency: "EUR",
+      locale: "de-DE",
+      template_id: template!.id,
+      items: [{ description: "Entwicklung", quantity: 1, unit_price: 1000 }],
+      cash_discount_type: "percentage",
+      cash_discount_value: 3,
+      cash_discount_days: 7,
+    });
+
+    const html = renderInvoiceHtml(inv.id)!;
+    expect(html).toContain("3 % Skonto");
+    expect(html).toContain("Zahlungsbedingung:");
+    expect(html).toContain("zu leistende Zahlung:");
+    expect(html).toContain("970,00");
+    expect(html).toContain("innerhalb von 7 Tagen");
   });
 
   test("buildInvoiceContext exposes payments, amount paid, and balance due", () => {

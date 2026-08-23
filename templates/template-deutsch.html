@@ -21,8 +21,6 @@
         --soft: #6b6b6b;
         --rule: #dddddd;
         --shade: #f5f5f5;
-        --discount-bg: #f6f8fb;
-        --discount-border: #cfd7e3;
       }
 
       * {
@@ -228,36 +226,14 @@
         font-weight: 600;
       }
 
-      .cash-discount {
-        margin-top: 4mm;
-        padding: 3mm 3.5mm;
-        border: 1px solid var(--discount-border);
-        border-radius: 2mm;
-        background: var(--discount-bg);
-        break-inside: avoid;
-      }
-
-      .cash-discount .discount-title {
-        display: flex;
-        justify-content: space-between;
-        gap: 4mm;
-        color: var(--strong);
-        font-weight: 600;
-      }
-
-      .cash-discount .discount-meta {
-        margin-top: 1mm;
+      .payment-condition {
+        margin-top: 5mm;
+        padding-top: 2.5mm;
+        border-top: 1px solid var(--rule);
         color: var(--soft);
-        font-size: 8.5pt;
-      }
-
-      .cash-discount .discount-payable {
-        margin-top: 1.5mm;
-        padding-top: 1.5mm;
-        border-top: 1px solid var(--discount-border);
-        display: flex;
-        justify-content: space-between;
-        gap: 4mm;
+        font-size: 9pt;
+        line-height: 1.45;
+        break-inside: avoid;
       }
 
       .note {
@@ -428,33 +404,26 @@
             {{/has_payments}}
           </table>
 
-          {{#has_cash_discount}}
-          <div class="cash-discount">
-            <div class="discount-title">
-              <span>
-                {{#cash_discount_is_percentage}}{{cash_discount_value}} % Skonto{{/cash_discount_is_percentage}}
-                {{#cash_discount_is_amount}}Skonto{{/cash_discount_is_amount}}
-              </span>
-              <span>&minus;{{formatted_cash_discount}}</span>
-            </div>
-            <div class="discount-meta">bei Zahlung bis zum {{cash_discount_deadline}}</div>
-            <div class="discount-payable">
-              <span>Reduzierter Zahlbetrag</span>
-              <strong>{{formatted_cash_discounted_total}}</strong>
-            </div>
-          </div>
-          {{/has_cash_discount}}
         </div>
       </div>
 
+      {{#has_cash_discount}}
+      <p class="payment-condition">
+        <strong>Zahlungsbedingung:</strong>
+        {{#due_date}}Rechnungsbetrag zahlbar bis zum {{due_date}}.{{/due_date}}
+        {{^due_date}}Rechnungsbetrag zahlbar innerhalb von 14 Tagen ab Rechnungsdatum.{{/due_date}}
+        Bei Zahlung innerhalb von {{cash_discount_days}} Tagen
+        {{#cash_discount_is_percentage}}werden {{cash_discount_value}} % Skonto gewährt.{{/cash_discount_is_percentage}}
+        {{#cash_discount_is_amount}}wird ein Skonto in Höhe von {{formatted_cash_discount}} gewährt.{{/cash_discount_is_amount}}
+        <strong>
+          Bei Zahlung innerhalb von {{cash_discount_days}} Tagen zu leistende Zahlung:
+          {{formatted_cash_discounted_total}}.
+        </strong>
+      </p>
+      {{/has_cash_discount}}
+
       <div class="note">
         {{^tax_summary}}<p>Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.</p>{{/tax_summary}}
-        {{#has_cash_discount}}
-        <p>
-          Für den Skontoabzug muss der reduzierte Zahlbetrag bis zum
-          {{cash_discount_deadline}} auf dem unten genannten Konto eingegangen sein.
-        </p>
-        {{/has_cash_discount}}
         {{^has_cash_discount}}
           {{#due_date}}<p>Bitte überweise den Rechnungsbetrag ohne Abzug bis zum {{due_date}} auf das unten genannte Konto.</p>{{/due_date}}
           {{^due_date}}<p>Bitte überweise den Rechnungsbetrag innerhalb von 14 Tagen ohne Abzug auf das unten genannte Konto.</p>{{/due_date}}
