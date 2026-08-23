@@ -27,6 +27,7 @@ import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
 import { consumeRowHighlight } from "@/lib/highlight-row";
 import { isRecordId } from "@/lib/record-id";
+import { formatUnitLabel } from "@/lib/unit";
 import { cn, formatCurrency } from "@/lib/utils";
 import ProductForm from "@/pages/ProductForm";
 
@@ -352,7 +353,9 @@ export default function Products() {
                   </TableCell>
                 )}
                 {isColVisible("unit") && (
-                  <TableCell className="text-muted-foreground capitalize">{p.unit}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatUnitLabel(t, p.unit)}
+                  </TableCell>
                 )}
                 {isColVisible("category") && (
                   <TableCell>

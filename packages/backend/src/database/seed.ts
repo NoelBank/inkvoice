@@ -239,7 +239,15 @@ export async function seed(): Promise<void> {
     );
   }
 
-  // Seed product units
+  // Seed product units. Older versions allowed built-in rows to be renamed,
+  // leaving custom-looking units protected from deletion. Demote those legacy
+  // rows before restoring the canonical built-ins.
+  db.exec(`
+    UPDATE product_units
+    SET is_builtin = 0
+    WHERE is_builtin = 1
+      AND name NOT IN ('piece', 'hour', 'month', 'day', 'kg', 'meter', 'lump_sum')
+  `);
   for (const [name, symbol] of [
     ["piece", "pc"],
     ["hour", "hr"],

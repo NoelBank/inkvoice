@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
+import { formatUnitLabel } from "@/lib/unit";
 
 type Category = { id: string; name: string; is_builtin: number };
 type Unit = { id: string; name: string; symbol: string | null; is_builtin: number };
@@ -192,9 +193,7 @@ export default function ProductSettings() {
           {units.map((unit) => (
             <div key={unit.id} className="flex items-center justify-between px-4 py-3">
               <div className="min-w-0">
-                <div className="font-medium">
-                  {unit.name.charAt(0).toUpperCase() + unit.name.slice(1)}
-                </div>
+                <div className="font-medium">{formatUnitLabel(t, unit.name)}</div>
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                   {unit.symbol || unit.name}
                   {unit.is_builtin === 1 && (
@@ -257,7 +256,12 @@ export default function ProductSettings() {
               }
               required
             >
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} autoFocus />
+              <Input
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                disabled={editDialog.type === "unit" && editDialog.item?.is_builtin === 1}
+                autoFocus
+              />
             </FormField>
             {editDialog.type === "unit" && (
               <FormField

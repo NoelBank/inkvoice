@@ -16,6 +16,7 @@ import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
 import { markRowHighlight } from "@/lib/highlight-row";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import { formatUnitLabel } from "@/lib/unit";
 
 interface Props {
   onSave: () => void;
@@ -216,7 +217,9 @@ export default function ProductForm({ onSave }: Props) {
               >
                 {units.map((u: any) => (
                   <option key={u.id} value={u.name}>
-                    {u.symbol ? `${u.name} (${u.symbol})` : u.name}
+                    {u.symbol
+                      ? `${formatUnitLabel(t, u.name)} (${u.symbol})`
+                      : formatUnitLabel(t, u.name)}
                   </option>
                 ))}
               </select>

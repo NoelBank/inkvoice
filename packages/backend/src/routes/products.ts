@@ -273,12 +273,16 @@ products.put("/units/:id", async (c) => {
   const id = c.req.param("id");
   const row = db.query("SELECT * FROM product_units WHERE id = ?").get(id) as {
     name: string;
+    is_builtin: number;
   } | null;
   if (!row) return c.json({ success: false, error: "Unit not found" }, 404);
   const body = await c.req.json();
   const parsed = z
     .object({ name: z.string().min(1).max(100), symbol: z.string().max(10).optional() })
     .parse(body);
+  if (row.is_builtin && parsed.name !== row.name) {
+    return c.json({ success: false, error: "Cannot rename built-in unit" }, 409);
+  }
   if (parsed.name !== row.name) {
     const existing = db
       .query("SELECT id FROM product_units WHERE name = ? AND id != ?")

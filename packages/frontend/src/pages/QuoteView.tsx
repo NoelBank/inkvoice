@@ -45,6 +45,7 @@ import {
 import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import { formatUnitLabel } from "@/lib/unit";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -529,7 +530,9 @@ export default function QuoteView() {
                 <TableRow key={item.id}>
                   <TableCell>{item.description}</TableCell>
                   <TableCell className="text-right tabular-nums">{item.quantity}</TableCell>
-                  <TableCell className="text-muted-foreground capitalize">{item.unit}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatUnitLabel(t, item.unit)}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(item.unit_price, quote.currency)}
                   </TableCell>

@@ -61,6 +61,24 @@ afterAll(() => {
 });
 
 describe("seed() company profile", () => {
+  test("demotes renamed legacy built-in units and restores canonical units", async () => {
+    await bootFresh(false);
+    const db = getDb();
+    const piece = db.query("SELECT id FROM product_units WHERE name = 'piece'").get() as {
+      id: string;
+    };
+    db.run("UPDATE product_units SET name = 'Monat' WHERE id = ?", [piece.id]);
+
+    await seed();
+
+    const legacy = db.query("SELECT is_builtin FROM product_units WHERE name = 'Monat'").get() as {
+      is_builtin: number;
+    };
+    expect(legacy.is_builtin).toBe(0);
+    expect(db.query("SELECT id FROM product_units WHERE name = 'piece'").get()).toBeTruthy();
+    expect(db.query("SELECT id FROM product_units WHERE name = 'month'").get()).toBeTruthy();
+  });
+
   test("leaves the stock placeholder profile alone on a self-hosted install", async () => {
     await bootFresh(false);
     const settings = getAllSettings();
