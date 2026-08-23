@@ -104,6 +104,9 @@ describe("Full Invoice Workflow", () => {
         issue_date: "2026-04-01",
         due_date: "2026-05-01",
         payment_terms: "Net 30",
+        cash_discount_type: "percentage",
+        cash_discount_value: 2,
+        cash_discount_days: 14,
         items: [
           {
             product_id: productId,
@@ -124,6 +127,9 @@ describe("Full Invoice Workflow", () => {
     expect(data.data.subtotal).toBe(1700);
     expect(data.data.tax_total).toBe(150);
     expect(data.data.total).toBe(1850);
+    expect(data.data.cash_discount_type).toBe("percentage");
+    expect(data.data.cash_discount_value).toBe(2);
+    expect(data.data.cash_discount_days).toBe(14);
     expect(data.data.items.length).toBe(2);
   });
 
