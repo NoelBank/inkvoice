@@ -243,6 +243,7 @@ export async function seed(): Promise<void> {
   for (const [name, symbol] of [
     ["piece", "pc"],
     ["hour", "hr"],
+    ["month", "mo"],
     ["day", "d"],
     ["kg", "kg"],
     ["meter", "m"],

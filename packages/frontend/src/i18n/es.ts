@@ -290,6 +290,7 @@ const es: TranslationKeys = {
     // Unidades
     unit_piece: "Pieza",
     unit_hour: "Hora",
+    unit_month: "Mes(es)",
     unit_day: "Día",
     unit_kg: "Kg",
     unit_meter: "Metro",

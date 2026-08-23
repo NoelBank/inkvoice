@@ -283,6 +283,7 @@ const en = {
     // Units
     unit_piece: "Piece",
     unit_hour: "Hour",
+    unit_month: "Month(s)",
     unit_day: "Day",
     unit_kg: "Kg",
     unit_meter: "Meter",

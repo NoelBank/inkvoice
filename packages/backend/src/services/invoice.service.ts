@@ -83,6 +83,22 @@ interface CreateInvoiceData {
   }[];
 }
 
+function normalizeCashDiscount(data: CreateInvoiceData): {
+  type: "percentage" | "amount" | null;
+  value: number;
+  days: number;
+} {
+  const type =
+    data.cash_discount_type === "percentage" || data.cash_discount_type === "amount"
+      ? data.cash_discount_type
+      : null;
+  return {
+    type,
+    value: type ? (data.cash_discount_value ?? 0) : 0,
+    days: type ? (data.cash_discount_days ?? 0) : 0,
+  };
+}
+
 function buildInvoiceFilters(params: InvoiceFilterParams): {
   where: string;
   queryParams: string[];
@@ -298,6 +314,7 @@ export function getInvoice(id: string): InvoiceWithItems | null {
 
 export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
   const db = getDb();
+  const cashDiscount = normalizeCashDiscount(data);
 
   // Wrap in transaction for atomicity (prevents invoice number race condition)
   const id = db.transaction(() => {
@@ -332,9 +349,9 @@ export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
         data.discount_type || null,
         data.discount_value ?? 0,
         totals.discount_amount,
-        data.cash_discount_type || null,
-        data.cash_discount_value ?? 0,
-        data.cash_discount_days ?? 0,
+        cashDiscount.type,
+        cashDiscount.value,
+        cashDiscount.days,
         totals.total,
         data.notes || null,
         data.payment_terms || null,
@@ -393,6 +410,7 @@ export function createInvoice(data: CreateInvoiceData): InvoiceWithItems {
 
 export function updateInvoice(id: string, data: CreateInvoiceData): InvoiceWithItems | null {
   const db = getDb();
+  const cashDiscount = normalizeCashDiscount(data);
   const existing = db.query("SELECT id, status FROM invoices WHERE id = ?").get(id) as {
     id: string;
     status: string;
@@ -423,9 +441,9 @@ export function updateInvoice(id: string, data: CreateInvoiceData): InvoiceWithI
         data.discount_type || null,
         data.discount_value ?? 0,
         totals.discount_amount,
-        data.cash_discount_type || null,
-        data.cash_discount_value ?? 0,
-        data.cash_discount_days ?? 0,
+        cashDiscount.type,
+        cashDiscount.value,
+        cashDiscount.days,
         totals.total,
         data.notes || null,
         data.payment_terms || null,

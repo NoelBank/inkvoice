@@ -167,6 +167,7 @@ function SortableLineItem({
           >
             <option value="piece">{t("invoices.unit_piece")}</option>
             <option value="hour">{t("invoices.unit_hour")}</option>
+            <option value="month">{t("invoices.unit_month")}</option>
             <option value="day">{t("invoices.unit_day")}</option>
             <option value="kg">{t("invoices.unit_kg")}</option>
             <option value="meter">{t("invoices.unit_meter")}</option>
@@ -1093,7 +1094,15 @@ export default function InvoiceForm({ onSave }: Props) {
                     </Label>
                     <select
                       value={form.cash_discount_type}
-                      onChange={(e) => setForm({ ...form, cash_discount_type: e.target.value })}
+                      onChange={(e) => {
+                        const type = e.target.value;
+                        setForm((current) => ({
+                          ...current,
+                          cash_discount_type: type,
+                          cash_discount_value: type ? current.cash_discount_value : 0,
+                          cash_discount_days: type ? current.cash_discount_days : 0,
+                        }));
+                      }}
                       className="form-select"
                     >
                       <option value="">{t("common.none")}</option>

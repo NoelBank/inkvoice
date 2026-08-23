@@ -26,9 +26,13 @@ export interface CashDiscountConfig {
   days?: number;
 }
 
-/** A cash discount is offered only when days > 0 and a positive value is set. */
+/** A cash discount is offered only with a valid type, positive value, and positive duration. */
 export function hasCashDiscount(config: CashDiscountConfig): boolean {
-  return (config.days ?? 0) > 0 && (config.value ?? 0) > 0;
+  return (
+    (config.type === "percentage" || config.type === "amount") &&
+    (config.days ?? 0) > 0 &&
+    (config.value ?? 0) > 0
+  );
 }
 
 /**

@@ -4,7 +4,7 @@ import { closeDatabase, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { createCustomer } from "../services/customer.service";
-import { createInvoice, getInvoice, markSent } from "../services/invoice.service";
+import { createInvoice, getInvoice, markSent, updateInvoice } from "../services/invoice.service";
 import { deletePayment, recordPayment } from "../services/payment.service";
 import { cashDiscountDeadline, cashDiscountOn, hasCashDiscount } from "../utils/cash-discount";
 import { resetEnvCache } from "../utils/env";
@@ -56,6 +56,7 @@ describe("cash discount maths", () => {
   test("disabled when days is 0 or value is 0", () => {
     expect(hasCashDiscount({ type: "percentage", value: 2, days: 0 })).toBe(false);
     expect(hasCashDiscount({ type: "percentage", value: 0, days: 10 })).toBe(false);
+    expect(hasCashDiscount({ type: null, value: 2, days: 10 })).toBe(false);
     expect(hasCashDiscount({ type: "percentage", value: 2, days: 10 })).toBe(true);
   });
 
@@ -89,6 +90,32 @@ describe("cash discount on invoices", () => {
     expect(loaded.cash_discount_type).toBe("percentage");
     expect(loaded.cash_discount_value).toBe(2);
     expect(loaded.cash_discount_days).toBe(14);
+  });
+
+  test("clearing the discount type also clears stale value and day fields", () => {
+    const customer = createCustomer({ name: "No Skonto" });
+    const inv = createInvoice({
+      customer_id: customer.id,
+      issue_date: "2026-01-01",
+      items: [{ description: "Work", quantity: 1, unit_price: 100 }],
+      cash_discount_type: "percentage",
+      cash_discount_value: 2,
+      cash_discount_days: 14,
+    });
+
+    updateInvoice(inv.id, {
+      customer_id: customer.id,
+      issue_date: "2026-01-01",
+      items: [{ description: "Work", quantity: 1, unit_price: 100 }],
+      cash_discount_type: null,
+      cash_discount_value: 2,
+      cash_discount_days: 14,
+    });
+
+    const loaded = getInvoice(inv.id)!;
+    expect(loaded.cash_discount_type).toBeNull();
+    expect(loaded.cash_discount_value).toBe(0);
+    expect(loaded.cash_discount_days).toBe(0);
   });
 
   test("settles for less when paid inside the window", () => {

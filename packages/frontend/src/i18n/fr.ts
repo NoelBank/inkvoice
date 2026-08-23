@@ -291,6 +291,7 @@ const fr: TranslationKeys = {
     // Unités
     unit_piece: "Pièce",
     unit_hour: "Heure",
+    unit_month: "Mois",
     unit_day: "Jour",
     unit_kg: "Kg",
     unit_meter: "Mètre",
