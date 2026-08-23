@@ -6,7 +6,7 @@ services:
     expose:
       - "3000"
     volumes:
-      - invoice-data:/app/data
+      - inkvoice-data:/app/data
     environment:
       # Left empty so the app owns the defaults (admin/changeme, or demo/demo
       # when DEMO_MODE=true). Set them in .env to override.
@@ -36,4 +36,4 @@ services:
           memory: 512M
 
 volumes:
-  invoice-data:
+  inkvoice-data:
