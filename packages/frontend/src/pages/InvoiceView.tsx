@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/table";
 import { useTranslation } from "@/i18n";
 import { isInvoiceFormEditable, STATUS_COLORS } from "@/lib/constants";
+import { addDaysIso } from "@/lib/date";
 import { formatApiError } from "@/lib/format-api-error";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -131,6 +132,24 @@ export default function InvoiceView({ onBack }: Props) {
       </div>
     );
   }
+
+  const balanceDue = Math.max(
+    0,
+    invoice.total - (invoice.amount_paid || 0) - (invoice.cash_discount_applied || 0),
+  );
+  const hasCashDiscount =
+    !!invoice.cash_discount_type &&
+    invoice.cash_discount_value > 0 &&
+    invoice.cash_discount_days > 0 &&
+    balanceDue > 0;
+  const cashDiscountAmount = hasCashDiscount
+    ? invoice.cash_discount_type === "amount"
+      ? Math.min(invoice.cash_discount_value, balanceDue)
+      : Math.round(balanceDue * invoice.cash_discount_value) / 100
+    : 0;
+  const cashDiscountDeadline = hasCashDiscount
+    ? addDaysIso(invoice.issue_date, invoice.cash_discount_days)
+    : null;
 
   const executeAction = async () => {
     if (!confirmAction) return;
@@ -660,6 +679,17 @@ export default function InvoiceView({ onBack }: Props) {
                 {formatCurrency(invoice.total, invoice.currency)}
               </span>
             </div>
+            {hasCashDiscount && cashDiscountDeadline && (
+              <div className="flex justify-between gap-4 text-sm text-muted-foreground">
+                <span>{t("invoices.cash_discount")}</span>
+                <span className="text-right">
+                  {t("record_payment.cash_discount_detail", {
+                    amount: formatCurrency(cashDiscountAmount, invoice.currency),
+                    deadline: formatDate(cashDiscountDeadline),
+                  })}
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -685,10 +715,7 @@ export default function InvoiceView({ onBack }: Props) {
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         invoiceId={id!}
-        balanceDue={Math.max(
-          0,
-          invoice.total - (invoice.amount_paid || 0) - (invoice.cash_discount_applied || 0),
-        )}
+        balanceDue={balanceDue}
         currency={invoice.currency}
         cashDiscount={
           invoice.cash_discount_days > 0

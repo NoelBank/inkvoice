@@ -70,6 +70,7 @@ function SortableLineItem({
   taxDefs,
   errors,
   itemCount,
+  currency,
   onProductSelect,
   onUpdateItem,
   onRemoveItem,
@@ -84,6 +85,7 @@ function SortableLineItem({
   taxDefs: any[];
   errors: Record<string, string>;
   itemCount: number;
+  currency: string;
   onProductSelect: (index: number, productId: string) => void;
   onUpdateItem: (index: number, field: string, value: any) => void;
   onRemoveItem: (index: number) => void;
@@ -200,7 +202,7 @@ function SortableLineItem({
         </div>
         <div className="flex items-center gap-1">
           <span className="text-sm font-medium w-full text-right tabular-nums">
-            {formatCurrency(item.quantity * item.unit_price)}
+            {formatCurrency(item.quantity * item.unit_price, currency)}
           </span>
           <Button
             type="button"
@@ -987,6 +989,7 @@ export default function InvoiceForm({ onSave }: Props) {
                         taxDefs={taxDefs}
                         errors={errors}
                         itemCount={items.length}
+                        currency={form.currency}
                         onProductSelect={handleProductSelect}
                         onUpdateItem={updateItem}
                         onRemoveItem={removeItem}
