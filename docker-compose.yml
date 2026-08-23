@@ -1,8 +1,10 @@
 services:
   app:
     build: .
-    ports:
-      - "3000:3000"
+    # Dokploy/Traefik reaches the app through Docker's internal network.
+    # Publishing 3000 on the host conflicts with Dokploy's own web interface.
+    expose:
+      - "3000"
     volumes:
       - invoice-data:/app/data
     environment:
