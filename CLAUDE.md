@@ -25,8 +25,11 @@ An open-source, self-hosted invoicing dashboard. Lightweight, modern, and design
 - **HTTP Client**: Built-in fetch with a typed API client wrapper
 
 ### PDF Generation
-- **Primary**: Puppeteer with Chrome Headless Shell
+- **Rendering**: the server renders HTML; the browser's own print dialog produces the PDF.
+  No headless browser, no PDF binary in the image.
 - **Templates**: Mustache (handlebars-compatible, logic-less templates)
+- **Exception**: the ZUGFeRD/Factur-X hybrid PDF is drawn server-side with `pdf-lib`
+  (`einvoice-pdf.service.ts`), the only PDF the backend generates itself.
 
 ### Build & Deploy
 - **Monorepo**: Single repo, `packages/backend` + `packages/frontend`
@@ -93,7 +96,7 @@ inkvoice/
 │   │       │   ├── settings.service.ts
 │   │       │   ├── tax.service.ts
 │   │       │   ├── user.service.ts
-│   │       │   ├── pdf.service.ts      # HTML-to-PDF via Chrome Headless
+│   │       │   ├── pdf.service.ts      # Renders invoice/quote HTML for browser print
 │   │       │   └── dashboard.service.ts
 │   │       ├── utils/
 │   │       │   ├── jwt.ts
@@ -444,9 +447,6 @@ ENABLE_HSTS=false                    # Enable HSTS header
 RATE_LIMIT_ENABLED=true              # Enable login rate limiting
 RATE_LIMIT_MAX_ATTEMPTS=5            # Max failed login attempts
 RATE_LIMIT_WINDOW=900                # Rate limit window in seconds
-
-# PDF
-CHROME_PATH=                         # Chrome/Chromium path (auto-detected)
 
 # Optional
 DEMO_MODE=false                      # Enable demo mode with periodic resets; also defaults

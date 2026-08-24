@@ -1,4 +1,4 @@
-// Best-effort filter so automated fetches (link unfurlers, our own PDF render,
+// Best-effort filter so automated fetches (link unfurlers, headless browsers,
 // crawlers, monitors) don't get counted as a client "viewing" an invoice. This
 // is intentionally conservative — a missed bot just over-counts a view; it
 // never blocks a real client.

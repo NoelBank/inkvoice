@@ -51,7 +51,7 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 **Invoicing**
 - Full lifecycle: draft → send → paid → void, plus one-click duplicate
 - Line items, discounts and multiple tax rates with auto-calculation
-- Polished PDF export (headless Chrome) with customizable Mustache templates
+- Polished PDF export straight from the browser's print dialog, with customizable Mustache templates
 - Public shareable links with **read receipts** — see when a client opens an invoice
 
 **Quotes & recurring**
@@ -179,7 +179,6 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `RATE_LIMIT_MAX_ATTEMPTS` | no       | `5`                   | Max failed logins per window                                         |
 | `RATE_LIMIT_WINDOW`       | no       | `900`                 | Rate-limit window in seconds                                         |
 | `ALLOWED_ORIGINS`         | no       | `localhost:5173,3000` | Comma-separated CORS allow-list                                      |
-| `CHROME_PATH`             | no       | (auto-detected)       | Override Chrome/Chromium binary path for PDF rendering               |
 | `SMTP_HOST`               | no       | —                     | SMTP host. Set this group to enable invoice email sending            |
 | `SMTP_PORT`               | no       | `587`                 | SMTP port                                                            |
 | `SMTP_USER`               | no       | —                     | SMTP username                                                        |
@@ -221,7 +220,7 @@ Any standards-compliant OIDC provider (Keycloak, Authentik, Authelia, Entra ID, 
 | Runtime | **Bun** |
 | Backend | **Hono** + **SQLite** (`bun:sqlite`), **Zod** validation, JWT auth |
 | Frontend | **React 19** + **Vite**, **Tailwind CSS** + shadcn/ui |
-| PDF | Headless Chrome + **Mustache** templates |
+| PDF | **Mustache** HTML templates, printed by the browser |
 | Packaging | Single **Docker** container serving API + static SPA |
 
 ## Documentation
