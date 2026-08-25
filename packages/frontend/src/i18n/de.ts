@@ -1250,6 +1250,8 @@ const de: TranslationKeys = {
 
   // Anhänge
   attachments: {
+    pending: "wird beim Speichern angehängt",
+    pending_hint: "Die Dateien werden angehängt, sobald du diesen Datensatz speicherst.",
     title: "Anhänge",
     receipts_title: "Belege",
     receipts_hint:

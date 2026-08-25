@@ -1217,6 +1217,8 @@ const en = {
 
   // Attachments
   attachments: {
+    pending: "will be attached when you save",
+    pending_hint: "Files are attached as soon as you save this record.",
     title: "Attachments",
     receipts_title: "Receipts",
     receipts_hint:

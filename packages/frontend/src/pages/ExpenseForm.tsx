@@ -1,9 +1,9 @@
 import { ExternalLink, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
-import { AttachmentsCard } from "@/components/shared/AttachmentsCard";
+import { AttachmentsCard, type AttachmentsCardHandle } from "@/components/shared/AttachmentsCard";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { CurrencyCombobox } from "@/components/shared/CurrencyCombobox";
 import { ExchangeRateField } from "@/components/shared/ExchangeRateField";
@@ -103,6 +103,8 @@ export default function ExpenseForm({ onSave }: Props) {
     // biome-ignore lint/correctness/useExhaustiveDependencies: seed-once on mount/id
   }, [id, isEdit]);
 
+  const attachmentsRef = useRef<AttachmentsCardHandle>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateAll(form)) return;
@@ -118,7 +120,13 @@ export default function ExpenseForm({ onSave }: Props) {
         toast.success(t("expenses.expense_updated"));
       } else {
         const res = await api.createExpense(data);
-        if (res?.data?.id) markRowHighlight("expense", res.data.id);
+        if (res?.data?.id) {
+          markRowHighlight("expense", res.data.id);
+          // Receipts picked before the expense existed now have something to
+          // hang off. Done before onSave() so the list is complete when the
+          // caller navigates away.
+          await attachmentsRef.current?.flush(res.data.id);
+        }
         toast.success(t("expenses.expense_created"));
       }
       onSave();
@@ -371,16 +379,15 @@ export default function ExpenseForm({ onSave }: Props) {
         </CardContent>
       </Card>
 
-      {/* Receipts can only hang off a saved expense — the attachment needs an
-          id to point at. */}
-      {isEdit && id && (
-        <AttachmentsCard
-          entityType="expense"
-          entityId={id}
-          title={t("attachments.receipts_title")}
-          description={t("attachments.receipts_hint")}
-        />
-      )}
+      {/* Shown for new expenses too: files picked here are held until the
+          expense is saved, then uploaded by handleSubmit. */}
+      <AttachmentsCard
+        ref={attachmentsRef}
+        entityType="expense"
+        entityId={isEdit && id ? id : null}
+        title={t("attachments.receipts_title")}
+        description={t("attachments.receipts_hint")}
+      />
     </form>
   );
 }

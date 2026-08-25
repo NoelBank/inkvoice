@@ -66,6 +66,7 @@ const BASE_SETTINGS_TABS = [
   "products",
   "templates",
   "api",
+  "security",
 ] as const;
 type SettingsTab = string; // Validated dynamically via the tab registry + base set.
 

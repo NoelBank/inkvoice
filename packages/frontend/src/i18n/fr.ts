@@ -1241,6 +1241,8 @@ const fr: TranslationKeys = {
 
   // Pièces jointes
   attachments: {
+    pending: "sera joint à l'enregistrement",
+    pending_hint: "Les fichiers sont joints dès que vous enregistrez cette fiche.",
     title: "Pièces jointes",
     receipts_title: "Justificatifs",
     receipts_hint:

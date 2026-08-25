@@ -1236,6 +1236,8 @@ const es: TranslationKeys = {
 
   // Adjuntos
   attachments: {
+    pending: "se adjuntará al guardar",
+    pending_hint: "Los archivos se adjuntan en cuanto guardas este registro.",
     title: "Adjuntos",
     receipts_title: "Justificantes",
     receipts_hint:

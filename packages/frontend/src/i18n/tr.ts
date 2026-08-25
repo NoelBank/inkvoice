@@ -1221,6 +1221,8 @@ const tr: TranslationKeys = {
 
   // Ekler
   attachments: {
+    pending: "kaydettiğinizde eklenecek",
+    pending_hint: "Dosyalar, bu kaydı kaydettiğiniz anda eklenir.",
     title: "Ekler",
     receipts_title: "Fişler",
     receipts_hint:
