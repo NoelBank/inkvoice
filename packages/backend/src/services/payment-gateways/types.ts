@@ -8,12 +8,17 @@
 /** Everything a gateway needs to start a hosted checkout for one invoice. */
 export interface CheckoutContext {
   invoiceId: string;
+  /** Human-readable number, e.g. "INV-2026-0001". What the payer recognises. */
+  invoiceNumber: string;
   shareToken: string;
   /** Outstanding balance to charge, in the invoice currency. */
   amount: number;
   /** ISO 4217 currency code (e.g. "USD"). */
   currency: string;
   customerEmail: string | null;
+  customerName: string | null;
+  /** Shown as the merchant on the provider's page; falls back to the account name. */
+  businessName: string | null;
   /** Where the provider sends the payer after a successful payment. */
   successUrl: string;
   /** Where the provider sends the payer if they cancel. */

@@ -115,10 +115,13 @@ publicRoutes.post("/invoices/:shareToken/pay", async (c) => {
   try {
     const result = await gateway.createCheckout({
       invoiceId: invoice.id,
+      invoiceNumber: invoice.invoice_number,
       shareToken,
       amount: balanceDue,
       currency: invoice.currency,
       customerEmail: invoice.customer?.email || null,
+      customerName: invoice.customer?.name || null,
+      businessName: getSetting("company_name")?.trim() || null,
       successUrl: `${origin}/payment/success?token=${shareToken}`,
       cancelUrl: `${origin}/public/invoice/${shareToken}`,
     });

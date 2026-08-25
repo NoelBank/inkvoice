@@ -25,14 +25,21 @@ function getStripe(): Promise<Stripe> {
 
 export async function createCheckoutSession(opts: {
   invoiceId: string;
+  invoiceNumber?: string;
   shareToken: string;
   amount: number;
   currency: string;
   customerEmail: string | null;
+  customerName?: string | null;
   successUrl: string;
   cancelUrl: string;
 }): Promise<{ url: string }> {
   const stripe = await getStripe();
+
+  // The line item is the only thing on the page that says what is being paid
+  // for. Without the number the payer sees a bare amount and has to trust it.
+  const label = opts.invoiceNumber ? `Invoice ${opts.invoiceNumber}` : "Invoice Payment";
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
@@ -41,15 +48,21 @@ export async function createCheckoutSession(opts: {
         price_data: {
           currency: opts.currency.toLowerCase(),
           unit_amount: Math.round(opts.amount * 100),
-          product_data: { name: `Invoice Payment` },
+          product_data: { name: label },
         },
         quantity: 1,
       },
     ],
     customer_email: opts.customerEmail || undefined,
+    // Searchable in the Stripe dashboard and shown on the payment record,
+    // which is where reconciliation questions actually get asked.
+    client_reference_id: opts.invoiceId,
+    payment_intent_data: { description: label },
     metadata: {
       invoice_id: opts.invoiceId,
       share_token: opts.shareToken,
+      ...(opts.invoiceNumber ? { invoice_number: opts.invoiceNumber } : {}),
+      ...(opts.customerName ? { customer_name: opts.customerName } : {}),
     },
     success_url: opts.successUrl,
     cancel_url: opts.cancelUrl,

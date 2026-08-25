@@ -23,13 +23,31 @@ export function formatAmount(amount: number): string {
   return amount.toFixed(2);
 }
 
+/**
+ * PayPal caps soft_descriptor at 22 characters and rejects the order outright
+ * if it is longer, so this trims rather than risking a failed checkout.
+ */
+export function softDescriptor(invoiceNumber: string): string {
+  return invoiceNumber.replace(/[^A-Za-z0-9 .-]/g, "").slice(0, 22);
+}
+
 export function buildOrderBody(ctx: CheckoutContext) {
+  // What the payer sees on the PayPal page. Without it they get a bare amount
+  // and the merchant name, with no way to tell which invoice they're settling.
+  const description = `Invoice ${ctx.invoiceNumber}`;
+  const descriptor = softDescriptor(ctx.invoiceNumber);
+
   return {
     intent: "CAPTURE" as const,
     purchase_units: [
       {
+        // reference_id carries the invoice id; the webhook reads it back to
+        // find the invoice. Do not repurpose it.
         reference_id: ctx.invoiceId,
         custom_id: ctx.shareToken,
+        // PayPal truncates at 127 characters.
+        description: description.slice(0, 127),
+        ...(descriptor ? { soft_descriptor: descriptor } : {}),
         amount: {
           currency_code: ctx.currency.toUpperCase(),
           value: formatAmount(ctx.amount),
@@ -37,6 +55,8 @@ export function buildOrderBody(ctx: CheckoutContext) {
       },
     ],
     application_context: {
+      // Otherwise PayPal shows the raw PayPal account name as the payee.
+      ...(ctx.businessName ? { brand_name: ctx.businessName.slice(0, 127) } : {}),
       return_url: ctx.successUrl,
       cancel_url: ctx.cancelUrl,
       user_action: "PAY_NOW" as const,

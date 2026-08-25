@@ -18,10 +18,12 @@ export const stripeGateway: PaymentGateway = {
   createCheckout(ctx: CheckoutContext): Promise<{ url: string }> {
     return createCheckoutSession({
       invoiceId: ctx.invoiceId,
+      invoiceNumber: ctx.invoiceNumber,
       shareToken: ctx.shareToken,
       amount: ctx.amount,
       currency: ctx.currency,
       customerEmail: ctx.customerEmail,
+      customerName: ctx.customerName,
       successUrl: ctx.successUrl,
       cancelUrl: ctx.cancelUrl,
     });

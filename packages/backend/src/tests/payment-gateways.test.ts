@@ -13,6 +13,7 @@ import {
   formatAmount,
   isAlreadyCaptured,
   paypalBaseUrl,
+  softDescriptor,
 } from "../services/payment-gateways/paypal.gateway";
 import {
   getEnabledGateways,
@@ -36,16 +37,22 @@ describe("PayPal pure helpers (no network)", () => {
     expect(formatAmount(0.1)).toBe("0.10");
   });
 
+  const checkoutContext = (overrides: Record<string, unknown> = {}) => ({
+    invoiceId: "inv-1",
+    invoiceNumber: "INV-2026-0001",
+    shareToken: "tok-1",
+    amount: 220.5,
+    currency: "eur",
+    customerEmail: null,
+    customerName: "Kunde GmbH",
+    businessName: "Noel Bank",
+    successUrl: "https://x/success",
+    cancelUrl: "https://x/cancel",
+    ...overrides,
+  });
+
   test("buildOrderBody carries invoice metadata and amount", () => {
-    const body = buildOrderBody({
-      invoiceId: "inv-1",
-      shareToken: "tok-1",
-      amount: 220.5,
-      currency: "eur",
-      customerEmail: null,
-      successUrl: "https://x/success",
-      cancelUrl: "https://x/cancel",
-    });
+    const body = buildOrderBody(checkoutContext());
     expect(body.intent).toBe("CAPTURE");
     expect(body.purchase_units[0].reference_id).toBe("inv-1");
     expect(body.purchase_units[0].custom_id).toBe("tok-1");
@@ -53,6 +60,30 @@ describe("PayPal pure helpers (no network)", () => {
     expect(body.purchase_units[0].amount.value).toBe("220.50");
     expect(body.application_context.return_url).toBe("https://x/success");
     expect(body.application_context.cancel_url).toBe("https://x/cancel");
+  });
+
+  test("buildOrderBody tells the payer which invoice they are settling", () => {
+    const body = buildOrderBody(checkoutContext());
+    expect(body.purchase_units[0].description).toBe("Invoice INV-2026-0001");
+    expect(body.purchase_units[0].soft_descriptor).toBe("INV-2026-0001");
+    expect(body.application_context.brand_name).toBe("Noel Bank");
+  });
+
+  test("buildOrderBody omits brand_name when no business name is configured", () => {
+    const body = buildOrderBody(checkoutContext({ businessName: null }));
+    expect("brand_name" in body.application_context).toBe(false);
+  });
+
+  test("softDescriptor stays within PayPal's 22-character limit", () => {
+    expect(softDescriptor("INV-2026-0001")).toBe("INV-2026-0001");
+    expect(softDescriptor("RECHNUNG-2026-000000000123456")).toHaveLength(22);
+    // Characters PayPal rejects are dropped rather than failing the order.
+    expect(softDescriptor("INV/2026#0001")).toBe("INV20260001");
+  });
+
+  test("a long description is truncated rather than rejected by PayPal", () => {
+    const body = buildOrderBody(checkoutContext({ invoiceNumber: "X".repeat(200) }));
+    expect(body.purchase_units[0].description.length).toBeLessThanOrEqual(127);
   });
 
   test("extractApproveUrl finds the approval link or throws", () => {
