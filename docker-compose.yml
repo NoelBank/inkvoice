@@ -13,7 +13,9 @@ services:
       # when DEMO_MODE=true). Set them in .env to override.
       ADMIN_USER: ${ADMIN_USER:-}
       ADMIN_PASS: ${ADMIN_PASS:-}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars}
+      # Required. No fallback on purpose: a shipped default secret would be
+      # public knowledge. Generate one with: openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env, minimum 32 characters}
       DATABASE_PATH: /app/data/invoice.db
       PORT: "3000"
       HOST: 0.0.0.0
