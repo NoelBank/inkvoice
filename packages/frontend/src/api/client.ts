@@ -182,6 +182,18 @@ export const api = {
 
   logout: () => request("/auth/logout", { method: "POST" }),
 
+  validateCustomerVat: (id: string) =>
+    request<{
+      success: boolean;
+      data: {
+        status: "valid" | "invalid" | "unsupported" | "unavailable";
+        name: string | null;
+        address: string | null;
+        checked_at: string | null;
+        detail?: string;
+      };
+    }>(`/customers/${id}/validate-vat`, { method: "POST" }),
+
   getMe: () =>
     request<{
       success: boolean;

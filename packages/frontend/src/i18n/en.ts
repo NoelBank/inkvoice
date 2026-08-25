@@ -352,6 +352,12 @@ const en = {
 
   // Customers
   customers: {
+    tax_id_hint: "EU VAT ID (USt-IdNr). Required for reverse-charge invoices.",
+    vat_check: "Check",
+    vat_valid: "Valid — registered to {{name}} (checked {{date}}).",
+    vat_invalid: "VIES does not recognise this VAT ID.",
+    vat_unavailable: "The VIES registry could not be reached. Try again later.",
+    vat_unsupported: "This is not a recognisable EU VAT ID.",
     title: "Customers",
     add_customer: "Add Customer",
     search_placeholder: "Search customers...",

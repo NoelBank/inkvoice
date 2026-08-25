@@ -359,6 +359,12 @@ const es: TranslationKeys = {
 
   // Clientes
   customers: {
+    tax_id_hint: "NIF-IVA europeo. Necesario para facturas con inversión del sujeto pasivo.",
+    vat_check: "Comprobar",
+    vat_valid: "Válido — registrado a nombre de {{name}} (comprobado el {{date}}).",
+    vat_invalid: "VIES no reconoce este número de IVA.",
+    vat_unavailable: "No se pudo contactar con el registro VIES. Inténtalo más tarde.",
+    vat_unsupported: "Este no es un número de IVA europeo reconocible.",
     title: "Clientes",
     add_customer: "Añadir cliente",
     search_placeholder: "Buscar clientes...",

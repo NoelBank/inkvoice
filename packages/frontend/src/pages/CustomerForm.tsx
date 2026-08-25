@@ -54,6 +54,12 @@ export default function CustomerForm({ onSave }: Props) {
   } | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [vatCheck, setVatCheck] = useState<{
+    status: "valid" | "invalid" | "unsupported" | "unavailable";
+    name: string | null;
+    checked_at: string | null;
+  } | null>(null);
+  const [vatChecking, setVatChecking] = useState(false);
   const [portal, setPortal] = useState<{ enabled: boolean; token: string | null }>({
     enabled: false,
     token: null,
@@ -126,6 +132,24 @@ export default function CustomerForm({ onSave }: Props) {
     ],
   });
 
+  const handleValidateVat = async () => {
+    if (!id) return;
+    setVatChecking(true);
+    try {
+      const res = await api.validateCustomerVat(id);
+      setVatCheck(res.data);
+      if (res.data.status === "unavailable") {
+        toast.error(t("customers.vat_unavailable"));
+      } else if (res.data.status === "unsupported") {
+        toast.error(t("customers.vat_unsupported"));
+      }
+    } catch (err) {
+      toast.error(formatApiError(err, t));
+    } finally {
+      setVatChecking(false);
+    }
+  };
+
   useEffect(() => {
     api.listTemplates().then((r) => setTemplates(r.data));
     api.listTags().then((r) => setTagSuggestions(r.data.map((t) => t.name)));
@@ -167,6 +191,14 @@ export default function CustomerForm({ onSave }: Props) {
           last_invoice_date: d.last_invoice_date,
         });
         setPortal({ enabled: !!d.portal_enabled, token: d.portal_token ?? null });
+        // Surface the stored verdict from the last check; null means never checked.
+        if (d.vat_valid === 0 || d.vat_valid === 1) {
+          setVatCheck({
+            status: d.vat_valid === 1 ? "valid" : "invalid",
+            name: d.vat_check_name ?? null,
+            checked_at: d.vat_checked_at ?? null,
+          });
+        }
         if (d.name) {
           pushRecentlyViewed({
             type: "customer",
@@ -335,8 +367,50 @@ export default function CustomerForm({ onSave }: Props) {
                     ))}
                   </select>
                 </FormField>
-                <FormField label={t("customers.tax_id")}>
-                  <Input value={form.tax_id} onChange={set("tax_id")} />
+                <FormField label={t("customers.tax_id")} hint={t("customers.tax_id_hint")}>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={form.tax_id}
+                      onChange={(e) => {
+                        set("tax_id")(e);
+                        // The stored verdict belongs to the previous number.
+                        setVatCheck(null);
+                      }}
+                    />
+                    {/* Only meaningful for a saved customer — the check reads
+                        the stored tax_id rather than the unsaved field. */}
+                    {isEdit && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleValidateVat}
+                        disabled={vatChecking || !form.tax_id.trim()}
+                      >
+                        {vatChecking ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <SearchCheck className="h-4 w-4" />
+                        )}
+                        {t("customers.vat_check")}
+                      </Button>
+                    )}
+                  </div>
+                  {vatCheck && (vatCheck.status === "valid" || vatCheck.status === "invalid") && (
+                    <p
+                      className={`mt-1.5 text-xs ${
+                        vatCheck.status === "valid" ? "text-emerald-600" : "text-destructive"
+                      }`}
+                    >
+                      {vatCheck.status === "valid"
+                        ? t("customers.vat_valid", {
+                            name: vatCheck.name ?? "—",
+                            date: vatCheck.checked_at
+                              ? new Date(vatCheck.checked_at).toLocaleDateString()
+                              : "—",
+                          })
+                        : t("customers.vat_invalid")}
+                    </p>
+                  )}
                 </FormField>
               </div>
 

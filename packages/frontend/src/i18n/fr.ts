@@ -361,6 +361,12 @@ const fr: TranslationKeys = {
 
   // Clients
   customers: {
+    tax_id_hint: "Numéro de TVA intracommunautaire. Requis pour l'autoliquidation.",
+    vat_check: "Vérifier",
+    vat_valid: "Valide — enregistré au nom de {{name}} (vérifié le {{date}}).",
+    vat_invalid: "VIES ne reconnaît pas ce numéro de TVA.",
+    vat_unavailable: "Le registre VIES est injoignable. Réessayez plus tard.",
+    vat_unsupported: "Ce n'est pas un numéro de TVA européen reconnaissable.",
     title: "Clients",
     add_customer: "Ajouter un client",
     search_placeholder: "Rechercher des clients...",

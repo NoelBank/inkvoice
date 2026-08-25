@@ -371,6 +371,12 @@ const de: TranslationKeys = {
 
   // Kunden
   customers: {
+    tax_id_hint: "USt-IdNr. Für Reverse-Charge-Rechnungen erforderlich.",
+    vat_check: "Prüfen",
+    vat_valid: "Gültig — registriert auf {{name}} (geprüft am {{date}}).",
+    vat_invalid: "VIES kennt diese USt-IdNr nicht.",
+    vat_unavailable: "Das VIES-Register war nicht erreichbar. Bitte später erneut versuchen.",
+    vat_unsupported: "Das ist keine erkennbare EU-USt-IdNr.",
     title: "Kunden",
     add_customer: "Kunde hinzufügen",
     search_placeholder: "Kunden suchen...",

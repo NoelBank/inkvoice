@@ -356,6 +356,12 @@ const tr: TranslationKeys = {
 
   // Müşteriler
   customers: {
+    tax_id_hint: "AB KDV numarası. Reverse-charge faturalar için gereklidir.",
+    vat_check: "Doğrula",
+    vat_valid: "Geçerli — {{name}} adına kayıtlı ({{date}} tarihinde kontrol edildi).",
+    vat_invalid: "VIES bu KDV numarasını tanımıyor.",
+    vat_unavailable: "VIES kayıt sistemine ulaşılamadı. Lütfen daha sonra tekrar deneyin.",
+    vat_unsupported: "Bu tanınabilir bir AB KDV numarası değil.",
     title: "Müşteriler",
     add_customer: "Müşteri Ekle",
     search_placeholder: "Müşteri ara...",
