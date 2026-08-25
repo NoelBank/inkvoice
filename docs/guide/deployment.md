@@ -36,7 +36,7 @@ openssl rand -base64 48
 docker run -d \
   --name inkvoice \
   -p 3000:3000 \
-  -v inkvoice-data:/app/data \
+  -v invoice-data:/app/data \
   -e ADMIN_USER=admin \
   -e ADMIN_PASS=your-strong-password \
   -e JWT_SECRET=your-random-secret-at-least-32-chars \
@@ -83,8 +83,10 @@ The entire application state lives in a single SQLite file at `DATABASE_PATH` (d
 # Copy from a running container
 docker cp inkvoice:/app/data/invoice.db ./backup-$(date +%F).db
 
-# Or if using a named volume
-docker run --rm -v inkvoice-data:/data -v $(pwd):/backup \
+# Or straight from the named volume. Plain `docker run` creates `invoice-data`;
+# Docker Compose prefixes it with the project name, so use `inkvoice_invoice-data`.
+# Check with: docker volume ls
+docker run --rm -v invoice-data:/data -v $(pwd):/backup \
   alpine cp /data/invoice.db /backup/backup-$(date +%F).db
 ```
 

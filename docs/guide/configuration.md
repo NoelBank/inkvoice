@@ -90,11 +90,9 @@ See [Online Payments](/features/payments) for setup instructions.
 
 ## PDF Generation
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CHROME_PATH` | (auto-detected) | Path to Chrome/Chromium binary |
-
-Chrome Headless Shell is bundled in the Docker image. Only set this if running outside Docker with a custom Chrome installation.
+Nothing to configure. Inkvoice renders invoices and quotes as HTML and the browser's print
+dialog turns them into PDFs, so there is no Chrome or Chromium to install, bundle or point
+at. The `CHROME_PATH` variable used by older versions is gone and is ignored if still set.
 
 ## Demo Mode
 

@@ -13,7 +13,6 @@ export interface Env {
   RATE_LIMIT_ENABLED: boolean;
   RATE_LIMIT_MAX_ATTEMPTS: number;
   RATE_LIMIT_WINDOW: number;
-  CHROME_PATH: string;
   DEMO_MODE: boolean;
   DEMO_RESET_INTERVAL: number;
   ALLOWED_ORIGINS: string[];
@@ -99,7 +98,6 @@ export function getEnv(): Env {
     RATE_LIMIT_ENABLED: process.env.RATE_LIMIT_ENABLED !== "false",
     RATE_LIMIT_MAX_ATTEMPTS: parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || "5", 10),
     RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW || "900", 10),
-    CHROME_PATH: process.env.CHROME_PATH || "",
     DEMO_MODE: demoMode,
     DEMO_RESET_INTERVAL: parseInt(process.env.DEMO_RESET_INTERVAL || "86400000", 10),
     ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:3000")

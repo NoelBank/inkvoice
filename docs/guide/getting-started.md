@@ -4,7 +4,16 @@
 
 The fastest way to run Inkvoice is with Docker Compose.
 
-### 1. Create a `docker-compose.yml`
+### 1. Generate a signing secret
+
+```bash
+openssl rand -base64 48
+```
+
+Inkvoice refuses to start in production without `JWT_SECRET`, and it must be at
+least 32 characters. Keep the output for the next step.
+
+### 2. Create a `docker-compose.yml`
 
 ```yaml
 services:
@@ -15,27 +24,34 @@ services:
     volumes:
       - invoice-data:/app/data
     environment:
-      - ADMIN_USER=admin
-      - ADMIN_PASS=changeme
-      - JWT_SECRET=change-this-to-a-random-string-at-least-32-chars
+      ADMIN_USER: admin
+      ADMIN_PASS: pick-a-strong-password
+      JWT_SECRET: paste-the-openssl-output-here
+      # Serving over plain HTTP? Keep this false. It defaults to true, which
+      # marks the session cookie Secure, and browsers then drop it on any
+      # non-HTTPS address other than localhost, so logins silently fail.
+      COOKIE_SECURE: "false"
     restart: unless-stopped
+    # Bun sizes its heap to the memory it can see, so keep this cap.
+    mem_limit: 512m
 
 volumes:
   invoice-data:
 ```
 
-### 2. Start it
+### 3. Start it
 
 ```bash
 docker compose up -d
 ```
 
-### 3. Open the app
+### 4. Open the app
 
 Navigate to [http://localhost:3000](http://localhost:3000) and log in with the credentials you set above.
 
 ::: tip
-Change the default `ADMIN_PASS` and `JWT_SECRET` before exposing the app to the internet.
+Putting this on the public internet? Terminate TLS in front of it, then switch to
+`COOKIE_SECURE: "true"` and add `ENABLE_HSTS: "true"`.
 :::
 
 ## Manual Setup

@@ -20,7 +20,7 @@ Most invoicing tools are either SaaS platforms that charge per invoice or self-h
 | Database | SQLite (bun:sqlite) |
 | Frontend | React 19 + Vite 6 |
 | Styling | Tailwind CSS v4 + shadcn/ui |
-| PDF | Puppeteer + Chrome Headless |
+| PDF | Mustache HTML + browser print |
 | Templates | Mustache |
 
 ## How It Works

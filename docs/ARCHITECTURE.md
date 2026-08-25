@@ -15,7 +15,7 @@ Inkvoice is a self-hosted dashboard, so the constraint that drives every decisio
 | Styling    | Tailwind v4 + shadcn/ui             | Components ship as source, not a runtime — only what we use ends up in the bundle. |
 | State      | Zustand                             | ~1 KB. We don't need React Query for two-dozen endpoints.             |
 | Validation | Zod                                 | Same schemas can validate request bodies and infer TS types.          |
-| PDF        | Headless Chrome + Mustache          | Templates are plain HTML — anyone can read and edit them.             |
+| PDF        | Mustache HTML + browser print       | Templates are plain HTML — anyone can read and edit them.             |
 
 The whole thing runs as **one process serving one binary**: `bun run start` boots Hono, which serves `/api/*` and falls through to the built React SPA for everything else.
 

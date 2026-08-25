@@ -51,7 +51,7 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 **Invoicing**
 - Full lifecycle: draft → send → paid → void, plus one-click duplicate
 - Line items, discounts and multiple tax rates with auto-calculation
-- Polished PDF export (headless Chrome) with customizable Mustache templates
+- Polished PDF export straight from the browser's print dialog, with customizable Mustache templates
 - Public shareable links with **read receipts** — see when a client opens an invoice
 
 **Quotes & recurring**
@@ -101,11 +101,51 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 
 ### Docker (recommended)
 
+Inkvoice ships as a **prebuilt multi-arch image** (`linux/amd64` + `linux/arm64`), so there's nothing to clone and nothing to build:
+
 ```bash
-docker compose up -d
+docker run -d --name inkvoice \
+  -p 3000:3000 \
+  -v invoice-data:/app/data \
+  --memory 512m \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
+  -e ADMIN_PASS="change-me-please" \
+  ghcr.io/pigontech/inkvoice:latest
 ```
 
-Open **[http://localhost:3000](http://localhost:3000)** and log in with `admin` / `changeme`. Change the password from the user menu right away.
+Open **[http://localhost:3000](http://localhost:3000)** and log in with `admin` and the password you set.
+
+Prefer Compose? Save this as `docker-compose.yml` and run `docker compose up -d`:
+
+```yaml
+services:
+  app:
+    image: ghcr.io/pigontech/inkvoice:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - invoice-data:/app/data
+    mem_limit: 512m
+    environment:
+      JWT_SECRET: change-this-to-a-random-string-of-at-least-32-chars
+      ADMIN_PASS: change-me-please
+    restart: unless-stopped
+
+volumes:
+  invoice-data:
+```
+
+> **Keep the 512 MB cap.** Bun sizes its heap to the memory it can see, so the cap is what keeps
+> Inkvoice in its usual ~60 MB working set. Measured on a fresh install: **62 MB** capped at 512 MB,
+> versus **118 MB** uncapped.
+>
+> **Image tags:** `latest` tracks `main`. For a stable deployment, pin a release tag such as
+> `ghcr.io/pigontech/inkvoice:0.1.0`.
+>
+> **Going public?** Put it behind HTTPS and add `-e COOKIE_SECURE=true -e ENABLE_HSTS=true`.
+> Staying on plain HTTP? Add `-e COOKIE_SECURE=false`. It defaults to true, which marks the
+> session cookie Secure, and browsers drop that on every non-HTTPS address except localhost,
+> so logins fail with no visible error.
 
 ### Manual (development)
 
@@ -150,7 +190,7 @@ docker build -t inkvoice .
 docker run -d \
   --name inkvoice \
   -p 3000:3000 \
-  -v inkvoice-data:/app/data \
+  -v invoice-data:/app/data \
   -e JWT_SECRET="$(openssl rand -base64 48)" \
   -e ADMIN_PASS="change-me-please" \
   -e COOKIE_SECURE=true \
@@ -179,7 +219,6 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `RATE_LIMIT_MAX_ATTEMPTS` | no       | `5`                   | Max failed logins per window                                         |
 | `RATE_LIMIT_WINDOW`       | no       | `900`                 | Rate-limit window in seconds                                         |
 | `ALLOWED_ORIGINS`         | no       | `localhost:5173,3000` | Comma-separated CORS allow-list                                      |
-| `CHROME_PATH`             | no       | (auto-detected)       | Override Chrome/Chromium binary path for PDF rendering               |
 | `SMTP_HOST`               | no       | —                     | SMTP host. Set this group to enable invoice email sending            |
 | `SMTP_PORT`               | no       | `587`                 | SMTP port                                                            |
 | `SMTP_USER`               | no       | —                     | SMTP username                                                        |
@@ -221,7 +260,7 @@ Any standards-compliant OIDC provider (Keycloak, Authentik, Authelia, Entra ID, 
 | Runtime | **Bun** |
 | Backend | **Hono** + **SQLite** (`bun:sqlite`), **Zod** validation, JWT auth |
 | Frontend | **React 19** + **Vite**, **Tailwind CSS** + shadcn/ui |
-| PDF | Headless Chrome + **Mustache** templates |
+| PDF | **Mustache** HTML templates, printed by the browser |
 | Packaging | Single **Docker** container serving API + static SPA |
 
 ## Documentation

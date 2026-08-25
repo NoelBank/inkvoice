@@ -1,5 +1,8 @@
 services:
   app:
+    # Built from source on purpose: this fork carries its own changes (German
+    # invoice template, cash discount fields) that the upstream prebuilt image
+    # at ghcr.io/pigontech/inkvoice does not contain.
     build: .
     # Dokploy/Traefik reaches the app through Docker's internal network.
     # Publishing 3000 on the host conflicts with Dokploy's own web interface.
@@ -12,7 +15,9 @@ services:
       # when DEMO_MODE=true). Set them in .env to override.
       ADMIN_USER: ${ADMIN_USER:-}
       ADMIN_PASS: ${ADMIN_PASS:-}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars}
+      # Required. No fallback on purpose: a shipped default secret would be
+      # public knowledge. Generate one with: openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env, minimum 32 characters}
       DATABASE_PATH: /app/data/invoice.db
       PORT: "3000"
       HOST: 0.0.0.0
@@ -30,10 +35,8 @@ services:
       PEPPOL_SH_WEBHOOK_SECRET: ${PEPPOL_SH_WEBHOOK_SECRET:-}
       PEPPOL_SH_BASE_URL: ${PEPPOL_SH_BASE_URL:-https://api.peppol.sh}
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    # Bun sizes its heap to the memory it can see - keep this cap.
+    mem_limit: 512m
 
 volumes:
   inkvoice-data:
