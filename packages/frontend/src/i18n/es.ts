@@ -776,6 +776,18 @@ const es: TranslationKeys = {
 
   // Informes
   reports: {
+    tab_year_archive: "Archivo anual",
+    archive_intro:
+      "Todo un ejercicio en un solo zip: un CSV de gastos y otro de facturas, más los justificantes a los que hacen referencia. Entrégaselo a tu asesor o guárdalo para una inspección.",
+    archive_year: "Año",
+    archive_download: "Descargar archivo",
+    archive_downloaded:
+      "Archivo descargado: {{expenses}} gastos, {{invoices}} facturas, {{files}} ficheros.",
+    archive_failed: "No se pudo crear el archivo.",
+    archive_complete: "Todos los gastos de {{year}} tienen justificante.",
+    archive_missing: "{{count}} gasto(s) sin justificante",
+    archive_missing_hint: "Seguirán en el archivo, pero el manifiesto los marca como ausentes.",
+    archive_add_receipt: "Añadir justificante",
     title: "Informes",
     tab_tax_summary: "Resumen de impuestos",
     tab_aging: "Antigüedad de saldos",
@@ -1220,6 +1232,21 @@ const es: TranslationKeys = {
     disable_title: "Desactivar la autenticación de dos factores",
     disable_hint: "Confirma tu contraseña. Se eliminarán tus códigos de recuperación.",
     disabled: "Autenticación de dos factores desactivada.",
+  },
+
+  // Adjuntos
+  attachments: {
+    title: "Adjuntos",
+    receipts_title: "Justificantes",
+    receipts_hint:
+      "La factura o el recibo de este gasto. Se guarda con el registro y se incluye en el archivo anual.",
+    drop_hint: "Arrastra los archivos aquí",
+    choose_files: "Elegir archivos",
+    accepted_types: "PDF, JPG, PNG, WebP, HEIC, TIFF o XML — hasta 20 MB cada uno",
+    uploaded: "{{count}} archivo(s) subido(s)",
+    delete_title: "¿Eliminar este archivo?",
+    delete_hint:
+      "Desaparece de este registro y de los archivos futuros. La subida permanece en el registro de actividad.",
   },
   // Diseño público
   public: {

@@ -959,6 +959,37 @@ const MIGRATIONS: Migration[] = [
       addColumnIfMissing(db, "customers", "vat_check_name", "TEXT");
     },
   },
+  {
+    version: 29,
+    name: "attachments",
+    up: (db) => {
+      // File metadata only — the bytes live on the data volume under a
+      // content-addressed path. Receipt scans would bloat the database and
+      // every backup of it; einvoice_inbox keeps XML inline because those are
+      // ~50 KB, which is a different problem.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS attachments (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          entity_type TEXT NOT NULL,          -- expense | invoice | customer
+          entity_id TEXT NOT NULL,
+          file_name TEXT NOT NULL,
+          content_type TEXT,
+          bytes INTEGER NOT NULL,
+          -- Content address and integrity check in one. Identical uploads
+          -- share a blob on disk.
+          sha256 TEXT NOT NULL,
+          uploaded_by TEXT REFERENCES users(id),
+          created_at TEXT DEFAULT (datetime('now')),
+          -- Soft delete: a receipt inside its retention period must not
+          -- disappear from the record just because someone hit delete.
+          deleted_at TEXT DEFAULT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_attachments_entity
+          ON attachments(entity_type, entity_id) WHERE deleted_at IS NULL;
+        CREATE INDEX IF NOT EXISTS idx_attachments_sha ON attachments(sha256);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

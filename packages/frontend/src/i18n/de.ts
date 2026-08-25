@@ -790,6 +790,19 @@ const de: TranslationKeys = {
 
   // Berichte
   reports: {
+    tab_year_archive: "Jahresarchiv",
+    archive_intro:
+      "Ein komplettes Geschäftsjahr in einer ZIP-Datei: eine CSV mit den Ausgaben, eine mit den Rechnungen und die zugehörigen Belegdateien. Für den Steuerberater oder fürs Archiv.",
+    archive_year: "Jahr",
+    archive_download: "Archiv herunterladen",
+    archive_downloaded:
+      "Archiv heruntergeladen — {{expenses}} Ausgaben, {{invoices}} Rechnungen, {{files}} Dateien.",
+    archive_failed: "Das Archiv konnte nicht erstellt werden.",
+    archive_complete: "Jede Ausgabe in {{year}} hat einen Beleg.",
+    archive_missing: "{{count}} Ausgabe(n) ohne Beleg",
+    archive_missing_hint:
+      "Sie sind trotzdem im Archiv, das Manifest weist sie aber als fehlend aus.",
+    archive_add_receipt: "Beleg ergänzen",
     title: "Berichte",
     tab_tax_summary: "Steuerübersicht",
     tab_aging: "Fälligkeitsanalyse",
@@ -1233,6 +1246,21 @@ const de: TranslationKeys = {
     disable_title: "Zwei-Faktor-Authentifizierung deaktivieren",
     disable_hint: "Bestätige dein Passwort. Deine Wiederherstellungscodes werden gelöscht.",
     disabled: "Zwei-Faktor-Authentifizierung deaktiviert.",
+  },
+
+  // Anhänge
+  attachments: {
+    title: "Anhänge",
+    receipts_title: "Belege",
+    receipts_hint:
+      "Die Rechnung oder der Beleg zu dieser Ausgabe. Bleibt am Datensatz und landet im Jahresarchiv.",
+    drop_hint: "Dateien hierhin ziehen",
+    choose_files: "Dateien auswählen",
+    accepted_types: "PDF, JPG, PNG, WebP, HEIC, TIFF oder XML — je bis 20 MB",
+    uploaded: "{{count}} Datei(en) hochgeladen",
+    delete_title: "Diese Datei entfernen?",
+    delete_hint:
+      "Sie verschwindet von diesem Datensatz und aus künftigen Archiven. Der Upload bleibt im Aktivitätsprotokoll.",
   },
   // Öffentliches Layout
   public: {

@@ -766,6 +766,19 @@ const tr: TranslationKeys = {
 
   // Raporlar
   reports: {
+    tab_year_archive: "Yıl arşivi",
+    archive_intro:
+      "Bir mali yılın tamamı tek bir zip dosyasında: giderler ve faturalar için birer CSV, ayrıca atıfta bulundukları fiş dosyaları. Mali müşavirinize verin veya denetim için saklayın.",
+    archive_year: "Yıl",
+    archive_download: "Arşivi indir",
+    archive_downloaded:
+      "Arşiv indirildi — {{expenses}} gider, {{invoices}} fatura, {{files}} dosya.",
+    archive_failed: "Arşiv oluşturulamadı.",
+    archive_complete: "{{year}} yılındaki her giderin bir fişi var.",
+    archive_missing: "{{count}} giderin fişi yok",
+    archive_missing_hint:
+      "Yine de arşivde yer alırlar, ancak manifest bunları eksik olarak işaretler.",
+    archive_add_receipt: "Fiş ekle",
     title: "Raporlar",
     tab_tax_summary: "Vergi Özeti",
     tab_aging: "Yaşlandırma",
@@ -1204,6 +1217,21 @@ const tr: TranslationKeys = {
     disable_title: "İki faktörlü kimlik doğrulamayı kapat",
     disable_hint: "Parolanızı onaylayın. Kurtarma kodlarınız silinecek.",
     disabled: "İki faktörlü kimlik doğrulama kapatıldı.",
+  },
+
+  // Ekler
+  attachments: {
+    title: "Ekler",
+    receipts_title: "Fişler",
+    receipts_hint:
+      "Bu giderin arkasındaki fatura veya fiş. Kayıtla birlikte saklanır ve yıllık arşive dahil edilir.",
+    drop_hint: "Dosyaları buraya sürükleyin",
+    choose_files: "Dosya seç",
+    accepted_types: "PDF, JPG, PNG, WebP, HEIC, TIFF veya XML — her biri en fazla 20 MB",
+    uploaded: "{{count}} dosya yüklendi",
+    delete_title: "Bu dosya kaldırılsın mı?",
+    delete_hint:
+      "Bu kayıttan ve gelecekteki arşivlerden kaybolur. Yükleme, etkinlik günlüğünde kalır.",
   },
   // Genel düzen
   public: {

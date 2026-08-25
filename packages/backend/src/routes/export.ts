@@ -6,10 +6,40 @@ import { Hono } from "hono";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
+import { buildYearArchive, findMissingReceipts } from "../services/year-archive.service";
 import { todayIso } from "../utils/date";
 import { getEnv } from "../utils/env";
 
 const exportRoutes = new Hono();
+
+/**
+ * One financial year as a single archive: CSVs plus the attached receipt
+ * files. This is the artefact for the accountant or a tax audit.
+ */
+exportRoutes.get("/year/:year", (c) => {
+  const year = Number.parseInt(c.req.param("year") ?? "", 10);
+  const currentYear = new Date().getFullYear();
+  if (!Number.isInteger(year) || year < 1970 || year > currentYear + 1) {
+    return c.json({ success: false, error: "Invalid year" }, 400);
+  }
+
+  const archive = buildYearArchive(year);
+  c.header("Content-Type", "application/zip");
+  c.header("Content-Disposition", `attachment; filename="${archive.fileName}"`);
+  // The UI shows these after the download so the user learns about gaps
+  // without having to open the manifest.
+  c.header("X-Archive-Stats", JSON.stringify(archive.stats));
+  return c.body(Buffer.from(archive.zip));
+});
+
+/** Expenses in a year with no receipt attached — the January checklist. */
+exportRoutes.get("/year/:year/missing-receipts", (c) => {
+  const year = Number.parseInt(c.req.param("year") ?? "", 10);
+  if (!Number.isInteger(year)) {
+    return c.json({ success: false, error: "Invalid year" }, 400);
+  }
+  return c.json({ success: true, data: findMissingReceipts(year) });
+});
 
 exportRoutes.get("/backup", (c) => {
   const db = getDb();

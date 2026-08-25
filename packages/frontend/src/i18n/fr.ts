@@ -779,6 +779,19 @@ const fr: TranslationKeys = {
 
   // Rapports
   reports: {
+    tab_year_archive: "Archive annuelle",
+    archive_intro:
+      "Un exercice complet dans un seul zip : un CSV des dépenses, un des factures, et les justificatifs auxquels ils renvoient. À remettre à votre comptable ou à conserver en cas de contrôle.",
+    archive_year: "Année",
+    archive_download: "Télécharger l'archive",
+    archive_downloaded:
+      "Archive téléchargée — {{expenses}} dépenses, {{invoices}} factures, {{files}} fichiers.",
+    archive_failed: "L'archive n'a pas pu être créée.",
+    archive_complete: "Chaque dépense de {{year}} a un justificatif.",
+    archive_missing: "{{count}} dépense(s) sans justificatif",
+    archive_missing_hint:
+      "Elles figurent quand même dans l'archive, mais le manifeste les signale comme manquantes.",
+    archive_add_receipt: "Ajouter un justificatif",
     title: "Rapports",
     tab_tax_summary: "Récapitulatif des taxes",
     tab_aging: "Balance âgée",
@@ -1224,6 +1237,21 @@ const fr: TranslationKeys = {
     disable_title: "Désactiver l'authentification à deux facteurs",
     disable_hint: "Confirmez votre mot de passe. Vos codes de récupération seront supprimés.",
     disabled: "Authentification à deux facteurs désactivée.",
+  },
+
+  // Pièces jointes
+  attachments: {
+    title: "Pièces jointes",
+    receipts_title: "Justificatifs",
+    receipts_hint:
+      "La facture ou le reçu correspondant à cette dépense. Conservé avec l'enregistrement et inclus dans l'archive annuelle.",
+    drop_hint: "Déposez les fichiers ici",
+    choose_files: "Choisir des fichiers",
+    accepted_types: "PDF, JPG, PNG, WebP, HEIC, TIFF ou XML — jusqu'à 20 Mo chacun",
+    uploaded: "{{count}} fichier(s) téléversé(s)",
+    delete_title: "Supprimer ce fichier ?",
+    delete_hint:
+      "Il disparaît de cet enregistrement et des archives futures. Le téléversement reste dans le journal d'activité.",
   },
   // Mise en page publique
   public: {

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
+import { AttachmentsCard } from "@/components/shared/AttachmentsCard";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { CurrencyCombobox } from "@/components/shared/CurrencyCombobox";
 import { ExchangeRateField } from "@/components/shared/ExchangeRateField";
@@ -369,6 +370,17 @@ export default function ExpenseForm({ onSave }: Props) {
           </FormField>
         </CardContent>
       </Card>
+
+      {/* Receipts can only hang off a saved expense — the attachment needs an
+          id to point at. */}
+      {isEdit && id && (
+        <AttachmentsCard
+          entityType="expense"
+          entityId={id}
+          title={t("attachments.receipts_title")}
+          description={t("attachments.receipts_hint")}
+        />
+      )}
     </form>
   );
 }

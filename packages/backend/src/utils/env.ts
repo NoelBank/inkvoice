@@ -52,6 +52,8 @@ export interface Env {
   BACKUP_DIR: string;
   /** How many snapshots to keep; older ones are pruned after each run. */
   BACKUP_KEEP: number;
+  /** Where attachment blobs are stored. Defaults next to the database. */
+  ATTACHMENTS_DIR: string;
 }
 
 /**
@@ -197,6 +199,9 @@ export function getEnv(): Env {
       // 0 would mean "prune everything we just wrote" — treat it as a typo.
       return Number.isFinite(keep) && keep > 0 ? keep : 7;
     })(),
+    ATTACHMENTS_DIR:
+      process.env.ATTACHMENTS_DIR ||
+      join(dirname(process.env.DATABASE_PATH || "./data/invoice.db"), "attachments"),
   };
 
   return cachedEnv;

@@ -139,6 +139,18 @@ export function isMfaChallenge(data: LoginPayload): data is MfaChallengePayload 
   return "mfa_required" in data;
 }
 
+export interface AttachmentRecord {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  file_name: string;
+  content_type: string | null;
+  bytes: number;
+  sha256: string;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
 export interface TwoFactorStatus {
   enabled: boolean;
   confirmed_at: string | null;
@@ -181,6 +193,41 @@ export const api = {
     }),
 
   logout: () => request("/auth/logout", { method: "POST" }),
+
+  // Attachments
+  listAttachments: (entityType: string, entityId: string) =>
+    request<{ success: boolean; data: AttachmentRecord[] }>(
+      `/attachments?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`,
+    ),
+
+  uploadAttachment: (entityType: string, entityId: string, file: File) => {
+    const form = new FormData();
+    form.append("entity_type", entityType);
+    form.append("entity_id", entityId);
+    form.append("file", file);
+    // No Content-Type header: the browser has to set the multipart boundary.
+    return request<{ success: boolean; data: AttachmentRecord }>("/attachments", {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  deleteAttachment: (id: string) => request(`/attachments/${id}`, { method: "DELETE" }),
+
+  attachmentDownloadUrl: (id: string) => `/api/v1/attachments/${id}/download`,
+
+  listMissingReceipts: (year: number) =>
+    request<{
+      success: boolean;
+      data: Array<{
+        id: string;
+        expense_date: string;
+        vendor: string | null;
+        description: string | null;
+        total: number;
+        currency: string;
+      }>;
+    }>(`/export/year/${year}/missing-receipts`),
 
   validateCustomerVat: (id: string) =>
     request<{

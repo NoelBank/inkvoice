@@ -766,6 +766,19 @@ const en = {
 
   // Reports
   reports: {
+    tab_year_archive: "Year archive",
+    archive_intro:
+      "Everything for one financial year in a single zip: an expenses and an invoices CSV, plus the receipt files they reference. Hand this to your accountant or keep it for an audit.",
+    archive_year: "Year",
+    archive_download: "Download archive",
+    archive_downloaded:
+      "Archive downloaded — {{expenses}} expenses, {{invoices}} invoices, {{files}} files.",
+    archive_failed: "The archive could not be created.",
+    archive_complete: "Every expense in {{year}} has a receipt attached.",
+    archive_missing: "{{count}} expense(s) have no receipt attached",
+    archive_missing_hint:
+      "They will still be in the archive, but the manifest flags them as missing.",
+    archive_add_receipt: "Add receipt",
     title: "Reports",
     tab_tax_summary: "Tax Summary",
     tab_aging: "Aging",
@@ -1202,6 +1215,20 @@ const en = {
     disabled: "Two-factor authentication turned off.",
   },
 
+  // Attachments
+  attachments: {
+    title: "Attachments",
+    receipts_title: "Receipts",
+    receipts_hint:
+      "The invoice or receipt behind this expense. Kept with the record and included in the yearly archive.",
+    drop_hint: "Drop files here",
+    choose_files: "Choose files",
+    accepted_types: "PDF, JPG, PNG, WebP, HEIC, TIFF or XML — up to 20 MB each",
+    uploaded: "{{count}} file(s) uploaded",
+    delete_title: "Remove this file?",
+    delete_hint:
+      "It disappears from this record and from future archives. The upload stays in the activity log.",
+  },
   // Public layout
   public: {
     invoice: "Invoice",

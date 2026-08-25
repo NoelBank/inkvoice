@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "@/api/client";
+import { YearArchiveCard } from "@/components/shared/YearArchiveCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ const REPORT_TABS = [
   "currency-breakdown",
   "cash-flow",
   "accounting-export",
+  "year-archive",
 ] as const;
 type ReportTab = (typeof REPORT_TABS)[number];
 
@@ -160,8 +162,8 @@ export default function Reports() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
-    if (tab === "accounting-export") {
-      // Download-only tab: no JSON report to fetch.
+    if (tab === "accounting-export" || tab === "year-archive") {
+      // Download-only tabs: no JSON report to fetch.
       setData(null);
       setLoadError(null);
       setLoading(false);
@@ -288,10 +290,11 @@ export default function Reports() {
           </TabsTrigger>
           <TabsTrigger value="cash-flow">{t("reports.tab_cash_flow")}</TabsTrigger>
           <TabsTrigger value="accounting-export">{t("reports.tab_accounting_export")}</TabsTrigger>
+          <TabsTrigger value="year-archive">{t("reports.tab_year_archive")}</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {tab !== "aging" && tab !== "cash-flow" && (
+      {tab !== "aging" && tab !== "cash-flow" && tab !== "year-archive" && (
         <DateRangePicker
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -317,6 +320,8 @@ export default function Reports() {
           ))}
         </div>
       )}
+
+      {tab === "year-archive" && <YearArchiveCard />}
 
       {tab === "accounting-export" && (
         <Card>
