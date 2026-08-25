@@ -34,6 +34,15 @@ services:
       PEPPOL_SH_API_KEY: ${PEPPOL_SH_API_KEY:-}
       PEPPOL_SH_WEBHOOK_SECRET: ${PEPPOL_SH_WEBHOOK_SECRET:-}
       PEPPOL_SH_BASE_URL: ${PEPPOL_SH_BASE_URL:-https://api.peppol.sh}
+      # Payment gateways. Both stay dormant until their credentials are present
+      # AND the gateway is toggled on in Settings, so leaving these empty is safe.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_SECRET: ${PAYPAL_SECRET:-}
+      PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+      PAYPAL_ENV: ${PAYPAL_ENV:-sandbox}
     restart: unless-stopped
     # Bun sizes its heap to the memory it can see - keep this cap.
     mem_limit: 512m

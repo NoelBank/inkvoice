@@ -1452,6 +1452,7 @@ const tr: TranslationKeys = {
   portal: {
     customer_portal: "Müşteri Portalı",
     view_invoices: "Faturaları Görüntüle",
+    view_invoice: "Faturayı aç",
     pay_now: "Şimdi Öde",
     no_invoices: "Görüntülenecek fatura yok.",
     portal_expired: "Bu portal bağlantısının süresi dolmuş.",

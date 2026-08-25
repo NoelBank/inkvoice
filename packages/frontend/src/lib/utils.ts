@@ -8,7 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 function getCurrentLocale(): string {
   try {
     const lang = localStorage.getItem("inkvoice-lang") || "en";
-    const localeMap: Record<string, string> = { en: "en-US", tr: "tr-TR" };
+    const localeMap: Record<string, string> = {
+      en: "en-US",
+      tr: "tr-TR",
+      de: "de-DE",
+      es: "es-ES",
+      fr: "fr-FR",
+    };
     return localeMap[lang] || "en-US";
   } catch {
     return "en-US";

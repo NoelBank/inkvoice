@@ -397,6 +397,41 @@ publicRoutes.get("/portal/:token/invoices.zip", async (c) => {
   });
 });
 
+// Render a single portal invoice. Same renderer the year ZIP uses, scoped to
+// the invoices the portal token actually owns so a guessed id leaks nothing.
+publicRoutes.get("/portal/:token/invoices/:invoiceId/preview", async (c) => {
+  const customer = resolvePortalCustomer(c.req.param("token"));
+  if (!customer) return c.json({ success: false, error: "Portal link not found or expired" }, 404);
+
+  const invoiceId = c.req.param("invoiceId");
+  const owns = getDb()
+    .query(
+      `SELECT id FROM invoices
+       WHERE id = ? AND customer_id = ? AND deleted_at IS NULL AND status != 'draft'`,
+    )
+    .get(invoiceId, customer.id);
+  if (!owns) return c.json({ success: false, error: "Invoice not found" }, 404);
+
+  const { renderInvoiceHtml } = await import("../services/pdf.service");
+  const html = renderInvoiceHtml(invoiceId);
+  if (!html) {
+    return c.json(
+      {
+        success: false,
+        error:
+          "This invoice could not be rendered. The template may be missing or invalid — please try again later.",
+      },
+      503,
+    );
+  }
+  c.header(
+    "Content-Security-Policy",
+    "default-src 'none'; style-src 'unsafe-inline'; img-src data: blob:; frame-ancestors 'self';",
+  );
+  c.header("X-Frame-Options", "SAMEORIGIN");
+  return c.html(html);
+});
+
 // --- Invoice comment threads ---
 
 publicRoutes.get("/portal/:token/invoices/:invoiceId/comments", (c) => {

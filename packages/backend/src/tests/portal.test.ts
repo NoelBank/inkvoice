@@ -241,6 +241,66 @@ describe("invoice comment thread", () => {
   });
 });
 
+describe("portal single-invoice preview", () => {
+  test("renders the customer's own invoice as HTML", async () => {
+    const res = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${invoiceId}/preview`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    const html = await res.text();
+    expect(html).toContain("<html");
+    expect(html.length).toBeGreaterThan(200);
+  });
+
+  test("rejects an invoice belonging to another customer", async () => {
+    const cRes = await authed("/api/v1/customers", {
+      method: "POST",
+      body: JSON.stringify({ name: "Preview Outsider" }),
+    });
+    const otherCustomerId = ((await cRes.json()) as any).data.id;
+    const inv = await authed("/api/v1/invoices", {
+      method: "POST",
+      body: JSON.stringify({
+        customer_id: otherCustomerId,
+        issue_date: "2026-04-01",
+        items: [{ description: "Y", quantity: 1, unit_price: 20, tax_rate: 0 }],
+      }),
+    });
+    const otherInvoiceId = ((await inv.json()) as any).data.id;
+    await authed(`/api/v1/invoices/${otherInvoiceId}/mark-sent`, { method: "POST" });
+
+    const res = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${otherInvoiceId}/preview`,
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test("does not expose the customer's own draft invoice", async () => {
+    const inv = await authed("/api/v1/invoices", {
+      method: "POST",
+      body: JSON.stringify({
+        customer_id: customerId,
+        issue_date: "2026-05-01",
+        items: [{ description: "Draft", quantity: 1, unit_price: 30, tax_rate: 0 }],
+      }),
+    });
+    const draftId = ((await inv.json()) as any).data.id;
+
+    const res = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${draftId}/preview`,
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test("rejects unknown portal token", async () => {
+    const res = await app.request(
+      `/api/v1/public/portal/000000aabbcc/invoices/${invoiceId}/preview`,
+    );
+    expect(res.status).toBe(404);
+  });
+});
+
 describe("portal token expiry (TTL)", () => {
   test("token with a future expires_at keeps working", async () => {
     getDb().run(
@@ -277,6 +337,11 @@ describe("portal token expiry (TTL)", () => {
       },
     );
     expect(post.status).toBe(404);
+
+    const preview = await app.request(
+      `/api/v1/public/portal/${portalToken}/invoices/${invoiceId}/preview`,
+    );
+    expect(preview.status).toBe(404);
   });
 
   test("NULL expires_at means no expiry (self-hosted default)", async () => {

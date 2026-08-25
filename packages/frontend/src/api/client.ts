@@ -951,6 +951,8 @@ export const api = {
     }>(`/public/portal/${token}`),
   portalYearZipUrl: (token: string, year: number) =>
     `${API_BASE}/public/portal/${token}/invoices.zip?year=${year}`,
+  portalInvoicePreviewUrl: (token: string, invoiceId: string) =>
+    `${API_BASE}/public/portal/${token}/invoices/${invoiceId}/preview`,
   getPortalInvoiceComments: (token: string, invoiceId: string) =>
     request<{
       success: boolean;

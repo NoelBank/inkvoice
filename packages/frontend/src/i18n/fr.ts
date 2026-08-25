@@ -1473,6 +1473,7 @@ const fr: TranslationKeys = {
   portal: {
     customer_portal: "Portail client",
     view_invoices: "Voir les factures",
+    view_invoice: "Ouvrir la facture",
     pay_now: "Payer maintenant",
     no_invoices: "Aucune facture à afficher.",
     portal_expired: "Ce lien de portail a expiré.",

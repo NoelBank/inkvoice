@@ -1450,6 +1450,7 @@ const en = {
   portal: {
     customer_portal: "Customer Portal",
     view_invoices: "View Invoices",
+    view_invoice: "Open invoice",
     pay_now: "Pay Now",
     no_invoices: "No invoices to display.",
     portal_expired: "This portal link has expired.",

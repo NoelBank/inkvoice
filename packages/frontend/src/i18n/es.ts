@@ -1469,6 +1469,7 @@ const es: TranslationKeys = {
   portal: {
     customer_portal: "Portal del cliente",
     view_invoices: "Ver facturas",
+    view_invoice: "Abrir factura",
     pay_now: "Pagar ahora",
     no_invoices: "No hay facturas que mostrar.",
     portal_expired: "Este enlace del portal ha expirado.",

@@ -1,4 +1,4 @@
-import { Download, FileText, MessageSquare } from "lucide-react";
+import { Download, ExternalLink, FileText, MessageSquare } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/api/client";
@@ -226,7 +226,22 @@ export default function ClientPortal() {
                   return (
                     <Fragment key={inv.id}>
                       <tr className="border-b last:border-b-0">
-                        <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
+                        <td className="px-4 py-3">
+                          {token ? (
+                            <a
+                              href={api.portalInvoicePreviewUrl(token, inv.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={t("portal.view_invoice")}
+                              className="inline-flex items-center gap-1.5 font-mono text-xs text-primary hover:underline"
+                            >
+                              {inv.invoice_number}
+                              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            </a>
+                          ) : (
+                            <span className="font-mono text-xs">{inv.invoice_number}</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">{formatDate(inv.issue_date)}</td>
                         <td className="px-4 py-3">
                           {inv.due_date ? formatDate(inv.due_date) : "-"}
@@ -235,7 +250,7 @@ export default function ClientPortal() {
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[inv.status] || "bg-gray-100 text-gray-800"}`}
                           >
-                            {inv.status.replace("_", " ")}
+                            {t(`invoices.status_${inv.status}` as any)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
