@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    # Prebuilt multi-arch image (linux/amd64 + linux/arm64) - no build step needed.
+    # `latest` tracks main; pin a release tag (e.g. :0.1.0) for stable deployments.
+    # To build from source instead: docker compose -f docker-compose.dev.yml up
+    image: ghcr.io/pigontech/inkvoice:latest
     ports:
       - "3000:3000"
     volumes:
@@ -28,10 +31,8 @@ services:
       PEPPOL_SH_WEBHOOK_SECRET: ${PEPPOL_SH_WEBHOOK_SECRET:-}
       PEPPOL_SH_BASE_URL: ${PEPPOL_SH_BASE_URL:-https://api.peppol.sh}
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    # Bun sizes its heap to the memory it can see - keep this cap.
+    mem_limit: 512m
 
 volumes:
   invoice-data:
