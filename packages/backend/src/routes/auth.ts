@@ -6,10 +6,27 @@ import { getDb } from "../database/connection";
 import { authMiddleware } from "../middleware/auth";
 import { bucketRateLimiter, rateLimiter } from "../middleware/rate-limiter";
 import { logActivity } from "../services/activity.service";
-import { getCurrentUser, login } from "../services/auth.service";
+import {
+  getCurrentUser,
+  isMfaRequired,
+  issueSessionForUserId,
+  login,
+  type SessionResult,
+} from "../services/auth.service";
 import { sendEmail } from "../services/email.service";
 import { passwordResetEmail } from "../services/email-templates";
+import { getSetting } from "../services/settings.service";
 import { getSystemMailSender } from "../services/system-mail";
+import {
+  beginEnrollment,
+  confirmEnrollment,
+  consumeChallenge,
+  createChallenge,
+  disableTwoFactor,
+  getTwoFactorStatus,
+  peekChallenge,
+  verifySecondFactor,
+} from "../services/totp.service";
 import { getEnv } from "../utils/env";
 import { hashPassword } from "../utils/password";
 
@@ -31,6 +48,35 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+/**
+ * Strict locks the cookie to same-site requests, defeating CSRF on mutating
+ * endpoints. The auth cookie isn't read on cross-site links — bookmarks and
+ * direct navigations still work because Strict applies to top-level
+ * navigations the same way as Lax for already-set cookies.
+ */
+function setSessionCookie(c: Context, token: string): void {
+  const env = getEnv();
+  setCookie(c, "session", token, {
+    httpOnly: true,
+    secure: env.COOKIE_SECURE,
+    sameSite: "Strict",
+    maxAge: env.SESSION_TTL,
+    path: "/",
+  });
+}
+
+function completeLogin(c: Context, result: SessionResult, action: string) {
+  setSessionCookie(c, result.token);
+  logActivity({
+    user_id: result.user.id,
+    user_name: result.user.username,
+    action,
+    resource_type: "user",
+    resource_id: result.user.id,
+  });
+  return c.json({ success: true, data: result });
+}
+
 auth.post("/login", rateLimiter, async (c) => {
   const body = await c.req.json();
   const parsed = loginSchema.parse(body);
@@ -44,27 +90,54 @@ auth.post("/login", rateLimiter, async (c) => {
     return c.json({ success: false, error: "Invalid credentials" }, 401);
   }
 
-  const env = getEnv();
-  // Strict locks the cookie to same-site requests, defeating CSRF on
-  // mutating endpoints. The auth cookie isn't read on cross-site links —
-  // bookmarks and direct navigations still work because Strict applies to
-  // top-level navigations the same way as Lax for already-set cookies.
-  setCookie(c, "session", result.token, {
-    httpOnly: true,
-    secure: env.COOKIE_SECURE,
-    sameSite: "Strict",
-    maxAge: env.SESSION_TTL,
-    path: "/",
-  });
+  // Password was right but the account has a second factor. No cookie is set
+  // yet; the challenge token is the only thing that can finish this login.
+  if (isMfaRequired(result)) {
+    return c.json({
+      success: true,
+      data: { mfa_required: true, mfa_token: createChallenge(result.user_id, tenant?.id) },
+    });
+  }
 
-  logActivity({
-    user_id: result.user.id,
-    user_name: result.user.username,
-    action: "login",
-    resource_type: "user",
-    resource_id: result.user.id,
-  });
-  return c.json({ success: true, data: result });
+  return completeLogin(c, result, "login");
+});
+
+const mfaVerifySchema = z.object({
+  mfa_token: z.string().min(32),
+  code: z.string().min(6).max(32),
+});
+
+// Rate-limited independently of the password step: six digits is a small
+// keyspace, so unlimited guesses against a known challenge would defeat 2FA.
+auth.post("/2fa/verify", bucketRateLimiter("mfa-verify", 10, 900), async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = mfaVerifySchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ success: false, error: "Invalid request" }, 400);
+  }
+
+  const challenge = peekChallenge(parsed.data.mfa_token);
+  if (!challenge) {
+    return c.json(
+      { success: false, error: "This login attempt expired. Please sign in again." },
+      401,
+    );
+  }
+
+  const outcome = verifySecondFactor(challenge.user_id, parsed.data.code);
+  if (outcome !== "ok") {
+    // A replayed code is reported the same as a wrong one — telling an
+    // attacker they guessed a real-but-spent code is free information.
+    return c.json({ success: false, error: "Invalid code" }, 401);
+  }
+
+  consumeChallenge(parsed.data.mfa_token);
+  const session = await issueSessionForUserId(challenge.user_id, challenge.tenant_id ?? undefined);
+  if (!session) {
+    return c.json({ success: false, error: "Invalid credentials" }, 401);
+  }
+
+  return completeLogin(c, session, "login_2fa");
 });
 
 auth.post("/logout", (c) => {
@@ -184,6 +257,72 @@ auth.post("/reset-password", bucketRateLimiter("reset-password", 10, 3600), asyn
     resource_id: row.user_id,
   });
 
+  return c.json({ success: true });
+});
+
+// --- Two-factor management (all require an existing session) ---
+
+auth.get("/2fa", authMiddleware, (c) => {
+  return c.json({ success: true, data: getTwoFactorStatus(c.get("userId")) });
+});
+
+auth.post("/2fa/setup", authMiddleware, (c) => {
+  const issuer = getSetting("company_name")?.trim() || "Inkvoice";
+  const enrollment = beginEnrollment(c.get("userId"), issuer);
+  if (!enrollment) {
+    return c.json({ success: false, error: "Two-factor authentication is already enabled" }, 409);
+  }
+  return c.json({ success: true, data: enrollment });
+});
+
+const codeSchema = z.object({ code: z.string().min(6).max(32) });
+
+auth.post("/2fa/enable", authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = codeSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ success: false, error: "Invalid code" }, 400);
+  }
+
+  const userId = c.get("userId");
+  const result = confirmEnrollment(userId, parsed.data.code);
+  if (!result) {
+    return c.json({ success: false, error: "Invalid code" }, 400);
+  }
+
+  logActivity({
+    user_id: userId,
+    user_name: c.get("user")?.username ?? "",
+    action: "2fa_enabled",
+    resource_type: "user",
+    resource_id: userId,
+  });
+  // The only time the recovery codes are ever readable.
+  return c.json({ success: true, data: result });
+});
+
+const disableSchema = z.object({ password: z.string().min(1) });
+
+auth.post("/2fa/disable", authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = disableSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ success: false, error: "Password is required" }, 400);
+  }
+
+  const userId = c.get("userId");
+  const ok = await disableTwoFactor(userId, parsed.data.password);
+  if (!ok) {
+    return c.json({ success: false, error: "Incorrect password" }, 401);
+  }
+
+  logActivity({
+    user_id: userId,
+    user_name: c.get("user")?.username ?? "",
+    action: "2fa_disabled",
+    resource_type: "user",
+    resource_id: userId,
+  });
   return c.json({ success: true });
 });
 

@@ -10,6 +10,7 @@ import { FormField } from "@/components/shared/FormField";
 import { OutgoingWebhooksCard } from "@/components/shared/OutgoingWebhooksCard";
 import { PaymentTermsPicker } from "@/components/shared/PaymentTermsPicker";
 import { ReminderRulesCard } from "@/components/shared/ReminderRulesCard";
+import { TwoFactorCard } from "@/components/shared/TwoFactorCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -346,6 +347,7 @@ export default function Settings() {
           <TabsTrigger value="reminders">{t("settings.tab_reminders")}</TabsTrigger>
           <TabsTrigger value="products">{t("settings.tab_products")}</TabsTrigger>
           <TabsTrigger value="templates">{t("settings.tab_templates")}</TabsTrigger>
+          <TabsTrigger value="security">{t("settings.tab_security")}</TabsTrigger>
           <TabsTrigger value="api">{t("settings.tab_api")}</TabsTrigger>
           {getSettingsTabs()
             .filter((tab) => !(tab.hidden?.() ?? false))
@@ -1410,6 +1412,10 @@ export default function Settings() {
             <Templates />
           </div>
         </TabsContent>
+        <TabsContent value="security" className="max-w-3xl">
+          <TwoFactorCard />
+        </TabsContent>
+
         <TabsContent value="api" className="max-w-3xl">
           <ApiTokensCard />
         </TabsContent>
@@ -1425,6 +1431,9 @@ export default function Settings() {
 
       {tab !== "templates" &&
         tab !== "products" &&
+        // Security manages itself through its own actions — there is nothing
+        // on that tab the settings save button would persist.
+        tab !== "security" &&
         !getSettingsTabs().some((s) => s.id === tab && s.hideSave) && (
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4 mr-1" />

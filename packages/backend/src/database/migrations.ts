@@ -909,6 +909,43 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 27,
+    name: "totp_two_factor",
+    up: (db) => {
+      // The shared secret lives here in plaintext, like the other credentials
+      // this app holds. It is only useful together with the user's password.
+      addColumnIfMissing(db, "users", "totp_secret", "TEXT");
+      addColumnIfMissing(db, "users", "totp_enabled", "INTEGER DEFAULT 0");
+      addColumnIfMissing(db, "users", "totp_confirmed_at", "TEXT");
+      // Highest counter already accepted — refuses a replay of the same code
+      // inside its validity window.
+      addColumnIfMissing(db, "users", "totp_last_counter", "INTEGER");
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS user_recovery_codes (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          code_hash TEXT NOT NULL,
+          used_at TEXT DEFAULT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_recovery_codes_user ON user_recovery_codes(user_id);
+
+        -- Bridges the two login steps. Deliberately an opaque random token in
+        -- its own table rather than a JWT: a half-authenticated credential must
+        -- never be accepted by authMiddleware as a session.
+        CREATE TABLE IF NOT EXISTS mfa_challenges (
+          token TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          tenant_id TEXT,
+          expires_at TEXT NOT NULL,
+          consumed_at TEXT DEFAULT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_mfa_challenges_expiry ON mfa_challenges(expires_at);
+      `);
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

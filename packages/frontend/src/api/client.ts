@@ -65,7 +65,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   if (res.status === 401) {
     const msg =
       typeof data.error === "string" && data.error.length > 0 ? data.error : "Unauthorized";
-    if (path !== "/auth/login") {
+    // Both steps of the sign-in flow answer 401 for bad credentials; that is
+    // an expected outcome there, not an expired session to tear down.
+    if (path !== "/auth/login" && path !== "/auth/2fa/verify") {
       authToken = null;
       if (onUnauthorized) onUnauthorized();
     }
@@ -114,24 +116,68 @@ export class ApiError extends Error {
   }
 }
 
+export interface SessionPayload {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    email: string | null;
+    display_name: string | null;
+    is_admin: boolean;
+  };
+}
+
+/** A password-only login either finishes, or hands back a 2FA challenge. */
+export interface MfaChallengePayload {
+  mfa_required: true;
+  mfa_token: string;
+}
+
+export type LoginPayload = SessionPayload | MfaChallengePayload;
+
+export function isMfaChallenge(data: LoginPayload): data is MfaChallengePayload {
+  return "mfa_required" in data;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  confirmed_at: string | null;
+  recovery_codes_remaining: number;
+  pending: boolean;
+}
+
 export const api = {
   // Auth
   login: (username: string, password: string) =>
-    request<{
-      success: boolean;
-      data: {
-        token: string;
-        user: {
-          id: string;
-          username: string;
-          email: string | null;
-          display_name: string | null;
-          is_admin: boolean;
-        };
-      };
-    }>("/auth/login", {
+    request<{ success: boolean; data: LoginPayload }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
+    }),
+
+  verifyTwoFactor: (mfaToken: string, code: string) =>
+    request<{ success: boolean; data: SessionPayload }>("/auth/2fa/verify", {
+      method: "POST",
+      body: JSON.stringify({ mfa_token: mfaToken, code }),
+    }),
+
+  getTwoFactorStatus: () => request<{ success: boolean; data: TwoFactorStatus }>("/auth/2fa"),
+
+  setupTwoFactor: () =>
+    request<{
+      success: boolean;
+      data: { secret: string; otpauth_uri: string; qr: string };
+    }>("/auth/2fa/setup", { method: "POST", body: JSON.stringify({}) }),
+
+  enableTwoFactor: (code: string) =>
+    request<{ success: boolean; data: { recovery_codes: string[] } }>("/auth/2fa/enable", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  disableTwoFactor: (password: string) =>
+    request<{ success: boolean }>("/auth/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify({ password }),
     }),
 
   logout: () => request("/auth/logout", { method: "POST" }),

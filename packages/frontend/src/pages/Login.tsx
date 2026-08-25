@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { required, useFormValidation } from "@/hooks/use-form-validation";
 import { useTranslation } from "@/i18n";
 import { formatApiError } from "@/lib/format-api-error";
-import { useAuthStore } from "@/stores/auth.store";
+import { type MfaChallenge, useAuthStore } from "@/stores/auth.store";
 
 export default function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
+  const [challenge, setChallenge] = useState<MfaChallenge | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demo, setDemo] = useState<{ username: string; password: string } | null>(null);
@@ -35,6 +37,7 @@ export default function Login() {
       : "auth_failed"
     : null;
   const login = useAuthStore((s) => s.login);
+  const completeMfa = useAuthStore((s) => s.completeMfa);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -80,7 +83,11 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(form.username, form.password);
+      const mfa = await login(form.username, form.password);
+      if (mfa) {
+        setChallenge(mfa);
+        return;
+      }
       navigate("/");
     } catch (err: unknown) {
       setError(formatApiError(err, t));
@@ -89,10 +96,79 @@ export default function Login() {
     }
   };
 
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!challenge) return;
+    setError("");
+    setLoading(true);
+    try {
+      await completeMfa(challenge.mfaToken, code);
+      navigate("/");
+    } catch (err: unknown) {
+      setError(formatApiError(err, t));
+      setCode("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const restartLogin = () => {
+    setChallenge(null);
+    setCode("");
+    setError("");
+    setForm({ ...form, password: "" });
+  };
+
   // Already signed in (active session, OAuth return, or a manual visit to
   // /login): skip the form and go straight to the dashboard home page.
   if (user) {
     return <Navigate to="/" replace />;
+  }
+
+  // Second step: the password checked out, now prove possession of the device.
+  if (challenge) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background prism-grid-bg p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <InkvoiceLogo className="h-16" />
+            </div>
+            <CardTitle className="text-xl">{t("auth.two_factor_title")}</CardTitle>
+            <CardDescription>{t("auth.two_factor_prompt")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVerify} className="space-y-4" noValidate>
+              {error && (
+                <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 animate-slide-down">
+                  {error}
+                </div>
+              )}
+              <FormField label={t("auth.two_factor_code")} required>
+                <Input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  // One-time-code lets password managers and iOS autofill the
+                  // SMS/authenticator value straight into the field.
+                  autoComplete="one-time-code"
+                  inputMode="text"
+                  className="text-center text-lg tracking-[0.3em] font-mono"
+                  placeholder="000000"
+                  autoFocus
+                />
+              </FormField>
+              <p className="text-xs text-muted-foreground">{t("auth.two_factor_recovery_hint")}</p>
+              <Button type="submit" className="w-full" disabled={loading || code.trim().length < 6}>
+                {loading ? t("auth.signing_in") : t("auth.sign_in")}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={restartLogin}>
+                {t("auth.two_factor_back")}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

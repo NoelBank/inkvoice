@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api, setAuthToken, setOnUnauthorized } from "@/api/client";
+import { api, isMfaChallenge, setAuthToken, setOnUnauthorized } from "@/api/client";
 
 interface User {
   id: string;
@@ -14,11 +14,18 @@ interface User {
   impersonation?: { impersonator_id: string; reason: string | null } | null;
 }
 
+/** Returned by `login` when the account needs a second factor to finish. */
+export interface MfaChallenge {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<MfaChallenge | null>;
+  completeMfa: (mfaToken: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -37,6 +44,18 @@ export const useAuthStore = create<AuthState>((set) => {
 
     login: async (username: string, password: string) => {
       const res = await api.login(username, password);
+      // No session is established yet — the caller has to run completeMfa.
+      if (isMfaChallenge(res.data)) {
+        return { mfaRequired: true, mfaToken: res.data.mfa_token };
+      }
+      const { token, user } = res.data;
+      setAuthToken(token);
+      set({ user, token, isLoading: false });
+      return null;
+    },
+
+    completeMfa: async (mfaToken: string, code: string) => {
+      const res = await api.verifyTwoFactor(mfaToken, code);
       const { token, user } = res.data;
       setAuthToken(token);
       set({ user, token, isLoading: false });
