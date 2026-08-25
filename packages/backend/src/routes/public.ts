@@ -93,6 +93,19 @@ publicRoutes.get("/invoices/:shareToken", (c) => {
   });
 });
 
+/**
+ * The invoice's customer projection is deliberately narrow (id/name/email),
+ * so the language is read separately rather than widening a type the PDF and
+ * portal also depend on.
+ */
+function customerLanguage(customerId: string | undefined): string | null {
+  if (!customerId) return null;
+  const row = getDb().query("SELECT language FROM customers WHERE id = ?").get(customerId) as {
+    language: string | null;
+  } | null;
+  return row?.language || null;
+}
+
 publicRoutes.post("/invoices/:shareToken/pay", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { gateway?: string };
   const gateway = getGateway(body.gateway || "stripe");
@@ -122,6 +135,10 @@ publicRoutes.post("/invoices/:shareToken/pay", async (c) => {
       customerEmail: invoice.customer?.email || null,
       customerName: invoice.customer?.name || null,
       businessName: getSetting("company_name")?.trim() || null,
+      // Same precedence as the PDF, so the checkout page speaks the language
+      // the invoice itself is written in.
+      locale:
+        invoice.locale || customerLanguage(invoice.customer?.id) || getSetting("locale") || null,
       successUrl: `${origin}/payment/success?token=${shareToken}`,
       cancelUrl: `${origin}/public/invoice/${shareToken}`,
     });

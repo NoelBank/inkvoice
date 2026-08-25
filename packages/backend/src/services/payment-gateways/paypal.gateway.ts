@@ -1,6 +1,7 @@
 import { todayIso } from "../../utils/date";
 import { getEnv } from "../../utils/env";
 import { recordPayment } from "../payment.service";
+import { invoiceLabel, paypalLocale } from "./strings";
 import type { CheckoutContext, PaymentGateway, WebhookRequest, WebhookResult } from "./types";
 
 // PayPal integration via the Orders v2 API. The flow mirrors Stripe Checkout:
@@ -34,8 +35,9 @@ export function softDescriptor(invoiceNumber: string): string {
 export function buildOrderBody(ctx: CheckoutContext) {
   // What the payer sees on the PayPal page. Without it they get a bare amount
   // and the merchant name, with no way to tell which invoice they're settling.
-  const description = `Invoice ${ctx.invoiceNumber}`;
+  const description = invoiceLabel(ctx.locale, ctx.invoiceNumber);
   const descriptor = softDescriptor(ctx.invoiceNumber);
+  const locale = paypalLocale(ctx.locale);
 
   return {
     intent: "CAPTURE" as const,
@@ -57,6 +59,9 @@ export function buildOrderBody(ctx: CheckoutContext) {
     application_context: {
       // Otherwise PayPal shows the raw PayPal account name as the payee.
       ...(ctx.businessName ? { brand_name: ctx.businessName.slice(0, 127) } : {}),
+      // Omitted for languages we have no wording for, so PayPal keeps its own
+      // detection rather than being pinned to something wrong.
+      ...(locale ? { locale } : {}),
       return_url: ctx.successUrl,
       cancel_url: ctx.cancelUrl,
       user_action: "PAY_NOW" as const,

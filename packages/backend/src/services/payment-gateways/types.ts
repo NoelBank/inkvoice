@@ -19,6 +19,12 @@ export interface CheckoutContext {
   customerName: string | null;
   /** Shown as the merchant on the provider's page; falls back to the account name. */
   businessName: string | null;
+  /**
+   * The payer's language, resolved the same way the PDF resolves it: invoice
+   * locale > customer language > instance default. Drives both the wording we
+   * pass over and the provider page's own language.
+   */
+  locale: string | null;
   /** Where the provider sends the payer after a successful payment. */
   successUrl: string;
   /** Where the provider sends the payer if they cancel. */

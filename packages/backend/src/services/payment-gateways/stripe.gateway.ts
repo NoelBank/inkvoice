@@ -24,6 +24,7 @@ export const stripeGateway: PaymentGateway = {
       currency: ctx.currency,
       customerEmail: ctx.customerEmail,
       customerName: ctx.customerName,
+      locale: ctx.locale,
       successUrl: ctx.successUrl,
       cancelUrl: ctx.cancelUrl,
     });

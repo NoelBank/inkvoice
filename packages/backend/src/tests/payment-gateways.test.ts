@@ -46,6 +46,7 @@ describe("PayPal pure helpers (no network)", () => {
     customerEmail: null,
     customerName: "Kunde GmbH",
     businessName: "Noel Bank",
+    locale: "de-DE",
     successUrl: "https://x/success",
     cancelUrl: "https://x/cancel",
     ...overrides,
@@ -63,8 +64,9 @@ describe("PayPal pure helpers (no network)", () => {
   });
 
   test("buildOrderBody tells the payer which invoice they are settling", () => {
+    // The fixture customer is German, so the wording follows.
     const body = buildOrderBody(checkoutContext());
-    expect(body.purchase_units[0].description).toBe("Invoice INV-2026-0001");
+    expect(body.purchase_units[0].description).toBe("Rechnung INV-2026-0001");
     expect(body.purchase_units[0].soft_descriptor).toBe("INV-2026-0001");
     expect(body.application_context.brand_name).toBe("Noel Bank");
   });
@@ -72,6 +74,36 @@ describe("PayPal pure helpers (no network)", () => {
   test("buildOrderBody omits brand_name when no business name is configured", () => {
     const body = buildOrderBody(checkoutContext({ businessName: null }));
     expect("brand_name" in body.application_context).toBe(false);
+  });
+
+  test("the payer reads the invoice label in their own language", () => {
+    for (const [locale, expected] of [
+      ["de-DE", "Rechnung INV-2026-0001"],
+      ["en-US", "Invoice INV-2026-0001"],
+      ["fr-FR", "Facture INV-2026-0001"],
+      ["es-ES", "Factura INV-2026-0001"],
+      ["tr-TR", "Fatura INV-2026-0001"],
+    ] as const) {
+      const body = buildOrderBody(checkoutContext({ locale }));
+      expect(body.purchase_units[0].description).toBe(expected);
+    }
+  });
+
+  test("PayPal is pinned to the customer's language", () => {
+    expect(buildOrderBody(checkoutContext()).application_context.locale).toBe("de-DE");
+    expect(buildOrderBody(checkoutContext({ locale: "de" })).application_context.locale).toBe(
+      "de-DE",
+    );
+    expect(buildOrderBody(checkoutContext({ locale: "de-AT" })).application_context.locale).toBe(
+      "de-AT",
+    );
+  });
+
+  test("an unknown language leaves PayPal's own detection alone", () => {
+    const body = buildOrderBody(checkoutContext({ locale: "ja-JP" }));
+    expect("locale" in body.application_context).toBe(false);
+    // Wording still has to fall back to something readable.
+    expect(body.purchase_units[0].description).toBe("Invoice INV-2026-0001");
   });
 
   test("softDescriptor stays within PayPal's 22-character limit", () => {
