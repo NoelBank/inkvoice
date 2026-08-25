@@ -156,6 +156,11 @@ const en = {
     reset_token_missing: "This reset link is incomplete — request a new one.",
     password_too_short: "Password must be at least 12 characters",
     passwords_do_not_match: "Passwords do not match",
+    two_factor_title: "Two-step verification",
+    two_factor_prompt: "Enter the 6-digit code from your authenticator app.",
+    two_factor_code: "Verification code",
+    two_factor_recovery_hint: "Lost your device? Enter one of your recovery codes instead.",
+    two_factor_back: "Use a different account",
   },
 
   // Dashboard
@@ -840,6 +845,7 @@ const en = {
     tab_products: "Products",
     tab_templates: "Templates",
     tab_peppol: "PEPPOL",
+    tab_security: "Security",
     tab_api: "API",
     preferences: "Preferences",
     save_settings: "Save Settings",
@@ -1164,6 +1170,32 @@ const en = {
     cancel_message: "Your payment was not processed. You can try again from the invoice page.",
   },
 
+  // Two-factor authentication
+  two_factor: {
+    title: "Two-factor authentication",
+    description: "Require a one-time code from an authenticator app in addition to your password.",
+    enable: "Enable two-factor authentication",
+    disable: "Turn off",
+    activate: "Activate",
+    step_scan: "Scan this QR code with your authenticator app.",
+    step_enter: "Enter the 6-digit code the app shows to confirm it works.",
+    qr_alt: "QR code for setting up two-factor authentication",
+    manual_entry: "Can't scan? Enter this key manually:",
+    verification_code: "Code from the app",
+    enabled_since: "Active since {{date}}.",
+    codes_remaining: "{{count}} recovery codes left.",
+    no_codes_warning: "No recovery codes left — turn two-factor off and on again to get a new set.",
+    recovery_title: "Save your recovery codes",
+    recovery_hint:
+      "Each code works once and gets you in if you lose your device. This is the only time they are shown.",
+    copy_codes: "Copy codes",
+    copy_failed: "Could not copy to clipboard.",
+    codes_saved: "I've saved them",
+    disable_title: "Turn off two-factor authentication",
+    disable_hint: "Confirm your password. Your recovery codes will be deleted.",
+    disabled: "Two-factor authentication turned off.",
+  },
+
   // Public layout
   public: {
     invoice: "Invoice",
@@ -1175,6 +1207,8 @@ const en = {
     payment_failed: "Payment could not be started. Please try again.",
     redirecting: "Redirecting...",
     pay_with: "Pay with {{method}}",
+    amount_due: "Amount due",
+    secure_payment: "Secure payment",
     accept_quote: "Accept Quote",
     reject_quote: "Decline",
     quote_accepted: "You've accepted this quote.",

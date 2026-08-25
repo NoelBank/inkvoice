@@ -162,6 +162,12 @@ const fr: TranslationKeys = {
     reset_token_missing: "Ce lien de réinitialisation est incomplet — demandez-en un nouveau.",
     password_too_short: "Le mot de passe doit contenir au moins 12 caractères",
     passwords_do_not_match: "Les mots de passe ne correspondent pas",
+    two_factor_title: "Validation en deux étapes",
+    two_factor_prompt: "Saisissez le code à 6 chiffres de votre application d'authentification.",
+    two_factor_code: "Code de vérification",
+    two_factor_recovery_hint:
+      "Appareil perdu ? Saisissez plutôt l'un de vos codes de récupération.",
+    two_factor_back: "Utiliser un autre compte",
   },
 
   // Tableau de bord
@@ -853,6 +859,7 @@ const fr: TranslationKeys = {
     tab_products: "Produits",
     tab_peppol: "PEPPOL",
     tab_templates: "Modèles",
+    tab_security: "Sécurité",
     tab_api: "API",
     preferences: "Préférences",
     save_settings: "Enregistrer les paramètres",
@@ -1185,6 +1192,33 @@ const fr: TranslationKeys = {
       "Votre paiement n'a pas été traité. Vous pouvez réessayer depuis la page de la facture.",
   },
 
+  // Authentification à deux facteurs
+  two_factor: {
+    title: "Authentification à deux facteurs",
+    description:
+      "Exiger un code à usage unique d'une application d'authentification en plus de votre mot de passe.",
+    enable: "Activer l'authentification à deux facteurs",
+    disable: "Désactiver",
+    activate: "Activer",
+    step_scan: "Scannez ce QR code avec votre application d'authentification.",
+    step_enter: "Saisissez le code à 6 chiffres affiché par l'application pour la confirmer.",
+    qr_alt: "QR code de configuration de l'authentification à deux facteurs",
+    manual_entry: "Impossible de scanner ? Saisissez cette clé manuellement :",
+    verification_code: "Code de l'application",
+    enabled_since: "Active depuis le {{date}}.",
+    codes_remaining: "Il reste {{count}} codes de récupération.",
+    no_codes_warning:
+      "Plus de codes de récupération — désactivez puis réactivez la double authentification pour en obtenir de nouveaux.",
+    recovery_title: "Enregistrez vos codes de récupération",
+    recovery_hint:
+      "Chaque code fonctionne une fois et vous permet d'entrer si vous perdez votre appareil. Ils ne s'affichent que cette fois.",
+    copy_codes: "Copier les codes",
+    copy_failed: "Copie dans le presse-papiers impossible.",
+    codes_saved: "Je les ai enregistrés",
+    disable_title: "Désactiver l'authentification à deux facteurs",
+    disable_hint: "Confirmez votre mot de passe. Vos codes de récupération seront supprimés.",
+    disabled: "Authentification à deux facteurs désactivée.",
+  },
   // Mise en page publique
   public: {
     invoice: "Facture",
@@ -1196,6 +1230,8 @@ const fr: TranslationKeys = {
     payment_failed: "Le paiement n'a pas pu être lancé. Veuillez réessayer.",
     redirecting: "Redirection...",
     pay_with: "Payer avec {{method}}",
+    amount_due: "Montant dû",
+    secure_payment: "Paiement sécurisé",
     accept_quote: "Accepter le devis",
     reject_quote: "Refuser",
     quote_accepted: "Vous avez accepté ce devis.",

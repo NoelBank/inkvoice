@@ -169,6 +169,12 @@ const de: TranslationKeys = {
       "Dieser Link zum Zurücksetzen ist unvollständig — fordern Sie einen neuen an.",
     password_too_short: "Das Passwort muss mindestens 12 Zeichen lang sein",
     passwords_do_not_match: "Die Passwörter stimmen nicht überein",
+    two_factor_title: "Bestätigung in zwei Schritten",
+    two_factor_prompt: "Gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+    two_factor_code: "Bestätigungscode",
+    two_factor_recovery_hint:
+      "Gerät verloren? Gib stattdessen einen deiner Wiederherstellungscodes ein.",
+    two_factor_back: "Anderes Konto verwenden",
   },
 
   // Dashboard
@@ -863,6 +869,7 @@ const de: TranslationKeys = {
     tab_products: "Produkte",
     tab_peppol: "PEPPOL",
     tab_templates: "Vorlagen",
+    tab_security: "Sicherheit",
     tab_api: "API",
     preferences: "Voreinstellungen",
     save_settings: "Einstellungen speichern",
@@ -1195,6 +1202,32 @@ const de: TranslationKeys = {
       "Ihre Zahlung wurde nicht verarbeitet. Sie können es auf der Rechnungsseite erneut versuchen.",
   },
 
+  // Zwei-Faktor-Authentifizierung
+  two_factor: {
+    title: "Zwei-Faktor-Authentifizierung",
+    description: "Zusätzlich zum Passwort einen Einmalcode aus einer Authenticator-App verlangen.",
+    enable: "Zwei-Faktor-Authentifizierung aktivieren",
+    disable: "Deaktivieren",
+    activate: "Aktivieren",
+    step_scan: "Scanne diesen QR-Code mit deiner Authenticator-App.",
+    step_enter: "Gib den 6-stelligen Code aus der App ein, um sie zu bestätigen.",
+    qr_alt: "QR-Code zum Einrichten der Zwei-Faktor-Authentifizierung",
+    manual_entry: "Scannen nicht möglich? Diesen Schlüssel manuell eingeben:",
+    verification_code: "Code aus der App",
+    enabled_since: "Aktiv seit {{date}}.",
+    codes_remaining: "Noch {{count}} Wiederherstellungscodes übrig.",
+    no_codes_warning:
+      "Keine Wiederherstellungscodes mehr — deaktiviere und aktiviere die Zwei-Faktor-Authentifizierung, um neue zu erhalten.",
+    recovery_title: "Wiederherstellungscodes sichern",
+    recovery_hint:
+      "Jeder Code funktioniert einmal und bringt dich rein, wenn du dein Gerät verlierst. Sie werden nur dieses eine Mal angezeigt.",
+    copy_codes: "Codes kopieren",
+    copy_failed: "Kopieren in die Zwischenablage fehlgeschlagen.",
+    codes_saved: "Habe ich gesichert",
+    disable_title: "Zwei-Faktor-Authentifizierung deaktivieren",
+    disable_hint: "Bestätige dein Passwort. Deine Wiederherstellungscodes werden gelöscht.",
+    disabled: "Zwei-Faktor-Authentifizierung deaktiviert.",
+  },
   // Öffentliches Layout
   public: {
     invoice: "Rechnung",
@@ -1207,6 +1240,8 @@ const de: TranslationKeys = {
     payment_failed: "Die Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
     redirecting: "Weiterleitung...",
     pay_with: "Mit {{method}} bezahlen",
+    amount_due: "Offener Betrag",
+    secure_payment: "Sichere Zahlung",
     accept_quote: "Angebot annehmen",
     reject_quote: "Ablehnen",
     quote_accepted: "Sie haben dieses Angebot angenommen.",

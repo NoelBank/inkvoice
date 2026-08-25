@@ -160,6 +160,12 @@ const es: TranslationKeys = {
     reset_token_missing: "Este enlace de restablecimiento está incompleto — solicite uno nuevo.",
     password_too_short: "La contraseña debe tener al menos 12 caracteres",
     passwords_do_not_match: "Las contraseñas no coinciden",
+    two_factor_title: "Verificación en dos pasos",
+    two_factor_prompt: "Introduce el código de 6 dígitos de tu aplicación de autenticación.",
+    two_factor_code: "Código de verificación",
+    two_factor_recovery_hint:
+      "¿Perdiste tu dispositivo? Introduce uno de tus códigos de recuperación.",
+    two_factor_back: "Usar otra cuenta",
   },
 
   // Panel
@@ -850,6 +856,7 @@ const es: TranslationKeys = {
     tab_products: "Productos",
     tab_peppol: "PEPPOL",
     tab_templates: "Plantillas",
+    tab_security: "Seguridad",
     tab_api: "API",
     preferences: "Preferencias",
     save_settings: "Guardar configuración",
@@ -1181,6 +1188,33 @@ const es: TranslationKeys = {
       "Su pago no se procesó. Puede intentarlo de nuevo desde la página de la factura.",
   },
 
+  // Autenticación de dos factores
+  two_factor: {
+    title: "Autenticación de dos factores",
+    description:
+      "Exigir un código de un solo uso de una aplicación de autenticación además de tu contraseña.",
+    enable: "Activar la autenticación de dos factores",
+    disable: "Desactivar",
+    activate: "Activar",
+    step_scan: "Escanea este código QR con tu aplicación de autenticación.",
+    step_enter: "Introduce el código de 6 dígitos que muestra la aplicación para confirmarla.",
+    qr_alt: "Código QR para configurar la autenticación de dos factores",
+    manual_entry: "¿No puedes escanear? Introduce esta clave manualmente:",
+    verification_code: "Código de la aplicación",
+    enabled_since: "Activa desde el {{date}}.",
+    codes_remaining: "Quedan {{count}} códigos de recuperación.",
+    no_codes_warning:
+      "No quedan códigos de recuperación: desactiva y vuelve a activar la verificación en dos pasos para obtener un juego nuevo.",
+    recovery_title: "Guarda tus códigos de recuperación",
+    recovery_hint:
+      "Cada código funciona una vez y te permite entrar si pierdes tu dispositivo. Solo se muestran esta vez.",
+    copy_codes: "Copiar códigos",
+    copy_failed: "No se pudo copiar al portapapeles.",
+    codes_saved: "Ya los he guardado",
+    disable_title: "Desactivar la autenticación de dos factores",
+    disable_hint: "Confirma tu contraseña. Se eliminarán tus códigos de recuperación.",
+    disabled: "Autenticación de dos factores desactivada.",
+  },
   // Diseño público
   public: {
     invoice: "Factura",
@@ -1192,6 +1226,8 @@ const es: TranslationKeys = {
     payment_failed: "No se pudo iniciar el pago. Inténtelo de nuevo.",
     redirecting: "Redirigiendo...",
     pay_with: "Pagar con {{method}}",
+    amount_due: "Importe pendiente",
+    secure_payment: "Pago seguro",
     accept_quote: "Aceptar presupuesto",
     reject_quote: "Rechazar",
     quote_accepted: "Ha aceptado este presupuesto.",

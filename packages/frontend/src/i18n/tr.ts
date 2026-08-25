@@ -158,6 +158,12 @@ const tr: TranslationKeys = {
     reset_token_missing: "Bu sıfırlama bağlantısı eksik — yenisini isteyin.",
     password_too_short: "Şifre en az 12 karakter olmalıdır",
     passwords_do_not_match: "Şifreler eşleşmiyor",
+    two_factor_title: "İki adımlı doğrulama",
+    two_factor_prompt: "Kimlik doğrulama uygulamanızdaki 6 haneli kodu girin.",
+    two_factor_code: "Doğrulama kodu",
+    two_factor_recovery_hint:
+      "Cihazınızı mı kaybettiniz? Bunun yerine kurtarma kodlarınızdan birini girin.",
+    two_factor_back: "Başka bir hesap kullan",
   },
 
   // Kontrol Paneli
@@ -839,6 +845,7 @@ const tr: TranslationKeys = {
     tab_products: "Ürünler",
     tab_peppol: "PEPPOL",
     tab_templates: "Şablonlar",
+    tab_security: "Güvenlik",
     tab_api: "API",
     preferences: "Tercihler",
     save_settings: "Ayarları Kaydet",
@@ -1165,6 +1172,33 @@ const tr: TranslationKeys = {
     cancel_message: "Ödemeniz işlenmedi. Fatura sayfasından tekrar deneyebilirsiniz.",
   },
 
+  // İki faktörlü kimlik doğrulama
+  two_factor: {
+    title: "İki faktörlü kimlik doğrulama",
+    description:
+      "Parolanıza ek olarak bir kimlik doğrulama uygulamasından tek kullanımlık kod isteyin.",
+    enable: "İki faktörlü kimlik doğrulamayı etkinleştir",
+    disable: "Kapat",
+    activate: "Etkinleştir",
+    step_scan: "Bu QR kodunu kimlik doğrulama uygulamanızla tarayın.",
+    step_enter: "Doğrulamak için uygulamanın gösterdiği 6 haneli kodu girin.",
+    qr_alt: "İki faktörlü kimlik doğrulama kurulumu için QR kodu",
+    manual_entry: "Tarayamıyor musunuz? Bu anahtarı elle girin:",
+    verification_code: "Uygulamadaki kod",
+    enabled_since: "{{date}} tarihinden beri etkin.",
+    codes_remaining: "{{count}} kurtarma kodu kaldı.",
+    no_codes_warning:
+      "Kurtarma kodu kalmadı — yeni bir set için iki faktörlü doğrulamayı kapatıp tekrar açın.",
+    recovery_title: "Kurtarma kodlarınızı kaydedin",
+    recovery_hint:
+      "Her kod bir kez çalışır ve cihazınızı kaybederseniz giriş yapmanızı sağlar. Yalnızca bu sefer gösterilir.",
+    copy_codes: "Kodları kopyala",
+    copy_failed: "Panoya kopyalanamadı.",
+    codes_saved: "Kaydettim",
+    disable_title: "İki faktörlü kimlik doğrulamayı kapat",
+    disable_hint: "Parolanızı onaylayın. Kurtarma kodlarınız silinecek.",
+    disabled: "İki faktörlü kimlik doğrulama kapatıldı.",
+  },
   // Genel düzen
   public: {
     invoice: "Fatura",
@@ -1176,6 +1210,8 @@ const tr: TranslationKeys = {
     payment_failed: "Ödeme başlatılamadı. Lütfen tekrar deneyin.",
     redirecting: "Yönlendiriliyor...",
     pay_with: "{{method}} ile öde",
+    amount_due: "Ödenecek tutar",
+    secure_payment: "Güvenli ödeme",
     accept_quote: "Teklifi Kabul Et",
     reject_quote: "Reddet",
     quote_accepted: "Bu teklifi kabul ettiniz.",
