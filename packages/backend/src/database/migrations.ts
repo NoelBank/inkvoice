@@ -946,6 +946,19 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 28,
+    name: "vat_id_validation",
+    up: (db) => {
+      // Outcome of the last VIES lookup for customers.tax_id. NULL means the
+      // number was never checked — distinct from "checked and invalid".
+      addColumnIfMissing(db, "customers", "vat_valid", "INTEGER");
+      addColumnIfMissing(db, "customers", "vat_checked_at", "TEXT");
+      // Registered name VIES returned; the audit trail for a reverse-charge
+      // invoice is the confirmation, not just the boolean.
+      addColumnIfMissing(db, "customers", "vat_check_name", "TEXT");
+    },
+  },
 ];
 
 export const LATEST_MIGRATION_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

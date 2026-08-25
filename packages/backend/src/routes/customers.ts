@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { bucketRateLimiter } from "../middleware/rate-limiter";
 import { logActivity } from "../services/activity.service";
 import * as customerService from "../services/customer.service";
 import { buildStatementData, renderStatementHtml } from "../services/statement.service";
 import { getTagsForItem, setItemTags } from "../services/tag.service";
+import { validateCustomerVatId } from "../services/vat-validation.service";
 import type { Customer } from "../types/customer";
 import { buildCsv, type CsvColumn, csvHeaders } from "../utils/csv";
 import { parseCsv } from "../utils/csv-parser";
@@ -196,6 +198,22 @@ customers.put("/:id", async (c) => {
     metadata: { customer_name: customer.name },
   });
   return c.json({ success: true, data: customer });
+});
+
+/**
+ * Verifies the customer's VAT ID against the EU VIES registry. Rate-limited
+ * per instance: VIES asks callers not to hammer it, and this sits behind a
+ * button a user can hold down.
+ */
+customers.post("/:id/validate-vat", bucketRateLimiter("vies", 30, 3600), async (c) => {
+  // Hono can't infer the path params through the middleware, so `id` is
+  // typed as optional here; an absent one folds into the same 404.
+  const id = c.req.param("id");
+  const result = id ? await validateCustomerVatId(id) : null;
+  if (!result) {
+    return c.json({ success: false, error: "Customer not found" }, 404);
+  }
+  return c.json({ success: true, data: result });
 });
 
 // Replace tags on a customer (full replace, no status restrictions).

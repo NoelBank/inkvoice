@@ -10,6 +10,11 @@ export interface Customer {
   postal_code: string | null;
   country: string | null;
   tax_id: string | null;
+  /** Last VIES verdict on tax_id: 1 valid, 0 invalid, null never checked. */
+  vat_valid: number | null;
+  vat_checked_at: string | null;
+  /** Registered name VIES returned at check time. */
+  vat_check_name: string | null;
   /** German Steuernummer (tax number; not the USt-IdNr). */
   tax_number: string | null;
   /** Per-customer e-invoice format override (zugferd | xrechnung | peppol | auto). */
