@@ -143,7 +143,9 @@ volumes:
 > `ghcr.io/pigontech/inkvoice:0.1.0`.
 >
 > **Going public?** Put it behind HTTPS and add `-e COOKIE_SECURE=true -e ENABLE_HSTS=true`.
-> Leave `COOKIE_SECURE` unset for plain-HTTP localhost, or the login cookie won't be set.
+> Staying on plain HTTP? Add `-e COOKIE_SECURE=false`. It defaults to true, which marks the
+> session cookie Secure, and browsers drop that on every non-HTTPS address except localhost,
+> so logins fail with no visible error.
 
 ### Manual (development)
 
