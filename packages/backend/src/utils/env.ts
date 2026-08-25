@@ -1,3 +1,4 @@
+import { dirname, join } from "node:path";
 import { logger } from "./logger";
 
 export interface Env {
@@ -43,6 +44,14 @@ export interface Env {
   OIDC_PROVIDER_NAME: string;
   PUBLIC_BASE_URL: string;
   OIDC_ENABLED: boolean;
+  /** Nightly on-disk snapshots of the SQLite database. */
+  BACKUP_ENABLED: boolean;
+  /** Seconds between automatic backups. */
+  BACKUP_INTERVAL: number;
+  /** Where snapshots are written. Defaults to a `backups/` dir next to the DB. */
+  BACKUP_DIR: string;
+  /** How many snapshots to keep; older ones are pruned after each run. */
+  BACKUP_KEEP: number;
 }
 
 /**
@@ -176,6 +185,18 @@ export function getEnv(): Env {
       return true;
     })(),
     PUBLIC_BASE_URL: (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, ""),
+    // On by default: the most common way a self-hosted install loses data is
+    // nobody ever setting a backup up.
+    BACKUP_ENABLED: process.env.BACKUP_ENABLED !== "false",
+    BACKUP_INTERVAL: parseInt(process.env.BACKUP_INTERVAL || "86400", 10),
+    BACKUP_DIR:
+      process.env.BACKUP_DIR ||
+      join(dirname(process.env.DATABASE_PATH || "./data/invoice.db"), "backups"),
+    BACKUP_KEEP: (() => {
+      const keep = parseInt(process.env.BACKUP_KEEP || "7", 10);
+      // 0 would mean "prune everything we just wrote" — treat it as a typo.
+      return Number.isFinite(keep) && keep > 0 ? keep : 7;
+    })(),
   };
 
   return cachedEnv;

@@ -4,12 +4,14 @@ import { runMigrations } from "../database/migrations";
 import { seed, seedDemoData } from "../database/seed";
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
+import { runBackup, shouldRunBackups } from "./backup.service";
 import { startTransportWorker, stopTransportWorker } from "./einvoice-transport.service";
 import { processAllDue } from "./recurring.service";
 import { processAllReminders } from "./reminder.service";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let demoIntervalId: ReturnType<typeof setInterval> | null = null;
+let backupIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export function startScheduler(intervalMs = 60 * 60 * 1000): void {
   if (intervalId) return;
@@ -24,6 +26,22 @@ export function startScheduler(intervalMs = 60 * 60 * 1000): void {
   // The e-invoice transport queue needs a much faster tick than the hourly
   // scheduler; it keeps its own 60s worker under the same lifecycle owner.
   startTransportWorker();
+
+  // Backups run on their own (much slower) cadence than the hourly task tick.
+  // No immediate run at startup: a crash-loop would otherwise churn out a
+  // snapshot per restart and prune the useful history away.
+  const backupEnv = getEnv();
+  if (shouldRunBackups() && !backupIntervalId) {
+    backupIntervalId = setInterval(runBackup, backupEnv.BACKUP_INTERVAL * 1000);
+    logger.info(
+      {
+        intervalSec: backupEnv.BACKUP_INTERVAL,
+        dir: backupEnv.BACKUP_DIR,
+        keep: backupEnv.BACKUP_KEEP,
+      },
+      "Automatic database backups enabled",
+    );
+  }
 
   // Start demo reset job if demo mode is enabled
   const env = getEnv();
@@ -41,6 +59,10 @@ export function stopScheduler(): void {
   if (demoIntervalId) {
     clearInterval(demoIntervalId);
     demoIntervalId = null;
+  }
+  if (backupIntervalId) {
+    clearInterval(backupIntervalId);
+    backupIntervalId = null;
   }
   stopTransportWorker();
 }
