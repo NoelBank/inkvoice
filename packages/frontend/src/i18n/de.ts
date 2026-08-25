@@ -888,7 +888,6 @@ const de: TranslationKeys = {
     tab_products: "Produkte",
     tab_peppol: "PEPPOL",
     tab_templates: "Vorlagen",
-    tab_security: "Sicherheit",
     tab_api: "API",
     preferences: "Voreinstellungen",
     save_settings: "Einstellungen speichern",
@@ -1249,6 +1248,16 @@ const de: TranslationKeys = {
   },
 
   // Anhänge
+  // Persönliches Konto (pro Benutzer, keine Instanz-Einstellung)
+  account: {
+    title: "Mein Konto",
+    profile: "Profil",
+    username: "Benutzername",
+    display_name: "Anzeigename",
+    email: "E-Mail",
+    role: "Rolle",
+  },
+
   attachments: {
     pending: "wird beim Speichern angehängt",
     pending_hint: "Die Dateien werden angehängt, sobald du diesen Datensatz speicherst.",

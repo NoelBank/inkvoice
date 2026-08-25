@@ -878,7 +878,6 @@ const fr: TranslationKeys = {
     tab_products: "Produits",
     tab_peppol: "PEPPOL",
     tab_templates: "Modèles",
-    tab_security: "Sécurité",
     tab_api: "API",
     preferences: "Préférences",
     save_settings: "Enregistrer les paramètres",
@@ -1240,6 +1239,16 @@ const fr: TranslationKeys = {
   },
 
   // Pièces jointes
+  // Compte personnel (par utilisateur, pas un réglage de l'instance)
+  account: {
+    title: "Mon compte",
+    profile: "Profil",
+    username: "Nom d'utilisateur",
+    display_name: "Nom affiché",
+    email: "E-mail",
+    role: "Rôle",
+  },
+
   attachments: {
     pending: "sera joint à l'enregistrement",
     pending_hint: "Les fichiers sont joints dès que vous enregistrez cette fiche.",

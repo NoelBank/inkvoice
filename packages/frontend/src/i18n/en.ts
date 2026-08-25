@@ -864,7 +864,6 @@ const en = {
     tab_products: "Products",
     tab_templates: "Templates",
     tab_peppol: "PEPPOL",
-    tab_security: "Security",
     tab_api: "API",
     preferences: "Preferences",
     save_settings: "Save Settings",
@@ -1216,6 +1215,16 @@ const en = {
   },
 
   // Attachments
+  // Personal account (per-user, not instance settings)
+  account: {
+    title: "My account",
+    profile: "Profile",
+    username: "Username",
+    display_name: "Display name",
+    email: "Email",
+    role: "Role",
+  },
+
   attachments: {
     pending: "will be attached when you save",
     pending_hint: "Files are attached as soon as you save this record.",

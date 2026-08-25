@@ -17,6 +17,7 @@ import { useUpgradeStore } from "@/stores/upgrade.store";
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 
+const Account = lazy(() => import("@/pages/Account"));
 const ActivityLog = lazy(() => import("@/pages/ActivityLog"));
 const Customers = lazy(() => import("@/pages/Customers"));
 const CustomerView = lazy(() => import("@/pages/CustomerView"));
@@ -202,6 +203,10 @@ function App() {
                   </RequireEinvoice>
                 }
               />
+              {/* The signed-in user's own account. Deliberately outside
+                  AdminRoute — a second factor is personal, and Settings is
+                  admin-only. */}
+              <Route path="/account" element={<Account />} />
               {/* Convenience entry point — templates live under Settings. */}
               <Route path="/templates" element={<Navigate to="/settings/templates" replace />} />
               <Route

@@ -864,7 +864,6 @@ const tr: TranslationKeys = {
     tab_products: "Ürünler",
     tab_peppol: "PEPPOL",
     tab_templates: "Şablonlar",
-    tab_security: "Güvenlik",
     tab_api: "API",
     preferences: "Tercihler",
     save_settings: "Ayarları Kaydet",
@@ -1220,6 +1219,16 @@ const tr: TranslationKeys = {
   },
 
   // Ekler
+  // Kişisel hesap (kullanıcı başına, örnek ayarı değil)
+  account: {
+    title: "Hesabım",
+    profile: "Profil",
+    username: "Kullanıcı adı",
+    display_name: "Görünen ad",
+    email: "E-posta",
+    role: "Rol",
+  },
+
   attachments: {
     pending: "kaydettiğinizde eklenecek",
     pending_hint: "Dosyalar, bu kaydı kaydettiğiniz anda eklenir.",

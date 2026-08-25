@@ -874,7 +874,6 @@ const es: TranslationKeys = {
     tab_products: "Productos",
     tab_peppol: "PEPPOL",
     tab_templates: "Plantillas",
-    tab_security: "Seguridad",
     tab_api: "API",
     preferences: "Preferencias",
     save_settings: "Guardar configuración",
@@ -1235,6 +1234,16 @@ const es: TranslationKeys = {
   },
 
   // Adjuntos
+  // Cuenta personal (por usuario, no ajustes de la instancia)
+  account: {
+    title: "Mi cuenta",
+    profile: "Perfil",
+    username: "Usuario",
+    display_name: "Nombre visible",
+    email: "Correo electrónico",
+    role: "Rol",
+  },
+
   attachments: {
     pending: "se adjuntará al guardar",
     pending_hint: "Los archivos se adjuntan en cuanto guardas este registro.",

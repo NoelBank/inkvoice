@@ -14,6 +14,7 @@ import {
   Settings,
   Sun,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -23,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type Theme, useTheme } from "@/hooks/use-theme";
@@ -232,6 +234,11 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top">
+            <DropdownMenuItem onClick={() => navigate("/account")}>
+              <UserRound className="h-4 w-4 mr-2" />
+              {t("account.title")}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               {t("header.logout")}
