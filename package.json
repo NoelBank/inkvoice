@@ -13,7 +13,7 @@
     "build": "bun run --filter frontend build",
     "build:watch": "bun run --filter frontend build:watch",
     "dev:served": "bun run --filter backend dev & bun run --filter frontend build:watch",
-    "test": "bun run --filter backend test",
+    "test": "bun run --filter backend test && bun run --filter frontend test",
     "start": "bun run --filter backend start",
     "typecheck": "tsc --noEmit -p packages/backend/tsconfig.json && tsc --noEmit -p packages/frontend/tsconfig.json",
     "lint": "biome check .",
