@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useEffect, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
+import { useTranslation } from "@/i18n"
 import { cn } from "@/lib/utils"
 
 interface NumberInputProps
@@ -50,7 +51,14 @@ function sanitize(input: string, opts: { allowNegative: boolean; integer: boolea
  * English one. It is read as grouping when the field allows fewer than three
  * decimals, since three decimal places cannot be what was meant there.
  */
-export function parseDecimalInput(input: string, decimals?: number): number {
+export interface ParseOptions {
+  /** Decimal places the field allows; used only as a fallback heuristic. */
+  decimals?: number
+  /** The active language's decimal separator, when known. */
+  decimalSeparator?: "." | ","
+}
+
+export function parseDecimalInput(input: string, opts: ParseOptions = {}): number {
   const trimmed = input.trim()
   if (!trimmed) return Number.NaN
 
@@ -64,8 +72,18 @@ export function parseDecimalInput(input: string, decimals?: number): number {
 
   if (lastSeparator !== -1) {
     const separatorCount = (body.match(/[.,]/g) ?? []).length
+    const ambiguous = separatorCount === 1 && fracPart.length === 3
+    const separator = body[lastSeparator]
+
+    // With the language known this stops being a guess: in a German UI a dot
+    // can only be grouping, in an English one only a decimal point. The
+    // decimals heuristic is the fallback for callers that pass no locale.
     const looksLikeGrouping =
-      separatorCount === 1 && fracPart.length === 3 && decimals !== undefined && decimals < 3
+      ambiguous &&
+      (opts.decimalSeparator !== undefined
+        ? separator !== opts.decimalSeparator
+        : opts.decimals !== undefined && opts.decimals < 3)
+
     if (looksLikeGrouping) {
       intPart += fracPart
       fracPart = ""
@@ -80,12 +98,33 @@ export function parseDecimalInput(input: string, decimals?: number): number {
   return negative ? -value : value
 }
 
-function formatForDisplay(value: number | string | undefined | null, decimals?: number): string {
+/** The decimal separator the given language writes numbers with. */
+export function decimalSeparatorFor(language: string): "." | "," {
+  const formatted = new Intl.NumberFormat(language).format(1.1)
+  return formatted.includes(",") ? "," : "."
+}
+
+/**
+ * Renders the value the way the current language writes it, so a German user
+ * reads back the "71,48" they typed. Grouping is deliberately off: separators
+ * inside a field being edited get in the way of selecting and retyping.
+ */
+export function formatForDisplay(
+  value: number | string | undefined | null,
+  decimals?: number,
+  language = "en",
+): string {
   if (value === undefined || value === null || value === "") return ""
-  const num = typeof value === "string" ? parseFloat(value) : value
+  const num = typeof value === "string" ? Number.parseFloat(value) : value
   if (Number.isNaN(num)) return ""
-  if (decimals !== undefined) return num.toFixed(decimals)
-  return String(num)
+
+  return new Intl.NumberFormat(language, {
+    useGrouping: false,
+    minimumFractionDigits: decimals ?? 0,
+    // Without a cap Intl rounds to 3 places, which would quietly truncate a
+    // rate like 0.1234 in a field that has no decimals limit.
+    maximumFractionDigits: decimals ?? 20,
+  }).format(num)
 }
 
 function NumberInput({
@@ -101,14 +140,20 @@ function NumberInput({
   onBlur: onBlurProp,
   ...props
 }: NumberInputProps) {
+  const { language } = useTranslation()
+  const separator = decimalSeparatorFor(language)
+
   const isFocused = useRef(false)
-  const [displayValue, setDisplayValue] = useState(() => formatForDisplay(value, decimals))
+  const [displayValue, setDisplayValue] = useState(() =>
+    formatForDisplay(value, decimals, language),
+  )
 
   useEffect(() => {
+    // Only while unfocused: reformatting mid-edit would fight the cursor.
     if (!isFocused.current) {
-      setDisplayValue(formatForDisplay(value, decimals))
+      setDisplayValue(formatForDisplay(value, decimals, language))
     }
-  }, [value, decimals])
+  }, [value, decimals, language])
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     isFocused.current = true
@@ -123,12 +168,15 @@ function NumberInput({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     isFocused.current = false
-    const parsed = parseDecimalInput(displayValue, integer ? 0 : decimals)
+    const parsed = parseDecimalInput(displayValue, {
+      decimals: integer ? 0 : decimals,
+      decimalSeparator: separator,
+    })
     let final = Number.isNaN(parsed) ? min : parsed
     if (min !== undefined && final < min) final = min
     if (max !== undefined && final > max) final = max
-    if (decimals !== undefined) final = parseFloat(final.toFixed(decimals))
-    setDisplayValue(formatForDisplay(final, decimals))
+    if (decimals !== undefined) final = Number.parseFloat(final.toFixed(decimals))
+    setDisplayValue(formatForDisplay(final, decimals, language))
     onValueChange(final)
     onBlurProp?.(e)
   }
