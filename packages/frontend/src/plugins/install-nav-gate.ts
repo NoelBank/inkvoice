@@ -2,7 +2,7 @@
 // (which invokes whatever hook we register here) to decide whether a nav item
 // tied to a pluginId should render. We back it with the plugins store, and use
 // the same call site to lazily kick off the catalog fetch once the authed
-// shell — and thus the Sidebar — mounts.
+// shell, and thus the Sidebar, mounts.
 
 import { useEffect } from "react";
 import { setNavGateHook } from "@/nav-registry";
