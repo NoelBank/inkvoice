@@ -4,6 +4,10 @@ services:
     # `latest` tracks main; pin a release tag (e.g. :0.1.0) for stable deployments.
     # To build from source instead: docker compose -f docker-compose.dev.yml up
     image: ghcr.io/pigontech/inkvoice:latest
+    # Always re-check the registry on `up`. Without this, compose's default
+    # pull policy is "missing": a locally cached :latest tag means a redeploy
+    # silently runs the stale image instead of the one CI just pushed.
+    pull_policy: always
     ports:
       - "3000:3000"
     volumes:
