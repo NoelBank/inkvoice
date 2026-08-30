@@ -412,6 +412,11 @@ const TEMPLATE_VARIABLES = [
       { tag: "qr", desc: "Truthy when QR codes are enabled and the document is published" },
       { tag: "qr.image", desc: 'QR code as a data URI — use as <img src="...">' },
       { tag: "qr.url", desc: "The public share URL the QR code points at" },
+      {
+        tag: "epc_qr",
+        desc: "Truthy when the EPC/SEPA payment QR code is enabled and the invoice can be paid by transfer",
+      },
+      { tag: "epc_qr.image", desc: 'EPC payment QR code as a data URI — use as <img src="...">' },
     ],
   },
 ];
@@ -504,6 +509,8 @@ function TemplateEditor({
         snippet = `{{#company.logo}}<img src="{{company.logo}}" alt="" style="max-height:60px;">{{/company.logo}}`;
       } else if (tag === "qr") {
         snippet = `{{#qr}}<img src="{{qr.image}}" alt="" style="width:25mm;height:25mm">{{/qr}}`;
+      } else if (tag === "epc_qr") {
+        snippet = `{{#epc_qr}}<img src="{{epc_qr.image}}" alt="" style="width:25mm;height:25mm">{{/epc_qr}}`;
       } else if (tag === "has_discount") {
         snippet = `{{#has_discount}}...{{/has_discount}}`;
       } else if (tag === "is_quote") {

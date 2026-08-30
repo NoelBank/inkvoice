@@ -738,6 +738,32 @@ export default function Settings() {
                   placeholder={"IBAN: …\nBIC: …\nBank name …"}
                 />
               </FormField>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField label={t("settings.iban")} hint={t("settings.iban_hint")}>
+                  <Input
+                    value={settings.company_iban || ""}
+                    onChange={set("company_iban")}
+                    placeholder="DE89 3704 0044 0532 0130 00"
+                  />
+                </FormField>
+                <FormField label={t("settings.bic")}>
+                  <Input
+                    value={settings.company_bic || ""}
+                    onChange={set("company_bic")}
+                    placeholder="COBADEFFXXX"
+                  />
+                </FormField>
+              </div>
+              <FormField
+                label={t("settings.account_holder")}
+                hint={t("settings.account_holder_hint")}
+              >
+                <Input
+                  value={settings.company_account_holder || ""}
+                  onChange={set("company_account_holder")}
+                  placeholder={settings.company_name || ""}
+                />
+              </FormField>
               <FormField label={t("settings.logo")}>
                 <div className="flex items-center gap-4 mt-1">
                   {settings.company_logo && (
@@ -882,6 +908,26 @@ export default function Settings() {
                 </label>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t("settings.pdf_qr_code_hint")}
+                </p>
+              </FormField>
+
+              <FormField label={t("settings.epc_qr_code")}>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.pdf_epc_qr_enabled === "true"}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        pdf_epc_qr_enabled: e.target.checked ? "true" : "false",
+                      })
+                    }
+                    disabled={!settings.company_iban}
+                  />
+                  {t("settings.epc_qr_code_enabled")}
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("settings.epc_qr_code_hint")}
                 </p>
               </FormField>
             </CardContent>

@@ -882,6 +882,15 @@ const fr: TranslationKeys = {
     pdf_qr_code_enabled: "Afficher un QR code pointant vers l'URL publique de la facture",
     pdf_qr_code_hint:
       "Affiche sur chaque PDF un QR code pointant vers l'URL de partage publique — pratique pour les factures papier. Nécessite une URL publique ci-dessus.",
+    iban: "IBAN",
+    iban_hint: "Sert à générer le QR code de paiement SEPA. Doit être un IBAN de la zone SEPA.",
+    bic: "BIC / SWIFT",
+    account_holder: "Titulaire du compte",
+    account_holder_hint: "Uniquement si le compte n'est pas au nom de votre société.",
+    epc_qr_code: "QR code de paiement SEPA (EPC / GiroCode)",
+    epc_qr_code_enabled: "Ajouter un QR code de paiement scannable aux factures",
+    epc_qr_code_hint:
+      "Les applications bancaires européennes le scannent pour pré-remplir un virement avec votre IBAN, le montant restant dû et le numéro de facture. Nécessite un IBAN ci-dessus ; n'apparaît que sur les factures impayées en EUR. Ajoutez la balise {{#epc_qr}} à votre modèle.",
     invoice_email_template: "Modèle d'e-mail de facture",
     invoice_email_template_hint:
       "Remplacez le modèle d'e-mail fourni par votre propre objet et corps. Laissez les deux vides pour utiliser le modèle par défaut.",

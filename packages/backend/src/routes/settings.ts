@@ -6,6 +6,7 @@ import { isEmailConfigured, sendEmail, testConnection } from "../services/email.
 import { resetDemoData } from "../services/scheduler";
 import { getAllSettings, updateSettings } from "../services/settings.service";
 import { getEnv } from "../utils/env";
+import { isSepaIban, isValidBic, normalizeBic, normalizeIban } from "../utils/epc-qr";
 
 const settings = new Hono();
 
@@ -40,6 +41,10 @@ const ALLOWED_SETTINGS = new Set([
   "exchange_rate_auto_fetch",
   "public_url",
   "pdf_qr_code_enabled",
+  "pdf_epc_qr_enabled",
+  "company_iban",
+  "company_bic",
+  "company_account_holder",
   "tax_label",
   "invoice_number_pattern",
   "quote_number_pattern",
@@ -136,6 +141,29 @@ settings.put("/", async (c) => {
         400,
       );
     }
+  }
+
+  // Bank details feed the EPC payment QR code, where a typo would send money to
+  // the wrong account. Reject bad values at the door rather than silently
+  // dropping the QR code off the invoice later. Both are stored normalized.
+  if (filtered.company_iban !== undefined && filtered.company_iban.trim() !== "") {
+    const iban = normalizeIban(filtered.company_iban);
+    if (!isSepaIban(iban)) {
+      return c.json(
+        {
+          success: false,
+          error: `"${filtered.company_iban}" is not a valid SEPA IBAN`,
+        },
+        400,
+      );
+    }
+    filtered.company_iban = iban;
+  }
+  if (filtered.company_bic !== undefined && filtered.company_bic.trim() !== "") {
+    if (!isValidBic(filtered.company_bic)) {
+      return c.json({ success: false, error: `"${filtered.company_bic}" is not a valid BIC` }, 400);
+    }
+    filtered.company_bic = normalizeBic(filtered.company_bic);
   }
 
   updateSettings(filtered);

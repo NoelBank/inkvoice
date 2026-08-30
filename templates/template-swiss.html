@@ -449,6 +449,16 @@
   </div>
   {{/has_payments}}
 
+  {{#epc_qr}}
+  <div class="epc-qr" style="display:flex;align-items:center;gap:10px;margin-top:12px">
+    <img src="{{epc_qr.image}}" alt="SEPA payment QR code" style="width:24mm;height:24mm;flex:none">
+    <div style="font-size:8pt;line-height:1.35">
+      <strong>Scan to pay</strong><br>
+      Scan this code with your banking app to pre-fill the transfer.
+    </div>
+  </div>
+  {{/epc_qr}}
+
   <!-- FOOTER -->
   {{#payment_terms}}
   <div class="footer">

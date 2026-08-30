@@ -6,6 +6,11 @@ export interface Settings {
   company_tax_id: string;
   /** Multiline; rendered as HTML line breaks in PDF templates */
   company_bank_details?: string;
+  /** Structured bank details, used to build the EPC/SEPA payment QR code. */
+  company_iban?: string;
+  company_bic?: string;
+  /** Account holder, when it differs from company_name. */
+  company_account_holder?: string;
   company_logo: string;
   currency: string;
   tax_label: string;

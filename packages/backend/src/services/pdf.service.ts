@@ -3,6 +3,7 @@ import { getDb } from "../database/connection";
 import type { Customer } from "../types/customer";
 import { cashDiscountDeadline, cashDiscountOn, hasCashDiscount } from "../utils/cash-discount";
 import { formatCurrency } from "../utils/currency";
+import { buildEpcPayload } from "../utils/epc-qr";
 import { escapeMultiline } from "../utils/html";
 import { qrToDataUri } from "../utils/qr-code";
 import { getInvoice } from "./invoice.service";
@@ -55,6 +56,39 @@ function buildQrContext(
   const url = `${baseUrl}/public/${kind}/${shareToken}`;
   try {
     return { url, image: qrToDataUri(url) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build an EPC ("GiroCode") QR code for the outstanding balance, so European
+ * banking apps can pre-fill a SEPA transfer from the printed invoice.
+ *
+ * Returns null whenever the payment could not actually be made this way — the
+ * feature is off, no or invalid bank details, a non-euro invoice, nothing left
+ * to pay. Printing no code is always better than printing a wrong one.
+ *
+ * `payload` is the raw EPC text the image encodes; templates normally only use
+ * `image`.
+ */
+function buildEpcQrContext(
+  settings: Record<string, string>,
+  invoice: { invoice_number: string; currency: string; balanceDue: number },
+): { image: string; payload: string } | null {
+  if (settings.pdf_epc_qr_enabled !== "true") return null;
+  const iban = (settings.company_iban || "").trim();
+  if (!iban) return null;
+  try {
+    const payload = buildEpcPayload({
+      name: (settings.company_account_holder || settings.company_name || "").trim(),
+      iban,
+      bic: (settings.company_bic || "").trim() || undefined,
+      amount: invoice.balanceDue,
+      currency: invoice.currency,
+      remittance: invoice.invoice_number,
+    });
+    return { image: qrToDataUri(payload), payload };
   } catch {
     return null;
   }
@@ -141,6 +175,11 @@ export function buildInvoiceContext(invoiceId: string) {
     },
     watermark: buildWatermarkContext(settings, invoice.status),
     qr: buildQrContext(settings, invoice.share_token, "invoice"),
+    epc_qr: buildEpcQrContext(settings, {
+      invoice_number: invoice.invoice_number,
+      currency,
+      balanceDue,
+    }),
     customer: customer
       ? {
           name: customer.name,

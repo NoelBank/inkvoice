@@ -144,6 +144,7 @@ export async function seed(): Promise<void> {
       ["fiscal_year_start_month", "1"],
       ["public_url", ""],
       ["pdf_qr_code_enabled", "false"],
+      ["pdf_epc_qr_enabled", "false"],
       ["company_country", ""],
       ["einvoice_format", "zugferd"],
       ["einvoice_enabled", "false"],
@@ -161,6 +162,7 @@ export async function seed(): Promise<void> {
     const newDefaults: [string, string][] = [
       ["public_url", ""],
       ["pdf_qr_code_enabled", "false"],
+      ["pdf_epc_qr_enabled", "false"],
       ["company_country", ""],
       ["einvoice_format", "zugferd"],
       ["einvoice_enabled", "false"],
