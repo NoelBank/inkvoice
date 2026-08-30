@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import crypto from "node:crypto";
 import { unlinkSync } from "node:fs";
-import { closeDatabase, initDatabase } from "../database/connection";
+import bcrypt from "bcryptjs";
+import type { Hono } from "hono";
+import { createApp } from "../app";
+import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
+import { seed } from "../database/seed";
 import "../plugins"; // registers time-tracker so its migrations run
 import { runPluginMigrations } from "../plugins/runner";
 import {
@@ -21,12 +26,14 @@ import {
 import { resetEnvCache } from "../utils/env";
 
 const TEST_DB = "./data/test-time-tracker.db";
+let app: Hono;
+let adminToken: string;
 
 const admin: Actor = { userId: "admin-user-1", isAdmin: true };
 const alice: Actor = { userId: "alice-user-2", isAdmin: false };
 const bob: Actor = { userId: "bob-user-3", isAdmin: false };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_PATH = TEST_DB;
   process.env.ADMIN_USER = "admin";
   process.env.ADMIN_PASS = "tttestadminpass";
@@ -36,6 +43,15 @@ beforeAll(() => {
   initDatabase();
   runMigrations();
   runPluginMigrations();
+  await seed();
+  app = createApp();
+
+  const res = await app.request("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "admin", password: "tttestadminpass" }),
+  });
+  adminToken = ((await res.json()) as any).data.token as string;
 });
 
 afterAll(() => {
@@ -139,5 +155,104 @@ describe("time-tracker edit guard", () => {
       setTimeEntryEditGuard(null);
     }
     expect(updateEntry(alice, entry.id, { description: "ok" })?.description).toBe("ok");
+  });
+});
+
+describe("time-tracker api", () => {
+  let userToken: string;
+  let userId: string;
+
+  beforeAll(async () => {
+    userId = crypto.randomBytes(16).toString("hex");
+    const hash = await bcrypt.hash("tttestuserpass", 10);
+    getDb().run(
+      "INSERT INTO users (id, username, password_hash, is_admin, is_active) VALUES (?, ?, ?, 0, 1)",
+      [userId, "tt_regular", hash],
+    );
+    const res = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "tt_regular", password: "tttestuserpass" }),
+    });
+    userToken = ((await res.json()) as any).data.token as string;
+  });
+
+  function authed(token: string, path: string, opts: RequestInit = {}) {
+    return app.request(
+      new Request(`http://localhost${path}`, {
+        ...opts,
+        headers: {
+          "Content-Type": "application/json",
+          ...((opts.headers as Record<string, string>) || {}),
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    );
+  }
+
+  test("project create is admin-only", async () => {
+    const asUser = await authed(userToken, "/api/v1/plugins/time-tracker/projects", {
+      method: "POST",
+      body: JSON.stringify({ name: "Nope" }),
+    });
+    expect(asUser.status).toBe(403);
+
+    const asAdmin = await authed(adminToken, "/api/v1/plugins/time-tracker/projects", {
+      method: "POST",
+      body: JSON.stringify({ name: "Admin Project" }),
+    });
+    expect(asAdmin.status).toBe(201);
+  });
+
+  test("project list is readable by non-admins", async () => {
+    const res = await authed(userToken, "/api/v1/plugins/time-tracker/projects");
+    expect(res.status).toBe(200);
+  });
+
+  test("entries are self-scoped for non-admins over the API", async () => {
+    const projects = (await (
+      await authed(adminToken, "/api/v1/plugins/time-tracker/projects")
+    ).json()) as any;
+    const projectId = projects.data[0].id;
+
+    await authed(userToken, "/api/v1/plugins/time-tracker/entries", {
+      method: "POST",
+      body: JSON.stringify({
+        project_id: projectId,
+        started_at: new Date().toISOString(),
+        duration_seconds: 120,
+      }),
+    });
+
+    const list = (await (
+      await authed(userToken, "/api/v1/plugins/time-tracker/entries")
+    ).json()) as any;
+    expect(list.data.length).toBeGreaterThan(0);
+    for (const e of list.data) expect(e.user_id).toBe(userId);
+  });
+
+  test("invoice from time requires invoices:create", async () => {
+    const res = await authed(userToken, "/api/v1/plugins/time-tracker/invoice", {
+      method: "POST",
+      body: JSON.stringify({ customer_id: "0000" }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test("timer endpoints are per-user", async () => {
+    const projects = (await (
+      await authed(adminToken, "/api/v1/plugins/time-tracker/projects")
+    ).json()) as any;
+    const projectId = projects.data[0].id;
+
+    const start = await authed(userToken, "/api/v1/plugins/time-tracker/timer/start", {
+      method: "POST",
+      body: JSON.stringify({ project_id: projectId }),
+    });
+    expect(start.status).toBe(201);
+    const stop = await authed(userToken, "/api/v1/plugins/time-tracker/timer/stop", {
+      method: "POST",
+    });
+    expect(stop.status).toBe(200);
   });
 });
