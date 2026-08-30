@@ -5,9 +5,12 @@
 import { describe, expect, test } from "bun:test";
 import { getNavItems } from "@/nav-registry";
 import { getSettingsTabs } from "@/pages/settings-tab-registry";
+import { getPlugins } from "@/plugins/registry";
+import { getRoutes } from "@/route-registry";
 import "@/plugins";
 
 const settingsTabIds = getSettingsTabs().map((t) => t.id);
+const protectedPaths = getRoutes("protected").map((r) => r.path);
 
 describe("oss plugin bootstrap", () => {
   test("registers the Plugins settings tab", () => {
@@ -18,5 +21,16 @@ describe("oss plugin bootstrap", () => {
     // useNavGate must be callable; the allow-all default is replaced by the
     // plugin gate at bootstrap. We assert the registry is intact.
     expect(Array.isArray(getNavItems())).toBe(true);
+  });
+
+  test("registers the time-tracker route and nav item", () => {
+    expect(protectedPaths).toContain("/time-tracking");
+    expect(
+      getNavItems().some((n) => n.to === "/time-tracking" && n.pluginId === "time-tracker"),
+    ).toBe(true);
+  });
+
+  test("registers the time-tracker plugin metadata", () => {
+    expect(getPlugins().some((p) => p.id === "time-tracker")).toBe(true);
   });
 });
