@@ -454,6 +454,60 @@ export function seedDemoData(): void {
     }
   }
 
+  // Demo time tracking: 2 projects, ~15 unbilled entries over the last 2 weeks.
+  const demoProjects = [
+    { name: "Acme Corp Retainer", customerIndex: 0, default_rate: 150, billable: 1 },
+    { name: "Internal R&D", customerIndex: null, default_rate: null, billable: 0 },
+  ];
+  const demoProjectIds: string[] = demoProjects.map((p) => {
+    const id = crypto.randomBytes(16).toString("hex");
+    db.run(
+      `INSERT INTO tt_projects (id, name, customer_id, default_rate, billable)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        id,
+        p.name,
+        p.customerIndex === null ? null : customerIds[p.customerIndex],
+        p.default_rate,
+        p.billable,
+      ],
+    );
+    return id;
+  });
+
+  const adminId = (
+    db.query("SELECT id FROM users WHERE is_admin = 1 LIMIT 1").get() as { id: string }
+  ).id;
+
+  for (let i = 0; i < 15; i++) {
+    const entryId = crypto.randomBytes(16).toString("hex");
+    const projectIndex = i % demoProjects.length;
+    const projectId = demoProjectIds[projectIndex];
+    const project = demoProjects[projectIndex];
+    const dayOffset = Math.floor(i / 2) + 1; // entries over the last ~8 days
+    const startedAt = new Date();
+    startedAt.setDate(startedAt.getDate() - dayOffset);
+    startedAt.setHours(9 + (i % 6), 0, 0, 0);
+    const durationSeconds = 1800 + seededValue(i, 8) * 900; // 45min to ~2.5h
+    const endedAt = new Date(startedAt.getTime() + durationSeconds * 1000);
+    db.run(
+      `INSERT INTO tt_time_entries
+         (id, project_id, description, started_at, ended_at, duration_seconds, rate, billable, is_billed, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      [
+        entryId,
+        projectId,
+        i % 3 === 0 ? "Implementation" : i % 3 === 1 ? "Review and planning" : "Support",
+        startedAt.toISOString(),
+        endedAt.toISOString(),
+        durationSeconds,
+        null,
+        project.billable,
+        adminId,
+      ],
+    );
+  }
+
   logger.info(
     { customers: 5, products: 8, invoices: invoiceNum - 1, months: 12 },
     "Demo data seeded",
