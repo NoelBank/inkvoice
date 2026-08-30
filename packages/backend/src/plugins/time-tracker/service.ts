@@ -33,13 +33,6 @@ export function setTimeEntryEditGuard(guard: TimeEntryEditGuard | null): void {
   editGuard = guard;
 }
 
-function assertEditAllowed(entry: TtTimeEntry, actor: Actor): void {
-  if (editGuard) {
-    const error = editGuard({ entry, actor });
-    if (error) throw new Error(error);
-  }
-}
-
 export interface TtProject {
   id: string;
   name: string;

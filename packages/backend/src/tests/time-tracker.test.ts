@@ -15,6 +15,7 @@ import {
   createProject,
   deleteEntry,
   deleteProject,
+  getSummary,
   listEntries,
   listProjects,
   setTimeEntryEditGuard,
@@ -151,10 +152,36 @@ describe("time-tracker edit guard", () => {
     setTimeEntryEditGuard(() => "locked");
     try {
       expect(() => updateEntry(alice, entry.id, { description: "x" })).toThrow("locked");
+      expect(() => deleteEntry(alice, entry.id)).toThrow("locked");
     } finally {
       setTimeEntryEditGuard(null);
     }
     expect(updateEntry(alice, entry.id, { description: "ok" })?.description).toBe("ok");
+    expect(deleteEntry(alice, entry.id)).toBe(true);
+  });
+});
+
+describe("time-tracker summary scoping", () => {
+  test("getSummary scopes seconds to the actor unless admin", () => {
+    const projectId = createProject({ name: "Summary Test" }).id;
+    createEntry(alice.userId, {
+      project_id: projectId,
+      started_at: secondsAgo(3600),
+      duration_seconds: 1800,
+    });
+    createEntry(bob.userId, {
+      project_id: projectId,
+      started_at: secondsAgo(1800),
+      duration_seconds: 900,
+    });
+
+    const aliceRows = getSummary(alice).filter((r) => r.project_id === projectId);
+    expect(aliceRows).toHaveLength(1);
+    expect(aliceRows[0].total_seconds).toBe(1800);
+
+    const adminRows = getSummary(admin).filter((r) => r.project_id === projectId);
+    expect(adminRows).toHaveLength(1);
+    expect(adminRows[0].total_seconds).toBe(2700);
   });
 });
 

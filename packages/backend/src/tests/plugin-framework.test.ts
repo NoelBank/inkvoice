@@ -195,6 +195,25 @@ describe("plugin catalog api", () => {
     expect(((await on.json()) as any).data.enabled).toContain("alpha");
   });
 
+  test("disabled plugin routes hit the enablement gate, not the router", async () => {
+    setPluginEnabled("zeta", false);
+    try {
+      const res = await authed("/api/v1/plugins/zeta/nothing");
+      expect(res.status).toBe(404);
+      const body = (await res.json()) as any;
+      expect(body.error).toBe("Plugin not enabled");
+      expect(body.plugin).toBe("zeta");
+
+      setPluginEnabled("zeta", true);
+      const enabledRes = await authed("/api/v1/plugins/zeta/nothing");
+      // zeta's router is empty so Hono itself 404s, without the gate's body.
+      expect(enabledRes.status).toBe(404);
+      expect(await enabledRes.text()).not.toContain("Plugin not enabled");
+    } finally {
+      setPluginEnabled("zeta", true);
+    }
+  });
+
   test("toggle on unknown plugin returns 404", async () => {
     const res = await authed("/api/v1/plugins/nope", {
       method: "PUT",

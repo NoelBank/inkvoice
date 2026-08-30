@@ -454,7 +454,7 @@ export function seedDemoData(): void {
     }
   }
 
-  // Demo time tracking: 2 projects, ~15 unbilled entries over the last 2 weeks.
+  // Demo time tracking: 2 projects, ~15 unbilled entries over the last ~8 days.
   const demoProjects = [
     { name: "Acme Corp Retainer", customerIndex: 0, default_rate: 150, billable: 1 },
     { name: "Internal R&D", customerIndex: null, default_rate: null, billable: 0 },

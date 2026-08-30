@@ -15,11 +15,6 @@ const routes = new Hono();
 
 const ok = (data: unknown) => ({ success: true as const, data });
 
-interface RequestUser {
-  sub: string;
-  is_admin: boolean;
-}
-
 function actor(c: { get: (k: string) => unknown }): svc.Actor {
   const user = c.get("user") as { sub: string; is_admin: boolean } | undefined;
   return { userId: user?.sub ?? "", isAdmin: !!user?.is_admin };

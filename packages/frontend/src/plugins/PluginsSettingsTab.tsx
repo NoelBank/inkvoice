@@ -1,7 +1,8 @@
 // Admin Plugins management tab: lists registered plugins with an enable/disable
-// toggle. Registered as a cloud-only Settings tab (the Settings route is already
-// admin-gated). Display metadata comes from the frontend plugin registry; the
-// enabled state and writes go through the plugins store / backend.
+// toggle. Registered as a Settings tab by the plugin framework barrel (the
+// Settings route is already admin-gated). Display metadata comes from the
+// frontend plugin registry; the enabled state and writes go through the
+// plugins store / backend.
 
 import { useEffect } from "react";
 import { toast } from "sonner";

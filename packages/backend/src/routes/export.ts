@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
+import { runPluginMigrations } from "../plugins/runner";
 import { todayIso } from "../utils/date";
 import { getEnv } from "../utils/env";
 
@@ -186,6 +187,7 @@ exportRoutes.post("/restore", async (c) => {
     // Re-open and migrate so older snapshots get current schema
     initDatabase();
     runMigrations();
+    runPluginMigrations();
     await seed();
 
     return c.json({
