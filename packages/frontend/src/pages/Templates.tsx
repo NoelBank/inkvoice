@@ -11,7 +11,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api, getAuthToken } from "@/api/client";
@@ -421,6 +421,65 @@ const TEMPLATE_VARIABLES = [
   },
 ];
 
+function readIframeScroll(win: Window): { x: number; y: number } {
+  const el = win.document.scrollingElement;
+  return {
+    x: el?.scrollLeft ?? win.scrollX,
+    y: el?.scrollTop ?? win.scrollY,
+  };
+}
+
+function writeIframeScroll(win: Window, pos: { x: number; y: number }) {
+  win.scrollTo(pos.x, pos.y);
+  const el = win.document.scrollingElement;
+  if (el) {
+    el.scrollLeft = pos.x;
+    el.scrollTop = pos.y;
+  }
+}
+
+/**
+ * Live-preview iframe that keeps its scroll position across srcDoc refreshes.
+ * Updating `srcDoc` reloads the iframe document (scroll resets to 0); we
+ * capture scroll before the attribute changes and restore it on load.
+ */
+function LivePreviewIframe({ html, title }: { html: string; title: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const scrollRef = useRef({ x: 0, y: 0 });
+  const [srcDoc, setSrcDoc] = useState(html);
+
+  useLayoutEffect(() => {
+    if (html === srcDoc) return;
+    const win = iframeRef.current?.contentWindow;
+    if (win && win.document.readyState === "complete") {
+      scrollRef.current = readIframeScroll(win);
+    }
+    setSrcDoc(html);
+  }, [html, srcDoc]);
+
+  const restoreScroll = useCallback(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    const pos = scrollRef.current;
+    writeIframeScroll(win, pos);
+    requestAnimationFrame(() => {
+      const next = iframeRef.current?.contentWindow;
+      if (next) writeIframeScroll(next, pos);
+    });
+  }, []);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={srcDoc}
+      className="w-full h-full"
+      title={title}
+      sandbox="allow-same-origin"
+      onLoad={restoreScroll}
+    />
+  );
+}
+
 function TemplateEditor({
   template,
   onSave,
@@ -806,12 +865,7 @@ function TemplateEditor({
           </div>
           <div className="flex-1 border rounded-lg overflow-hidden bg-white min-h-0">
             {previewHtml ? (
-              <iframe
-                srcDoc={previewHtml}
-                className="w-full h-full"
-                title="Template Preview"
-                sandbox="allow-same-origin"
-              />
+              <LivePreviewIframe html={previewHtml} title="Template Preview" />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 {t("templates.start_typing")}
