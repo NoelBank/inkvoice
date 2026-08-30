@@ -8,6 +8,7 @@
 // module via the `@/` overlay resolver (its own `registrations.tsx`), wiring
 // up its registration modules and the plugin framework.
 
+import "@/plugins";
 import { PeppolSettings } from "@/components/settings/PeppolSettings";
 import { registerSettingsTab } from "@/pages/settings-tab-registry";
 import { useSettingsStore } from "@/stores/settings.store";
