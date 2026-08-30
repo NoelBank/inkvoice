@@ -70,9 +70,15 @@ const ECM_BLOCKS: ReadonlyArray<readonly [number, number, number, number, number
   /* v8  */ [242, 22, 2, 38, 2, 39],
   /* v9  */ [292, 22, 3, 36, 2, 37],
   /* v10 */ [346, 26, 4, 43, 1, 44],
+  /* v11 */ [404, 30, 1, 50, 4, 51],
+  /* v12 */ [466, 22, 6, 36, 2, 37],
+  /* v13 */ [532, 22, 8, 37, 1, 38],
 ];
 
-// Alignment-pattern center coordinates per version (versions 2-10).
+/** Highest supported version. v13-M holds 331 bytes — exactly the EPC QR ceiling. */
+const MAX_VERSION = ECM_BLOCKS.length;
+
+// Alignment-pattern center coordinates per version (versions 2-13).
 const ALIGNMENT_CENTERS: ReadonlyArray<readonly number[]> = [
   /* v2  */ [6, 18],
   /* v3  */ [6, 22],
@@ -83,6 +89,9 @@ const ALIGNMENT_CENTERS: ReadonlyArray<readonly number[]> = [
   /* v8  */ [6, 24, 42],
   /* v9  */ [6, 26, 46],
   /* v10 */ [6, 28, 50],
+  /* v11 */ [6, 30, 54],
+  /* v12 */ [6, 32, 58],
+  /* v13 */ [6, 34, 62],
 ];
 
 // Format info bits for level M masked with 0x5412 (per spec).
@@ -105,11 +114,11 @@ function utf8Bytes(text: string): Uint8Array {
 }
 
 /**
- * Pick the smallest version (1-10, M-level) that fits the given data length.
- * Throws if data exceeds version-10 capacity.
+ * Pick the smallest version (1-13, M-level) that fits the given data length.
+ * Throws if data exceeds version-13 capacity.
  */
 function pickVersion(dataLen: number): number {
-  for (let v = 1; v <= 10; v++) {
+  for (let v = 1; v <= MAX_VERSION; v++) {
     const spec = ECM_BLOCKS[v - 1];
     const ecPerBlock = spec[1];
     const totalEcCodewords = ecPerBlock * (spec[2] + spec[4]);
@@ -119,7 +128,7 @@ function pickVersion(dataLen: number): number {
     const requiredBits = 4 + charCountBits + dataLen * 8;
     if (requiredBits <= dataCodewords * 8) return v;
   }
-  throw new Error(`QR data too large for version 10 (${dataLen} bytes)`);
+  throw new Error(`QR data too large for version ${MAX_VERSION} (${dataLen} bytes)`);
 }
 
 function buildDataCodewords(data: Uint8Array, version: number): Uint8Array {
@@ -276,6 +285,38 @@ function reserveFormatInfo(m: Matrix): void {
   m.reserved[m.size - 8][8] = true;
 }
 
+/**
+ * 18-bit version information: the 6-bit version number followed by 12 BCH(18,6)
+ * error-correction bits (generator polynomial 0x1F25, spec annex D).
+ */
+function versionInfoBits(version: number): number {
+  let rem = version;
+  for (let i = 0; i < 12; i++) {
+    rem = (rem << 1) ^ ((rem >>> 11) * 0x1f25);
+  }
+  return ((version << 12) | rem) & 0x3ffff;
+}
+
+/**
+ * Versions 7 and up carry two copies of the version information, in a 3x6 block
+ * above the bottom-left finder and its transpose left of the top-right finder.
+ * These are function modules: they must be reserved so data placement skips
+ * them, otherwise the whole data stream is shifted and the symbol is unreadable.
+ */
+function placeVersionInfo(m: Matrix, version: number): void {
+  if (version < 7) return;
+  const bits = versionInfoBits(version);
+  for (let i = 0; i < 18; i++) {
+    const bit = ((bits >>> i) & 1) === 1;
+    const a = m.size - 11 + (i % 3);
+    const b = Math.floor(i / 3);
+    m.modules[b][a] = bit;
+    m.reserved[b][a] = true;
+    m.modules[a][b] = bit;
+    m.reserved[a][b] = true;
+  }
+}
+
 function buildBaseMatrix(version: number): Matrix {
   const size = 17 + version * 4;
   const m = newMatrix(size);
@@ -300,6 +341,7 @@ function buildBaseMatrix(version: number): Matrix {
     }
   }
   reserveFormatInfo(m);
+  placeVersionInfo(m, version);
   return m;
 }
 
@@ -361,20 +403,22 @@ function applyMask(m: Matrix, mask: number): void {
 
 function placeFormatInfo(m: Matrix, mask: number): void {
   const bits = FORMAT_INFO_M[mask];
-  // Around top-left finder + top-right & bottom-left segments per spec.
+  // Around top-left finder + top-right & bottom-left segments per spec (figure 25).
   for (let i = 0; i < 15; i++) {
     const bit = ((bits >>> i) & 1) === 1;
-    // First copy: 6 bits along row 8 (cols 0..5), col 7, col 8, row 7, then up col 8 (rows 5..0).
-    if (i < 6) m.modules[8][i] = bit;
-    else if (i === 6) m.modules[8][7] = bit;
+    // First copy: 6 bits down col 8 (rows 0..5), row 7, the corner (8,8), col 7,
+    // then leftwards along row 8 (cols 5..0).
+    if (i < 6) m.modules[i][8] = bit;
+    else if (i === 6) m.modules[7][8] = bit;
     else if (i === 7) m.modules[8][8] = bit;
-    else if (i === 8) m.modules[7][8] = bit;
-    else m.modules[14 - i][8] = bit;
+    else if (i === 8) m.modules[8][7] = bit;
+    else m.modules[8][14 - i] = bit;
 
-    // Second copy: 7 bits down col 8 (rows size-1..size-7), then 8 bits along row 8 (cols size-8..size-1).
+    // Second copy: 8 bits along row 8 from the right edge (cols size-1..size-8),
+    // then 7 bits down col 8 (rows size-7..size-1).
     // The cell at (size-8, 8) is the always-dark module and is NOT part of format info.
-    if (i < 7) m.modules[m.size - 1 - i][8] = bit;
-    else m.modules[8][m.size - 15 + i] = bit;
+    if (i < 8) m.modules[8][m.size - 1 - i] = bit;
+    else m.modules[m.size - 15 + i][8] = bit;
   }
   // Restore the always-dark module — the second copy of format info skips it,
   // but defending against accidental overwrite is cheap.
