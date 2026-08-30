@@ -2,8 +2,10 @@ import type { Database } from "bun:sqlite";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { unlinkSync } from "node:fs";
 import { Hono } from "hono";
+import { createApp } from "../app";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
+import { seed } from "../database/seed";
 import {
   getBackendPlugin,
   getBackendPlugins,
@@ -15,6 +17,9 @@ import { getEnabledPluginIds, setPluginEnabled } from "../plugins/settings";
 import { resetEnvCache } from "../utils/env";
 
 const TEST_DB = "./data/test-plugin-framework.db";
+
+let app: Hono;
+let token: string;
 
 function dummyPlugin(id: string) {
   return {
@@ -37,14 +42,25 @@ function dummyPluginWithFlag(id: string, defaultEnabled: boolean) {
   return { ...dummyPlugin(id), defaultEnabled };
 }
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_PATH = TEST_DB;
   process.env.ADMIN_USER = "admin";
   process.env.ADMIN_PASS = "plugintestadminpass";
   process.env.JWT_SECRET = "test-secret-key-that-is-at-least-32-chars-long";
+  process.env.RATE_LIMIT_ENABLED = "false";
   resetEnvCache();
   initDatabase();
   runMigrations();
+  await seed();
+  registerBackendPlugin({ ...dummyPlugin("zeta"), feature: "zeta-feature" });
+  app = createApp();
+
+  const loginRes = await app.request("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "admin", password: "plugintestadminpass" }),
+  });
+  token = ((await loginRes.json()) as any).data.token;
 });
 
 afterAll(() => {
@@ -136,5 +152,80 @@ describe("plugin enablement", () => {
       value: string;
     };
     expect(JSON.parse(raw.value)).toContain("delta");
+  });
+});
+
+describe("plugin catalog api", () => {
+  function authed(path: string, opts: RequestInit = {}) {
+    return app.request(
+      new Request(`http://localhost${path}`, {
+        ...opts,
+        headers: {
+          "Content-Type": "application/json",
+          ...((opts.headers as Record<string, string>) || {}),
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    );
+  }
+
+  test("catalog lists plugins with enabled state", async () => {
+    const res = await authed("/api/v1/plugins");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data.plugins)).toBe(true);
+    expect(body.data.plugins.some((p: any) => p.id === "alpha")).toBe(true);
+    expect(Array.isArray(body.data.enabled)).toBe(true);
+  });
+
+  test("admin can toggle and un-toggle a plugin", async () => {
+    const off = await authed("/api/v1/plugins/alpha", {
+      method: "PUT",
+      body: JSON.stringify({ enabled: false }),
+    });
+    expect(off.status).toBe(200);
+    const list = (await (await authed("/api/v1/plugins")).json()) as any;
+    expect(list.data.enabled).not.toContain("alpha");
+
+    const on = await authed("/api/v1/plugins/alpha", {
+      method: "PUT",
+      body: JSON.stringify({ enabled: true }),
+    });
+    expect(((await on.json()) as any).data.enabled).toContain("alpha");
+  });
+
+  test("toggle on unknown plugin returns 404", async () => {
+    const res = await authed("/api/v1/plugins/nope", {
+      method: "PUT",
+      body: JSON.stringify({ enabled: true }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("feature gate hook is consulted only for plugins declaring a feature", async () => {
+    const { setPluginFeatureGate, getPluginFeatureGate } = await import("../plugins/feature-gate");
+
+    // Default: pass-through, no policy installed.
+    expect(getPluginFeatureGate()).toBeNull();
+
+    const features: string[] = [];
+    setPluginFeatureGate((feature) => async (_c, next) => {
+      features.push(feature);
+      await next();
+    });
+    try {
+      // alpha declares no feature; zeta (registered in the top-level beforeAll
+      // with feature: "zeta-feature") does. Both are enabled by default.
+      await authed("/api/v1/plugins/alpha/nothing");
+      const before = features.length; // alpha added nothing
+      const res = await authed("/api/v1/plugins/zeta/nothing");
+      // zeta's router is empty so the request 404s after the gate ran.
+      expect(res.status).toBe(404);
+      expect(features.length).toBe(before + 1);
+      expect(features[features.length - 1]).toBe("zeta-feature");
+    } finally {
+      setPluginFeatureGate(null);
+    }
   });
 });

@@ -6,6 +6,7 @@ import { createApp } from "./app";
 import { closeDatabase, initDatabase } from "./database/connection";
 import { runMigrations } from "./database/migrations";
 import { seed, seedDemoDataIfEmpty } from "./database/seed";
+import { runPluginMigrations } from "./plugins/runner";
 import { startScheduler, stopScheduler } from "./services/scheduler";
 import { getEnv } from "./utils/env";
 import { logger } from "./utils/logger";
@@ -163,6 +164,7 @@ if (import.meta.main) {
 
   initDatabase();
   runMigrations();
+  runPluginMigrations();
   await seed();
   // No-op unless DEMO_MODE is on and the database is still empty.
   seedDemoDataIfEmpty();

@@ -7,6 +7,10 @@ import { errorHandler } from "./middleware/error-handler";
 import { metricsMiddleware, metricsRoute } from "./middleware/metrics";
 import { requestContextMiddleware } from "./middleware/request-context";
 import { securityHeaders } from "./middleware/security";
+import { pluginGate } from "./plugins/gate";
+import "./plugins"; // side-effect: registers official plugins
+import { getBackendPlugins } from "./plugins/registry";
+import { pluginsAdminRoutes } from "./plugins/routes";
 import { activity } from "./routes/activity";
 import { apiTokens } from "./routes/api-tokens";
 import { auth } from "./routes/auth";
@@ -163,5 +167,15 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/api/v1/outgoing-webhooks", outgoingWebhooks);
   app.route("/api/v1/api-tokens", apiTokens);
   app.route("/api/v1/tags", tags);
+
+  // Official plugins. Mounted after core auth (registered above), each behind
+  // its per-install enablement gate; the management API lists the catalog and
+  // toggles plugins (admin only for writes). Overlays register extra plugins
+  // into the same registry at import time, so they mount here too.
+  app.route("/api/v1/plugins", pluginsAdminRoutes);
+  for (const plugin of getBackendPlugins()) {
+    app.use(`/api/v1/plugins/${plugin.id}/*`, pluginGate(plugin));
+    app.route(`/api/v1/plugins/${plugin.id}`, plugin.routes);
+  }
   return app;
 }
