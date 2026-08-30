@@ -11,6 +11,7 @@ import {
   registerBackendPlugin,
 } from "../plugins/registry";
 import { runPluginMigrations } from "../plugins/runner";
+import { getEnabledPluginIds, setPluginEnabled } from "../plugins/settings";
 import { resetEnvCache } from "../utils/env";
 
 const TEST_DB = "./data/test-plugin-framework.db";
@@ -30,6 +31,10 @@ function dummyPlugin(id: string) {
     ] as PluginMigration[],
     defaultEnabled: true as const,
   };
+}
+
+function dummyPluginWithFlag(id: string, defaultEnabled: boolean) {
+  return { ...dummyPlugin(id), defaultEnabled };
 }
 
 beforeAll(() => {
@@ -105,5 +110,31 @@ describe("runPluginMigrations", () => {
       .query("SELECT COUNT(*) as count FROM plugin_schema_migrations WHERE plugin_id = 'gamma'")
       .get() as { count: number };
     expect(rows.count).toBe(1);
+  });
+});
+
+describe("plugin enablement", () => {
+  test("plugins flagged defaultEnabled are on when the key is unset", () => {
+    registerBackendPlugin(dummyPluginWithFlag("delta", true));
+    registerBackendPlugin({ ...dummyPlugin("epsilon"), defaultEnabled: undefined });
+
+    const enabled = getEnabledPluginIds();
+    expect(enabled).toContain("delta");
+    expect(enabled).not.toContain("epsilon");
+  });
+
+  test("toggle round-trip persists into the enabled_plugins setting", () => {
+    setPluginEnabled("delta", false);
+    expect(getEnabledPluginIds()).not.toContain("delta");
+    expect(getBackendPlugins().length).toBeGreaterThan(0);
+
+    setPluginEnabled("delta", true);
+    expect(getEnabledPluginIds()).toContain("delta");
+
+    const db = getDb();
+    const raw = db.query("SELECT value FROM settings WHERE key = 'enabled_plugins'").get() as {
+      value: string;
+    };
+    expect(JSON.parse(raw.value)).toContain("delta");
   });
 });
