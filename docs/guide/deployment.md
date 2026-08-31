@@ -4,16 +4,23 @@ Inkvoice ships as a single Docker container that serves both the API and the fro
 
 ## Dokploy
 
-1. Create a new project in Dokploy
-2. Add a new **Application** with source type **GitHub**
-3. Point it to your Inkvoice repository
-4. Set the build path to `/` (root) — the `Dockerfile` is at the root of the repo
-5. Add environment variables:
-   - `ADMIN_USER` — your admin username
-   - `ADMIN_PASS` — a strong password
-   - `JWT_SECRET` — a random string (32+ characters)
-6. Add a persistent volume: mount `/app/data` to preserve the database
-7. Deploy
+Inkvoice is an [official Dokploy template](https://dokploy.com/templates/inkvoice). That is the one-click path.
+
+1. Install [Dokploy](https://dokploy.com) on your server if you haven't already.
+2. In your Dokploy panel, open a project and click **Create Service → Template**.
+3. Search for **Inkvoice** and click **Create**.
+4. Deploy. Dokploy generates `ADMIN_PASS` and `JWT_SECRET`, mounts `/app/data`, and routes a domain to port `3000`.
+5. Sign in as `admin` with the generated password (under the service's environment variables).
+
+The catalog template ships `COOKIE_SECURE=false` so login works on Dokploy's auto-generated HTTP domain. After you attach an HTTPS custom domain, set `COOKIE_SECURE=true` and `ENABLE_HSTS=true`.
+
+The catalog currently pins `ghcr.io/pigontech/inkvoice:0.1.0`. Bump the image tag in the Compose service if you want a newer release.
+
+To deploy a fork or a custom tag instead of the catalog template, add a Compose/Docker service from this repo, expose port `3000`, mount `/app/data`, and set:
+
+- `ADMIN_USER` — your admin username
+- `ADMIN_PASS` — a strong password
+- `JWT_SECRET` — a random string (32+ characters)
 
 ::: tip
 Generate a random JWT secret:
