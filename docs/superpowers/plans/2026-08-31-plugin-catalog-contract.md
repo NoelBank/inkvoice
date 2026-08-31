@@ -414,6 +414,14 @@ describe("loadEntries", () => {
 Run: `bun test tests/load.test.ts`
 Expected: FAIL, cannot resolve `../src/load`.
 
+> **Superseded during execution.** Review of the shipped Task 2 found that this
+> `existsSync` guard leaves a real hole in the "never throws" invariant: a
+> `pluginsDir` that exists but is a file makes `readdirSync` throw `ENOTDIR`. The
+> owner ruled the review governs. Shipped code wraps `readdirSync` in try/catch
+> instead, and Task 2 gained a `bad-schema` fixture plus assertions on error
+> message content. See commit `bb0efd7`; that code is authoritative over the
+> block below.
+
 - [ ] **Step 4: Write `src/load.ts`**
 
 ```ts
