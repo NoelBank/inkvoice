@@ -52,16 +52,19 @@ An icon valid in one consumer can be missing in the other, and lucide 1.0 was a 
 
 - [ ] **Step 1: Initialise the repo**
 
+Create it as a sibling of `inkvoice/`, `inkvoice-cloud/` and `inkvoice-site/`
+inside the `inkvoice-mono/` workspace container:
+
 ```bash
-mkdir -p inkvoice-plugins && cd inkvoice-plugins
+mkdir -p /Users/baris/projects/inhouse/inkvoice-mono/inkvoice-plugins
+cd /Users/baris/projects/inhouse/inkvoice-mono/inkvoice-plugins
 git init -b main
-bun init -y
-bun add zod zod-to-json-schema yaml
 ```
 
-- [ ] **Step 2: Write `package.json`**
+Do not run `bun init` or `bun add`. The next step writes `package.json` with
+the exact dependency set, and Step 6 installs from it.
 
-Replace the generated file entirely:
+- [ ] **Step 2: Write `package.json`**
 
 ```json
 {
@@ -114,7 +117,15 @@ dist/
 .DS_Store
 ```
 
-- [ ] **Step 5: Write the failing test**
+- [ ] **Step 5: Install dependencies**
+
+```bash
+bun install
+```
+
+Expected: creates `bun.lock` and `node_modules/` from the `package.json` above.
+
+- [ ] **Step 6: Write the failing test**
 
 Create `tests/schema.test.ts`:
 
@@ -184,12 +195,12 @@ describe("pluginEntrySchema", () => {
 });
 ```
 
-- [ ] **Step 6: Run the test to verify it fails**
+- [ ] **Step 7: Run the test to verify it fails**
 
 Run: `bun test tests/schema.test.ts`
 Expected: FAIL, cannot resolve `../src/schema`.
 
-- [ ] **Step 7: Write `src/schema.ts`**
+- [ ] **Step 8: Write `src/schema.ts`**
 
 ```ts
 // Zod is the single source of truth for the catalog contract. The committed
@@ -257,12 +268,12 @@ export type Screenshot = z.infer<typeof screenshotSchema>;
 export type PluginEntry = z.infer<typeof pluginEntrySchema>;
 ```
 
-- [ ] **Step 8: Run the test to verify it passes**
+- [ ] **Step 9: Run the test to verify it passes**
 
 Run: `bun test tests/schema.test.ts`
 Expected: PASS, 9 tests.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add package.json tsconfig.json .gitignore bun.lock src/schema.ts tests/schema.test.ts
@@ -1106,11 +1117,11 @@ git commit -m "feat: catalog builder"
 - Create: `scripts/gen-schema.ts`
 - Create: `schema/plugin.schema.json` (generated, committed)
 - Create: `schema/catalog.schema.json` (generated, committed)
-- Create: `tests/cli.test.ts`
+- Create: `tests/schema-files.test.ts`
 
 **Interfaces:**
 - Consumes: `loadEntries` (Task 2), `checkEntries` (Task 3), `sharedLucideIcons` (Task 4), `buildCatalog` and `catalogSchema` (Task 5), `pluginEntrySchema` (Task 1).
-- Produces: `bun run validate`, `bun run build`, `bun run gen:schema`. `build` writes `dist/catalog.v1.json` and copies screenshots to `dist/screenshots/<id>/`.
+- Produces: `bun run validate`, `bun run build`, `bun run gen:schema`. `build` writes `dist/catalog.v1.json` and copies screenshots to `dist/plugins/<id>/screenshots/`.
 
 - [ ] **Step 1: Write `scripts/gen-schema.ts`**
 
@@ -1140,7 +1151,39 @@ emit("plugin.schema.json", zodToJsonSchema(pluginEntrySchema, { name: "PluginEnt
 emit("catalog.schema.json", zodToJsonSchema(catalogSchema, { name: "Catalog" }));
 ```
 
-- [ ] **Step 2: Generate and inspect the schema files**
+- [ ] **Step 2: Write the failing schema-currency test**
+
+Create `tests/schema-files.test.ts`:
+
+```ts
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { catalogSchema } from "../src/build";
+import { pluginEntrySchema } from "../src/schema";
+
+// These committed files are generated from the Zod source. CI runs
+// `bun run gen:schema` then `git diff --exit-code schema/`; these tests catch
+// the same drift locally, before you push.
+describe("generated JSON Schema files", () => {
+  test("plugin.schema.json matches the Zod source", () => {
+    const expected = `${JSON.stringify(zodToJsonSchema(pluginEntrySchema, { name: "PluginEntry" }), null, 2)}\n`;
+    expect(readFileSync("schema/plugin.schema.json", "utf8")).toBe(expected);
+  });
+
+  test("catalog.schema.json matches the Zod source", () => {
+    const expected = `${JSON.stringify(zodToJsonSchema(catalogSchema, { name: "Catalog" }), null, 2)}\n`;
+    expect(readFileSync("schema/catalog.schema.json", "utf8")).toBe(expected);
+  });
+});
+```
+
+- [ ] **Step 3: Run it to verify it fails**
+
+Run: `bun test tests/schema-files.test.ts`
+Expected: FAIL, `ENOENT` on `schema/plugin.schema.json`. The files do not exist yet.
+
+- [ ] **Step 4: Generate the schema files**
 
 ```bash
 bun run gen:schema
@@ -1148,7 +1191,12 @@ bun run gen:schema
 
 Expected: writes `schema/plugin.schema.json` and `schema/catalog.schema.json`. Open both and confirm they contain the category enum and the semver `pattern`.
 
-- [ ] **Step 3: Write `scripts/validate.ts`**
+- [ ] **Step 5: Run the test to verify it passes**
+
+Run: `bun test tests/schema-files.test.ts`
+Expected: PASS, 2 tests.
+
+- [ ] **Step 6: Write `scripts/validate.ts`**
 
 ```ts
 #!/usr/bin/env bun
@@ -1195,7 +1243,7 @@ export function runValidate(): number {
 if (import.meta.main) process.exit(runValidate());
 ```
 
-- [ ] **Step 4: Write `scripts/build.ts`**
+- [ ] **Step 7: Write `scripts/build.ts`**
 
 ```ts
 #!/usr/bin/env bun
@@ -1243,57 +1291,35 @@ for (const dir of readdirSync(PLUGINS, { withFileTypes: true })) {
 console.log(`✓ dist/catalog.v1.json (${catalog.plugins.length} plugins)`);
 ```
 
-- [ ] **Step 5: Write the failing CLI test**
+- [ ] **Step 8: Smoke-run both CLIs**
 
-Create `tests/cli.test.ts`:
-
-```ts
-import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { catalogSchema } from "../src/build";
-import { pluginEntrySchema } from "../src/schema";
-
-describe("generated JSON Schema", () => {
-  test("plugin.schema.json is current", async () => {
-    const { zodToJsonSchema } = await import("zod-to-json-schema");
-    const expected = `${JSON.stringify(zodToJsonSchema(pluginEntrySchema, { name: "PluginEntry" }), null, 2)}\n`;
-    expect(readFileSync("schema/plugin.schema.json", "utf8")).toBe(expected);
-  });
-
-  test("catalog.schema.json is current", async () => {
-    const { zodToJsonSchema } = await import("zod-to-json-schema");
-    const expected = `${JSON.stringify(zodToJsonSchema(catalogSchema, { name: "Catalog" }), null, 2)}\n`;
-    expect(readFileSync("schema/catalog.schema.json", "utf8")).toBe(expected);
-  });
-});
-
-describe("validate CLI", () => {
-  test("exits 0 on the real catalog", async () => {
-    const proc = Bun.spawn(["bun", "run", "scripts/validate.ts"], { stdout: "pipe", stderr: "pipe" });
-    expect(await proc.exited).toBe(0);
-  });
-});
-
-describe("build CLI", () => {
-  test("writes a catalog that parses", async () => {
-    const proc = Bun.spawn(["bun", "run", "scripts/build.ts"], { stdout: "pipe", stderr: "pipe" });
-    expect(await proc.exited).toBe(0);
-    const written = JSON.parse(readFileSync("dist/catalog.v1.json", "utf8"));
-    expect(() => catalogSchema.parse(written)).not.toThrow();
-    expect(written.schema).toBe(1);
-  });
-});
-```
-
-- [ ] **Step 6: Run it to verify it fails**
-
-Run: `bun test tests/cli.test.ts`
-Expected: FAIL. `plugins/` does not exist yet, so `loadEntries` returns empty and the CLIs succeed with zero plugins; the build test passes but asserts nothing meaningful. Task 7 adds the real entries. If the schema tests fail, re-run `bun run gen:schema`.
-
-- [ ] **Step 7: Commit**
+`plugins/` does not exist yet, so both should succeed trivially on zero entries.
+That is the point of this step: it proves the wiring works before Task 7 adds
+real data. End-to-end CLI assertions live in Task 7, where there is something
+to assert against.
 
 ```bash
-git add scripts/ schema/ tests/cli.test.ts
+bun run validate
+bun run build
+```
+
+Expected: `validate` prints `✓ 0 plugin entries valid.` and exits 0. `build`
+prints `✓ dist/catalog.v1.json (0 plugins)` and writes a file whose `plugins`
+array is empty and whose `schema` is `1`. Confirm both by opening
+`dist/catalog.v1.json`.
+
+If `validate` exits non-zero here, the `existsSync` guard in `loadEntries` is
+not handling the missing directory; fix that before continuing.
+
+- [ ] **Step 9: Run the full suite**
+
+Run: `bun test`
+Expected: PASS. Every test file from Tasks 1 through 6 is green.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add scripts/ schema/ tests/schema-files.test.ts
 git commit -m "feat: validate and build CLIs with generated JSON Schema"
 ```
 
@@ -1436,9 +1462,9 @@ Create `tests/catalog.test.ts`:
 
 ```ts
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { buildCatalog } from "../src/build";
+import { buildCatalog, catalogSchema } from "../src/build";
 import { loadEntries } from "../src/load";
 import { sharedLucideIcons } from "../src/lucide";
 import { checkEntries } from "../src/validate";
@@ -1486,6 +1512,34 @@ describe("the real catalog", () => {
       generatedAt: "2026-08-31T00:00:00.000Z",
     });
     expect(cat.plugins).toHaveLength(entries.length);
+  });
+});
+
+// End-to-end coverage of the CLIs from Task 6. It lives here rather than in
+// Task 6 because only now is there real data for them to act on.
+describe("the CLIs against the real catalog", () => {
+  test("validate exits 0", async () => {
+    const proc = Bun.spawn(["bun", "run", "scripts/validate.ts"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const code = await proc.exited;
+    if (code !== 0) console.error(await new Response(proc.stderr).text());
+    expect(code).toBe(0);
+  });
+
+  test("build writes a catalog holding every entry", async () => {
+    const proc = Bun.spawn(["bun", "run", "scripts/build.ts"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(await proc.exited).toBe(0);
+
+    const written = JSON.parse(readFileSync("dist/catalog.v1.json", "utf8"));
+    expect(() => catalogSchema.parse(written)).not.toThrow();
+    expect(written.schema).toBe(1);
+    expect(written.plugins).toHaveLength(entries.length);
+    expect(written.plugins.map((p: { id: string }) => p.id)).toContain("time-tracker");
   });
 });
 ```
