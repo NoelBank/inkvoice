@@ -797,7 +797,7 @@ export function checkEntries(entries: PluginEntry[], opts: ValidateOptions): Vio
 - [ ] **Step 8: Run it to verify it passes**
 
 Run: `bun test tests/validate.test.ts tests/semver.test.ts`
-Expected: PASS, 16 tests total.
+Expected: PASS, 15 tests total (3 semver, 12 validate).
 
 - [ ] **Step 9: Commit**
 
