@@ -288,7 +288,7 @@ git commit -m "feat: plugin entry schema"
 - Create: `src/load.ts`
 - Create: `tests/load.test.ts`
 - Create: `tests/fixtures/good/alpha/plugin.yaml`, `tests/fixtures/good/beta/plugin.yaml`
-- Create: `tests/fixtures/bad-yaml/broken/plugin.yaml`
+- Create: `tests/fixtures/bad-yaml/broken/plugin.yaml`, `tests/fixtures/mismatched/wrong-folder/plugin.yaml`, `tests/fixtures/no-manifest/empty-plugin/.gitkeep`
 
 **Interfaces:**
 - Consumes: `pluginEntrySchema`, `PluginEntry` from `src/schema.ts`.
@@ -338,6 +338,26 @@ id: broken
 name: "Unterminated
 ```
 
+`tests/fixtures/mismatched/wrong-folder/plugin.yaml` (the `id` deliberately
+does not match the directory it sits in):
+
+```yaml
+id: some-other-id
+name: Mismatched
+tagline: The id does not match the folder name.
+description: Fixture used by the loader tests.
+category: productivity
+status: planned
+availability: oss
+icon: Clock
+docs: https://example.com/docs/mismatched
+```
+
+`tests/fixtures/no-manifest/empty-plugin/.gitkeep`: an empty file. The
+directory exists but holds no `plugin.yaml`, which is the case the loader must
+report rather than skip silently. Git does not track empty directories, so the
+`.gitkeep` is what makes this fixture survive a clone.
+
 - [ ] **Step 2: Write the failing test**
 
 Create `tests/load.test.ts`:
@@ -368,8 +388,17 @@ describe("loadEntries", () => {
   });
 
   test("reports a directory whose id does not match its folder name", () => {
-    const res = loadEntries("tests/fixtures/good");
-    expect(res.errors).toEqual([]);
+    const res = loadEntries("tests/fixtures/mismatched");
+    expect(res.entries).toEqual([]);
+    expect(res.errors).toHaveLength(1);
+    expect(res.errors[0]!.dir).toBe("wrong-folder");
+    expect(res.errors[0]!.message).toContain("must match its folder name");
+  });
+
+  test("reports a directory with no plugin.yaml", () => {
+    const res = loadEntries("tests/fixtures/no-manifest");
+    expect(res.errors).toHaveLength(1);
+    expect(res.errors[0]!.message).toBe("missing plugin.yaml");
   });
 
   test("returns empty for a directory with no plugins", () => {
@@ -459,7 +488,7 @@ export function loadEntries(pluginsDir: string): LoadResult {
 - [ ] **Step 5: Run the test to verify it passes**
 
 Run: `bun test tests/load.test.ts`
-Expected: PASS, 5 tests. The `tests/fixtures/empty` directory does not exist, which the `existsSync` guard handles.
+Expected: PASS, 6 tests. The `tests/fixtures/empty` directory deliberately does not exist, which the `existsSync` guard handles.
 
 - [ ] **Step 6: Commit**
 
