@@ -8,6 +8,7 @@ import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { setPluginEntitlementCheck } from "../plugins/entitlement";
+import { getBackendPlugins } from "../plugins/registry";
 import { runPluginMigrations } from "../plugins/runner";
 import { updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
@@ -88,16 +89,25 @@ describe("GET /api/v1/plugins/catalog", () => {
     expect(tt!.blockedReason).toBeNull();
   });
 
-  test("shows a cloud-only plugin as blocked rather than enableable", async () => {
-    updateSettings({ plugin_catalog_url: "" });
-    const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
-    const body = (await res.json()) as {
-      data: { plugins: { id: string; blockedReason: string | null }[] };
-    };
-    const peppol = body.data.plugins.find((p) => p.id === "peppol");
-    expect(peppol).toBeDefined();
-    expect(peppol!.blockedReason).toBe("cloud_only");
-  });
+  // Skipped when a composition has registered the plugin. This test documents
+  // the pristine-OSS view of the snapshot's cloud-only entry: not installed,
+  // so the merge reports cloud_only. A downstream overlay (for example the
+  // cloud build) legitimately registers peppol as a backend plugin, which
+  // makes installed true and the reason plan-dependent instead; those merged
+  // semantics are covered composition-proof in plugin-merge.test.ts.
+  test.skipIf(getBackendPlugins().some((p) => p.id === "peppol"))(
+    "shows a cloud-only plugin as blocked rather than enableable",
+    async () => {
+      updateSettings({ plugin_catalog_url: "" });
+      const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
+      const body = (await res.json()) as {
+        data: { plugins: { id: string; blockedReason: string | null }[] };
+      };
+      const peppol = body.data.plugins.find((p) => p.id === "peppol");
+      expect(peppol).toBeDefined();
+      expect(peppol!.blockedReason).toBe("cloud_only");
+    },
+  );
 
   test("requires authentication", async () => {
     const res = await app.request("/api/v1/plugins/catalog");
