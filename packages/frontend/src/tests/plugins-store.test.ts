@@ -60,7 +60,6 @@ function json(status: number, body: unknown) {
 function stubFetch(routes: [string, unknown, number?][]) {
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input.toString();
-    const method = init?.method ?? "GET";
     calls.push({ url, init });
     for (const [match, body, code = 200] of routes) {
       if (url === match || url.endsWith(match)) {
@@ -112,7 +111,7 @@ describe("plugins store on the catalog endpoint", () => {
 
   test("a failed refresh marks loaded and records the error, keeping guards honest", async () => {
     globalThis.fetch = (() =>
-      Promise.resolve(json(500, { success: false, error: "boom" }))) as typeof fetch;
+      Promise.resolve(json(500, { success: false, error: "boom" }))) as unknown as typeof fetch;
     await usePluginsStore.getState().refresh();
     const s = usePluginsStore.getState();
     expect(s.loaded).toBe(true);
