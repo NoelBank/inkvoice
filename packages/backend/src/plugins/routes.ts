@@ -9,6 +9,10 @@
 
 import { Hono } from "hono";
 import { z } from "zod";
+import { APP_VERSION } from "../utils/version";
+import { catalogEgressEnabled, getCatalog, getVotes, postVote } from "./catalog.service";
+import { getPluginEntitlementCheck } from "./entitlement";
+import { mergePlugins } from "./merge";
 import { getBackendPlugin, getBackendPlugins } from "./registry";
 import { getEnabledPluginIds, setPluginEnabled } from "./settings";
 
@@ -26,6 +30,66 @@ pluginsAdminRoutes.get("/", (c) => {
 });
 
 const toggleSchema = z.object({ enabled: z.boolean() });
+
+// GET /api/v1/plugins/catalog: the merged view the Plugins tab renders. Any
+// authenticated user may read it; only the admin toggle below writes.
+pluginsAdminRoutes.get("/catalog", async (c) => {
+  const [result, votes] = await Promise.all([getCatalog(), getVotes()]);
+  const enabled = getEnabledPluginIds();
+  const entitlementCheck = getPluginEntitlementCheck();
+
+  const plugins = mergePlugins({
+    catalog: result.catalog.plugins,
+    installed: getBackendPlugins().map((p) => ({
+      id: p.id,
+      version: p.version,
+      enabled: enabled.includes(p.id),
+    })),
+    appVersion: APP_VERSION,
+    votes,
+    // OSS ships no plans, so with no resolver installed everything is entitled.
+    isEntitled: (feature) => (entitlementCheck ? entitlementCheck(feature) : true),
+  });
+
+  return c.json({
+    success: true,
+    data: {
+      plugins,
+      catalog: {
+        source: result.source,
+        syncedAt: result.syncedAt,
+        error: result.error,
+        egressEnabled: catalogEgressEnabled(),
+      },
+    },
+  });
+});
+
+// POST /api/v1/plugins/catalog/refresh: force a re-sync, ignoring the TTL.
+pluginsAdminRoutes.post("/catalog/refresh", async (c) => {
+  const user = c.get("user") as { is_admin?: boolean } | undefined;
+  if (!user?.is_admin) return c.json({ success: false, error: "Forbidden" }, 403);
+
+  const result = await getCatalog({ force: true });
+  return c.json({
+    success: true,
+    data: { source: result.source, syncedAt: result.syncedAt, error: result.error },
+  });
+});
+
+const voteSchema = z.object({ id: z.string().min(1).max(64) });
+
+// POST /api/v1/plugins/catalog/vote: register interest in a planned plugin.
+// Proxied so a self-hosted browser never talks to inkvoice.app directly, and so
+// clearing plugin_catalog_url disables voting as a consequence.
+pluginsAdminRoutes.post("/catalog/vote", async (c) => {
+  const parsed = voteSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ success: false, error: "Invalid request body" }, 400);
+  }
+  const count = await postVote(parsed.data.id);
+  return c.json({ success: true, data: { count } });
+});
 
 // PUT /api/v1/plugins/:id: enable/disable a plugin (admin only).
 pluginsAdminRoutes.put("/:id", async (c) => {
