@@ -434,6 +434,20 @@
         {{/has_cash_discount}}
       </div>
 
+      {{#epc_qr}}
+      <div class="epc-qr" style="display: flex; align-items: center; gap: 10px; margin-top: 12px">
+        <img
+          src="{{epc_qr.image}}"
+          alt="SEPA-Zahlungs-QR-Code"
+          style="width: 24mm; height: 24mm; flex: none"
+        />
+        <div style="font-size: 8pt; line-height: 1.35">
+          <strong>Zum Bezahlen scannen</strong><br />
+          Scanne diesen Code mit deiner Banking-App, um die Überweisung vorzubefüllen.
+        </div>
+      </div>
+      {{/epc_qr}}
+
       <div class="bottom">
         <div class="sender">
           {{#company.phone}}Tel. {{company.phone}}<br />{{/company.phone}}
