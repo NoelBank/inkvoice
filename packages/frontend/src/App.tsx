@@ -237,6 +237,14 @@ function App() {
                 }
               />
               <Route
+                path="/settings/plugins/:pluginId"
+                element={
+                  <AdminRoute>
+                    <Settings />
+                  </AdminRoute>
+                }
+              />
+              <Route
                 path="/activity"
                 element={
                   <AdminRoute>

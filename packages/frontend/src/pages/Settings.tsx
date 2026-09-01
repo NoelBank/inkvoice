@@ -80,13 +80,17 @@ export default function Settings() {
   const { tab: tabParam } = useParams<{ tab: string }>();
   // Detect /settings/templates/* sub-routes (new, :id/edit)
   const isTemplateSubRoute = location.pathname.startsWith("/settings/templates/");
+  // Detect /settings/plugins/:pluginId so the tab resolves to plugins.
+  const isPluginSubRoute = location.pathname.startsWith("/settings/plugins/");
   // Registered at bootstrap (before first render), so reading once is safe.
   const extraTabs = useMemo(() => getSettingsTabs().map((t) => t.id), []);
   const tab: SettingsTab = isTemplateSubRoute
     ? "templates"
-    : isSettingsTab(tabParam, extraTabs)
-      ? (tabParam as SettingsTab)
-      : "general";
+    : isPluginSubRoute
+      ? "plugins"
+      : isSettingsTab(tabParam, extraTabs)
+        ? (tabParam as SettingsTab)
+        : "general";
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [pendingLanguage, setPendingLanguage] = useState<Language>(language);
   const [loading, setLoading] = useState(false);
@@ -119,10 +123,15 @@ export default function Settings() {
   }, [settings.company_logo, extractLogoColors]);
 
   useEffect(() => {
-    if (tabParam && !isSettingsTab(tabParam, extraTabs) && !isTemplateSubRoute) {
+    if (
+      tabParam &&
+      !isSettingsTab(tabParam, extraTabs) &&
+      !isTemplateSubRoute &&
+      !isPluginSubRoute
+    ) {
       navigate("/settings/general", { replace: true });
     }
-  }, [tabParam, navigate, isTemplateSubRoute, extraTabs]);
+  }, [tabParam, navigate, isTemplateSubRoute, isPluginSubRoute, extraTabs]);
 
   const handleSave = async () => {
     const email = settings.company_email || "";
