@@ -87,7 +87,7 @@ const es: TranslationKeys = {
     users: "Usuarios",
     activity: "Actividad",
     templates: "Plantillas",
-    extensions: "Extensiones",
+    plugins: "Plugins",
   },
 
   // Encabezado
@@ -904,6 +904,15 @@ const es: TranslationKeys = {
     pdf_qr_code_enabled: "Mostrar un código QR que enlace a la URL pública de la factura",
     pdf_qr_code_hint:
       "Genera en cada PDF un código QR que apunta a la URL pública de compartición — útil para facturas en papel. Requiere la URL pública de arriba.",
+    iban: "IBAN",
+    iban_hint: "Se usa para generar el código QR de pago SEPA. Debe ser un IBAN de la zona SEPA.",
+    bic: "BIC / SWIFT",
+    account_holder: "Titular de la cuenta",
+    account_holder_hint: "Solo si la cuenta no está a nombre de tu empresa.",
+    epc_qr_code: "Código QR de pago SEPA (EPC / GiroCode)",
+    epc_qr_code_enabled: "Añadir un código QR de pago escaneable a las facturas",
+    epc_qr_code_hint:
+      "Las apps bancarias europeas lo escanean para rellenar una transferencia con tu IBAN, el importe pendiente y el número de factura. Requiere un IBAN arriba; solo aparece en facturas impagadas en EUR. Añade la etiqueta {{#epc_qr}} a tu plantilla.",
     invoice_email_template: "Plantilla de correo de factura",
     invoice_email_template_hint:
       "Sustituya la plantilla de correo incluida por su propio asunto y cuerpo. Deje ambos en blanco para usar la predeterminada.",

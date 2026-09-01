@@ -91,7 +91,7 @@ const de: TranslationKeys = {
     users: "Benutzer",
     activity: "Aktivität",
     templates: "Vorlagen",
-    extensions: "Erweiterungen",
+    plugins: "Plugins",
   },
 
   // Kopfzeile
@@ -918,6 +918,15 @@ const de: TranslationKeys = {
     pdf_qr_code_enabled: "QR-Code mit Link zur öffentlichen Rechnungs-URL anzeigen",
     pdf_qr_code_hint:
       "Rendert auf jedem PDF einen QR-Code, der auf die öffentliche Freigabe-URL verweist — praktisch für Papierrechnungen. Erfordert eine öffentliche URL (siehe oben).",
+    iban: "IBAN",
+    iban_hint: "Grundlage für den SEPA-Zahlungs-QR-Code. Muss eine IBAN aus dem SEPA-Raum sein.",
+    bic: "BIC / SWIFT",
+    account_holder: "Kontoinhaber",
+    account_holder_hint: "Nur nötig, wenn das Konto nicht auf den Firmennamen läuft.",
+    epc_qr_code: "SEPA-Zahlungs-QR-Code (EPC / GiroCode)",
+    epc_qr_code_enabled: "Scannbaren Zahlungs-QR-Code auf Rechnungen drucken",
+    epc_qr_code_hint:
+      "Europäische Banking-Apps füllen damit eine Überweisung mit IBAN, offenem Betrag und Rechnungsnummer vor. Erfordert eine IBAN (siehe oben); erscheint nur auf offenen EUR-Rechnungen. Fügen Sie das Tag {{#epc_qr}} in Ihre Vorlage ein.",
     invoice_email_template: "E-Mail-Vorlage für Rechnungen",
     invoice_email_template_hint:
       "Überschreiben Sie die mitgelieferte E-Mail-Vorlage mit eigenem Betreff und Text. Lassen Sie beides leer, um den Standard zu verwenden.",

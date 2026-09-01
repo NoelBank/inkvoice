@@ -31,7 +31,7 @@ A self-hostable alternative to FreshBooks, Wave, Zoho Invoice & Invoice Ninja.
 Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd rather own their billing than rent it. Send professional invoices, get paid online, keep an eye on expenses, and hand clean numbers to your accountant — without per-seat pricing or data lock-in.
 
 - 🗄️ **Own your data** — everything lives in a single SQLite file you control.
-- 📦 **One container, runs anywhere** — Docker, [Coolify](https://coolify.io), [Dokploy](https://dokploy.com); ~50–100&nbsp;MB RAM.
+- 📦 **One container, runs anywhere** — Docker, [Coolify](https://coolify.io), or [one-click on Dokploy](https://dokploy.com/templates/inkvoice); ~50–100&nbsp;MB RAM.
 - ⚡ **Modern & fast** — Bun + Hono + React, no heavyweight runtime.
 - 🌍 **Multi-currency, multi-user, multi-language** out of the box.
 - ☁️ **Don't want to self-host?** Use the managed **[Inkvoice Cloud](https://cloud.inkvoice.app)** and skip the ops.
@@ -163,11 +163,24 @@ bun run start        # serve API + static frontend on :3000
 
 ## Self-Hosting
 
-[![Deploy with Docker](https://img.shields.io/badge/Deploy-Docker-2496ED?logo=docker&logoColor=white)](#plain-docker)
+[![Deploy on Dokploy](https://img.shields.io/badge/Deploy-Dokploy-06b6d4)](https://dokploy.com/templates/inkvoice)
 [![Deploy on Coolify](https://img.shields.io/badge/Deploy-Coolify-8b5cf6)](#coolify)
-[![Deploy on Dokploy](https://img.shields.io/badge/Deploy-Dokploy-06b6d4)](#dokploy)
+[![Deploy with Docker](https://img.shields.io/badge/Deploy-Docker-2496ED?logo=docker&logoColor=white)](#plain-docker)
 
-Inkvoice ships as a single container — point any Docker host at the bundled `Dockerfile`, expose port `3000`, and mount a volume on `/app/data` so the SQLite database survives redeploys.
+Inkvoice ships as a single container — expose port `3000` and mount a volume on `/app/data` so the SQLite database survives redeploys. The fastest path is the [official Dokploy template](https://dokploy.com/templates/inkvoice).
+
+### Dokploy
+
+Inkvoice is in the [official Dokploy templates catalog](https://dokploy.com/templates/inkvoice):
+
+1. In your Dokploy panel, open a project and click **Create Service → Template**.
+2. Search for **Inkvoice** and click **Create**.
+3. Dokploy generates `ADMIN_PASS` and `JWT_SECRET`, mounts `/app/data`, and routes a domain to port `3000`.
+4. Deploy, then sign in as `admin` with the generated password (under the service's environment variables).
+
+The catalog template ships `COOKIE_SECURE=false` so login works on Dokploy's auto-generated HTTP domain. After you attach an HTTPS custom domain, set `COOKIE_SECURE=true` and `ENABLE_HSTS=true`.
+
+To deploy a fork or a custom image tag, create a Compose/Docker service from this repo instead: expose port `3000`, mount `/app/data`, and set `JWT_SECRET` + `ADMIN_PASS`.
 
 ### Coolify
 
@@ -178,10 +191,6 @@ Inkvoice ships as a single container — point any Docker host at the bundled `D
 5. **Environment:** set at least `JWT_SECRET` (≥ 32 chars), `ADMIN_PASS`, and `COOKIE_SECURE=true`.
 6. **Domain:** attach one and Coolify issues a Let's Encrypt cert; then set `ENABLE_HSTS=true`.
 7. **Health check:** point it at `/health`.
-
-### Dokploy
-
-Same shape as Coolify — create a Docker service from this repo, expose port `3000`, mount a volume on `/app/data`, and set `JWT_SECRET` + `ADMIN_PASS`.
 
 ### Plain Docker
 

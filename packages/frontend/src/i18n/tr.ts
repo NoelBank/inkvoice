@@ -86,7 +86,7 @@ const tr: TranslationKeys = {
     users: "Kullanıcılar",
     activity: "Aktivite",
     templates: "Şablonlar",
-    extensions: "Eklentiler",
+    plugins: "Eklentiler",
   },
 
   // Üst çubuk
@@ -894,6 +894,16 @@ const tr: TranslationKeys = {
     pdf_qr_code_enabled: "Genel fatura URL'sine yönlendiren bir QR kod göster",
     pdf_qr_code_hint:
       "Her PDF'e genel paylaşım URL'sine yönlendiren bir QR kod ekler — basılı faturalar için kullanışlıdır. Yukarıda bir genel URL girilmiş olmalıdır.",
+    iban: "IBAN",
+    iban_hint:
+      "SEPA ödeme QR kodunu oluşturmak için kullanılır. SEPA bölgesine ait bir IBAN olmalıdır.",
+    bic: "BIC / SWIFT",
+    account_holder: "Hesap sahibi",
+    account_holder_hint: "Yalnızca hesap şirket adınıza değilse doldurun.",
+    epc_qr_code: "SEPA ödeme QR kodu (EPC / GiroCode)",
+    epc_qr_code_enabled: "Faturalara taranabilir ödeme QR kodu ekle",
+    epc_qr_code_hint:
+      "Avrupa bankacılık uygulamaları bunu tarayarak IBAN'ınız, kalan tutar ve fatura numarasıyla bir transfer formunu önceden doldurur. Yukarıda bir IBAN gerekir; yalnızca ödenmemiş EUR faturalarında görünür. Şablonunuza {{#epc_qr}} etiketini ekleyin.",
     invoice_email_template: "Fatura e-posta şablonu",
     invoice_email_template_hint:
       "Paketteki e-posta şablonunu kendi konu ve gövdenizle değiştirin. Varsayılanı kullanmak için her ikisini de boş bırakın.",

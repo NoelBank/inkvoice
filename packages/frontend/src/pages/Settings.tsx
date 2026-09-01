@@ -80,13 +80,17 @@ export default function Settings() {
   const { tab: tabParam } = useParams<{ tab: string }>();
   // Detect /settings/templates/* sub-routes (new, :id/edit)
   const isTemplateSubRoute = location.pathname.startsWith("/settings/templates/");
+  // Detect /settings/plugins/:pluginId so the tab resolves to plugins.
+  const isPluginSubRoute = location.pathname.startsWith("/settings/plugins/");
   // Registered at bootstrap (before first render), so reading once is safe.
   const extraTabs = useMemo(() => getSettingsTabs().map((t) => t.id), []);
   const tab: SettingsTab = isTemplateSubRoute
     ? "templates"
-    : isSettingsTab(tabParam, extraTabs)
-      ? (tabParam as SettingsTab)
-      : "general";
+    : isPluginSubRoute
+      ? "plugins"
+      : isSettingsTab(tabParam, extraTabs)
+        ? (tabParam as SettingsTab)
+        : "general";
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [pendingLanguage, setPendingLanguage] = useState<Language>(language);
   const [loading, setLoading] = useState(false);
@@ -119,10 +123,15 @@ export default function Settings() {
   }, [settings.company_logo, extractLogoColors]);
 
   useEffect(() => {
-    if (tabParam && !isSettingsTab(tabParam, extraTabs) && !isTemplateSubRoute) {
+    if (
+      tabParam &&
+      !isSettingsTab(tabParam, extraTabs) &&
+      !isTemplateSubRoute &&
+      !isPluginSubRoute
+    ) {
       navigate("/settings/general", { replace: true });
     }
-  }, [tabParam, navigate, isTemplateSubRoute, extraTabs]);
+  }, [tabParam, navigate, isTemplateSubRoute, isPluginSubRoute, extraTabs]);
 
   const handleSave = async () => {
     const email = settings.company_email || "";
@@ -738,6 +747,32 @@ export default function Settings() {
                   placeholder={"IBAN: …\nBIC: …\nBank name …"}
                 />
               </FormField>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField label={t("settings.iban")} hint={t("settings.iban_hint")}>
+                  <Input
+                    value={settings.company_iban || ""}
+                    onChange={set("company_iban")}
+                    placeholder="DE89 3704 0044 0532 0130 00"
+                  />
+                </FormField>
+                <FormField label={t("settings.bic")}>
+                  <Input
+                    value={settings.company_bic || ""}
+                    onChange={set("company_bic")}
+                    placeholder="COBADEFFXXX"
+                  />
+                </FormField>
+              </div>
+              <FormField
+                label={t("settings.account_holder")}
+                hint={t("settings.account_holder_hint")}
+              >
+                <Input
+                  value={settings.company_account_holder || ""}
+                  onChange={set("company_account_holder")}
+                  placeholder={settings.company_name || ""}
+                />
+              </FormField>
               <FormField label={t("settings.logo")}>
                 <div className="flex items-center gap-4 mt-1">
                   {settings.company_logo && (
@@ -882,6 +917,26 @@ export default function Settings() {
                 </label>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t("settings.pdf_qr_code_hint")}
+                </p>
+              </FormField>
+
+              <FormField label={t("settings.epc_qr_code")}>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.pdf_epc_qr_enabled === "true"}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        pdf_epc_qr_enabled: e.target.checked ? "true" : "false",
+                      })
+                    }
+                    disabled={!settings.company_iban}
+                  />
+                  {t("settings.epc_qr_code_enabled")}
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("settings.epc_qr_code_hint")}
                 </p>
               </FormField>
             </CardContent>

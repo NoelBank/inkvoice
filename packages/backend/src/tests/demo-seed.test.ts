@@ -3,6 +3,8 @@ import { unlinkSync } from "node:fs";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed, seedDemoDataIfEmpty } from "../database/seed";
+import "../plugins"; // registers official plugins so their migrations exist
+import { runPluginMigrations } from "../plugins/runner";
 import { getAllSettings, updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
 
@@ -30,6 +32,7 @@ async function bootFresh(demo: boolean): Promise<void> {
   setDemoMode(demo);
   initDatabase();
   runMigrations();
+  runPluginMigrations();
   await seed();
 }
 
@@ -175,5 +178,27 @@ describe("seedDemoDataIfEmpty()", () => {
     await bootFresh(false);
     expect(seedDemoDataIfEmpty()).toBe(false);
     expect(counts()).toEqual({ customers: 0, products: 0, invoices: 0 });
+  });
+});
+
+describe("demo time tracking seed", () => {
+  test("demo seed creates time tracking data", async () => {
+    await bootFresh(true);
+    expect(seedDemoDataIfEmpty()).toBe(true);
+    const db = getDb();
+    const projects = (
+      db.query("SELECT COUNT(*) as count FROM tt_projects").get() as { count: number }
+    ).count;
+    const entries = (
+      db.query("SELECT COUNT(*) as count FROM tt_time_entries").get() as { count: number }
+    ).count;
+    const running = (
+      db.query("SELECT COUNT(*) as count FROM tt_time_entries WHERE ended_at IS NULL").get() as {
+        count: number;
+      }
+    ).count;
+    expect(projects).toBeGreaterThanOrEqual(2);
+    expect(entries).toBeGreaterThanOrEqual(15);
+    expect(running).toBe(0);
   });
 });

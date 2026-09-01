@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import * as templateService from "../services/template.service";
+import { buildEpcPayload } from "../utils/epc-qr";
 import { qrToDataUri } from "../utils/qr-code";
 
 const templates = new Hono();
@@ -155,6 +156,17 @@ templates.post("/:id/preview", async (c) => {
   return c.html(fullHtml);
 });
 
+// Built through the real builder so the preview can never drift from what
+// invoices actually produce.
+const SAMPLE_EPC_PAYLOAD = buildEpcPayload({
+  name: "My Company",
+  iban: "DE89370400440532013000",
+  bic: "COBADEFFXXX",
+  amount: 1980,
+  currency: "EUR",
+  remittance: "INV-2026-0001",
+});
+
 function getSampleContext() {
   return {
     invoice_number: "INV-2026-0001",
@@ -207,6 +219,10 @@ function getSampleContext() {
     qr: {
       url: "https://invoices.example.com/public/invoice/sample",
       image: qrToDataUri("https://invoices.example.com/public/invoice/sample"),
+    },
+    epc_qr: {
+      image: qrToDataUri(SAMPLE_EPC_PAYLOAD),
+      payload: SAMPLE_EPC_PAYLOAD,
     },
   };
 }

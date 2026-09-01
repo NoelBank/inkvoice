@@ -94,7 +94,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
 
   // Plugin/extension nav items registered via the nav registry. Admin-only and
   // disabled-plugin entries are filtered out, then grouped into sidebar
-  // sections by their `section` i18n key (default "nav.extensions").
+  // sections by their `section` i18n key (default "nav.plugins").
   type SidebarSection = {
     label: string;
     items: { to: string; icon: ComponentType<{ className?: string }>; label: string }[];
@@ -108,7 +108,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
         return true;
       })
       .reduce<Record<string, SidebarSection>>((acc, item) => {
-        const sectionKey = item.section ?? "nav.extensions";
+        const sectionKey = item.section ?? "nav.plugins";
         if (!acc[sectionKey]) acc[sectionKey] = { label: t(sectionKey), items: [] };
         acc[sectionKey].items.push({
           to: item.to,

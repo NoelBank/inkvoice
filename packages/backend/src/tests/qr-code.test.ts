@@ -19,7 +19,7 @@ describe("qr-code", () => {
     expect(large.size).toBeGreaterThan(small.size);
   });
 
-  test("rejects payloads larger than version 10 capacity", () => {
+  test("rejects payloads larger than version 13 capacity", () => {
     const tooLong = "x".repeat(500);
     expect(() => encodeQR(tooLong)).toThrow();
   });

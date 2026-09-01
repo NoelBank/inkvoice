@@ -29,6 +29,7 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 - **PDF Generation** — Generate and download professional PDFs from any invoice or quote
 - **Email Sending** — Send invoices and quotes directly from the app via SMTP
 - **Activity Log** — Track all changes across invoices, customers, and settings
+- **[Plugins](/features/plugins)**: Optional extensions like Time Tracking, enabled per install from Settings
 
 ## Platform
 

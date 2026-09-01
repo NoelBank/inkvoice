@@ -84,7 +84,7 @@ const en = {
     users: "Users",
     activity: "Activity",
     templates: "Templates",
-    extensions: "Extensions",
+    plugins: "Plugins",
   },
 
   // Header
@@ -894,6 +894,15 @@ const en = {
     pdf_qr_code_enabled: "Show a QR code linking to the public invoice URL",
     pdf_qr_code_hint:
       "Renders a QR code on each PDF that points at the public share URL — handy for paper invoices. Requires a public URL above.",
+    iban: "IBAN",
+    iban_hint: "Used to build the SEPA payment QR code. Must be a SEPA-area IBAN.",
+    bic: "BIC / SWIFT",
+    account_holder: "Account holder",
+    account_holder_hint: "Only if the account is not held under your company name.",
+    epc_qr_code: "SEPA payment QR code (EPC / GiroCode)",
+    epc_qr_code_enabled: "Add a scannable payment QR code to invoices",
+    epc_qr_code_hint:
+      "European banking apps scan it to pre-fill a transfer with your IBAN, the outstanding amount and the invoice number. Requires an IBAN above; only appears on unpaid EUR invoices. Add the {{#epc_qr}} tag to your template.",
     invoice_email_template: "Invoice email template",
     invoice_email_template_hint:
       "Override the bundled email template with your own subject and body. Leave both blank to use the default.",

@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
+import { runPluginMigrations } from "../plugins/runner";
 import { buildYearArchive, findMissingReceipts } from "../services/year-archive.service";
 import { todayIso } from "../utils/date";
 import { getEnv } from "../utils/env";
@@ -63,6 +64,21 @@ exportRoutes.get("/backup", (c) => {
     .all();
   const userPermissions = db.query("SELECT * FROM user_permissions").all();
 
+  const ttProjects = (() => {
+    try {
+      return db.query("SELECT * FROM tt_projects").all();
+    } catch {
+      return [];
+    }
+  })();
+  const ttTimeEntries = (() => {
+    try {
+      return db.query("SELECT * FROM tt_time_entries").all();
+    } catch {
+      return [];
+    }
+  })();
+
   const backup = {
     version: "1.0",
     exported_at: new Date().toISOString(),
@@ -76,6 +92,8 @@ exportRoutes.get("/backup", (c) => {
       templates,
       users,
       user_permissions: userPermissions,
+      tt_projects: ttProjects,
+      tt_time_entries: ttTimeEntries,
     },
   };
 
@@ -199,6 +217,7 @@ exportRoutes.post("/restore", async (c) => {
     // Re-open and migrate so older snapshots get current schema
     initDatabase();
     runMigrations();
+    runPluginMigrations();
     await seed();
 
     return c.json({
@@ -243,6 +262,8 @@ exportRoutes.post("/wipe", async (c) => {
   const db = getDb();
   // Order matters — child tables before parents to satisfy FKs.
   const wipeOrder = [
+    "tt_time_entries",
+    "tt_projects",
     "invoice_comments",
     "invoice_item_taxes",
     "invoice_taxes",
