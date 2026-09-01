@@ -24,6 +24,7 @@ let token: string;
 function dummyPlugin(id: string) {
   return {
     id,
+    version: "1.0.0",
     routes: new Hono(),
     migrations: [
       {
@@ -87,6 +88,17 @@ describe("backend plugin registry", () => {
     const all = getBackendPlugins().filter((p) => p.id === "alpha");
     expect(all).toHaveLength(1);
     expect(all[0].defaultEnabled).toBe(false);
+  });
+
+  test("rejects a reserved plugin id", () => {
+    expect(() =>
+      registerBackendPlugin({
+        id: "catalog",
+        version: "1.0.0",
+        routes: new Hono(),
+        migrations: [],
+      }),
+    ).toThrow(/reserved/i);
   });
 });
 

@@ -188,6 +188,7 @@ routes.post("/invoice", requirePermission("invoices", "create"), async (c) => {
 
 registerBackendPlugin({
   id: "time-tracker",
+  version: "1.0.0",
   routes,
   migrations: timeTrackerMigrations,
   defaultEnabled: true,
