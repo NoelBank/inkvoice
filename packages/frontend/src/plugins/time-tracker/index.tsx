@@ -27,7 +27,7 @@ registerNavItem({
   to: "/time-tracking",
   labelKey: "time_tracker.nav",
   icon: Clock,
-  section: "nav.extensions",
+  section: "nav.plugins",
   pluginId: PLUGIN_ID,
 });
 

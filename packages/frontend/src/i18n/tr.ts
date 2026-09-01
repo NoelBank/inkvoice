@@ -86,7 +86,7 @@ const tr: TranslationKeys = {
     users: "Kullanıcılar",
     activity: "Aktivite",
     templates: "Şablonlar",
-    extensions: "Eklentiler",
+    plugins: "Eklentiler",
   },
 
   // Üst çubuk

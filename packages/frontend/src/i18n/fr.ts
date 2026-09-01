@@ -87,7 +87,7 @@ const fr: TranslationKeys = {
     users: "Utilisateurs",
     activity: "Activité",
     templates: "Modèles",
-    extensions: "Extensions",
+    plugins: "Plugins",
   },
 
   // En-tête

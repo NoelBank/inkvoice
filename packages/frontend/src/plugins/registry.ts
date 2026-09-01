@@ -15,6 +15,9 @@ export interface FrontendPlugin {
   descriptionKey: string;
   /** Icon shown in the Plugins list. */
   icon: ComponentType<{ className?: string }>;
+  /** Rendered in the plugin's detail view at /settings/plugins/<id>.
+   *  Plugins must not register their own top-level settings tab. */
+  settings?: ComponentType;
 }
 
 const PLUGINS: FrontendPlugin[] = [];

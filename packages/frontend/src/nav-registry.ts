@@ -21,7 +21,7 @@ export interface NavItem {
   icon: ComponentType<{ className?: string }>;
   /**
    * i18n key for the sidebar section heading this item groups under.
-   * Defaults to "nav.extensions".
+   * Defaults to "nav.plugins".
    */
   section?: string;
   /** Only render for admins. */

@@ -87,7 +87,7 @@ const es: TranslationKeys = {
     users: "Usuarios",
     activity: "Actividad",
     templates: "Plantillas",
-    extensions: "Extensiones",
+    plugins: "Plugins",
   },
 
   // Encabezado

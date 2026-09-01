@@ -84,7 +84,7 @@ const en = {
     users: "Users",
     activity: "Activity",
     templates: "Templates",
-    extensions: "Extensions",
+    plugins: "Plugins",
   },
 
   // Header

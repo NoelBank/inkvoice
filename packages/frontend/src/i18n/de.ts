@@ -91,7 +91,7 @@ const de: TranslationKeys = {
     users: "Benutzer",
     activity: "Aktivität",
     templates: "Vorlagen",
-    extensions: "Erweiterungen",
+    plugins: "Plugins",
   },
 
   // Kopfzeile
