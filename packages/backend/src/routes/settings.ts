@@ -10,8 +10,26 @@ import { isSepaIban, isValidBic, normalizeBic, normalizeIban } from "../utils/ep
 
 const settings = new Hono();
 
+// Internal catalog bookkeeping (cache blobs and fetch timestamps) lives in the
+// settings table but is not user-facing; handing it to the frontend would have
+// browsers cache potentially large JSON blobs. plugin_catalog_url is a real
+// setting and stays visible.
+const INTERNAL_SETTINGS = new Set([
+  "plugin_catalog_cache",
+  "plugin_catalog_synced_at",
+  "plugin_catalog_votes",
+]);
+
+function stripInternalSettings(data: Record<string, string>): Record<string, string> {
+  const visible: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (!INTERNAL_SETTINGS.has(key)) visible[key] = value;
+  }
+  return visible;
+}
+
 settings.get("/", async (c) => {
-  const data = getAllSettings();
+  const data = stripInternalSettings(getAllSettings());
   const emailConfigured = await isEmailConfigured();
   return c.json({
     success: true,
@@ -97,6 +115,7 @@ const ALLOWED_SETTINGS = new Set([
   "france_enabled",
   "france_transport",
   "france_sender_siren",
+  "plugin_catalog_url",
 ]);
 
 // Number patterns with neither a sequence nor a random token render the same
@@ -166,8 +185,40 @@ settings.put("/", async (c) => {
     filtered.company_bic = normalizeBic(filtered.company_bic);
   }
 
+  // The catalog source URL doubles as the documented off switch: an empty value
+  // turns all catalog egress off, so it must be accepted as-is. Anything else
+  // has to be an http(s) URL the server can actually fetch, so a typo cannot
+  // silently break the Plugins tab.
+  if (filtered.plugin_catalog_url !== undefined && filtered.plugin_catalog_url !== "") {
+    const url = filtered.plugin_catalog_url;
+    if (url.length > 2048) {
+      return c.json(
+        {
+          success: false,
+          error: `Setting "plugin_catalog_url" must be at most 2048 characters`,
+        },
+        400,
+      );
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return c.json(
+        { success: false, error: `Setting "plugin_catalog_url" must be a valid http(s) URL` },
+        400,
+      );
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return c.json(
+        { success: false, error: `Setting "plugin_catalog_url" must be a valid http(s) URL` },
+        400,
+      );
+    }
+  }
+
   updateSettings(filtered);
-  const data = getAllSettings();
+  const data = stripInternalSettings(getAllSettings());
   const emailConfigured = await isEmailConfigured();
   return c.json({
     success: true,

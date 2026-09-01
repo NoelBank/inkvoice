@@ -219,6 +219,13 @@ describe("catalog service", () => {
     expect(await getVotes()).toEqual({});
   });
 
+  test("a failed votes fetch falls back to the cached votes map", async () => {
+    enableEgress();
+    updateSettings({ plugin_catalog_votes: JSON.stringify({ "accounts-payable": 5 }) });
+    stubFetch(() => Promise.reject(new Error("network down")));
+    expect(await getVotes()).toEqual({ "accounts-payable": 5 });
+  });
+
   test("postVote returns the new count and is a no-op when egress is off", async () => {
     enableEgress();
     stubFetch(() => ok({ count: 8, voted: true }));

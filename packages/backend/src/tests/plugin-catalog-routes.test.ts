@@ -1,8 +1,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import crypto from "node:crypto";
 import { unlinkSync } from "node:fs";
+import bcrypt from "bcryptjs";
 import type { Hono } from "hono";
 import { createApp } from "../app";
-import { closeDatabase, initDatabase } from "../database/connection";
+import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { setPluginEntitlementCheck } from "../plugins/entitlement";
@@ -173,5 +175,50 @@ describe("POST /api/v1/plugins/catalog/vote", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(400);
+  });
+
+  test("rejects an unauthenticated caller", async () => {
+    const res = await app.request("/api/v1/plugins/catalog/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "accounts-payable" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  test("rejects an id longer than 64 characters", async () => {
+    const res = await app.request("/api/v1/plugins/catalog/vote", {
+      method: "POST",
+      headers: { ...auth(), "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "a".repeat(65) }),
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/v1/plugins/catalog/refresh as a non-admin", () => {
+  let userToken: string;
+
+  beforeAll(async () => {
+    const hash = await bcrypt.hash("catalog-user-pass", 10);
+    getDb().run(
+      "INSERT INTO users (id, username, password_hash, is_admin, is_active) VALUES (?, ?, ?, 0, 1)",
+      [crypto.randomBytes(16).toString("hex"), "catalog_regular", hash],
+    );
+    const res = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "catalog_regular", password: "catalog-user-pass" }),
+    });
+    userToken = ((await res.json()) as { data: { token: string } }).data.token;
+  });
+
+  test("gets 403", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    const res = await app.request("/api/v1/plugins/catalog/refresh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${userToken}` },
+    });
+    expect(res.status).toBe(403);
   });
 });

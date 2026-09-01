@@ -21,8 +21,8 @@ the tab can also describe plugins that are planned or ship only with
 Inkvoice Cloud.
 
 - The app fetches the catalog **server-side**, on a 6 hour TTL. Your browser
-  never talks to inkvoice.app directly; the server makes one predictable
-  request per install.
+  never talks to inkvoice.app directly; the server fetches the catalog from
+  one URL and demand votes from another.
 - A snapshot of the catalog ships with the app, so the Plugins tab works even
   with no internet at all. The remote catalog only ever improves on it.
 - **Turning it off**: set the `plugin_catalog_url` setting to an empty string.
