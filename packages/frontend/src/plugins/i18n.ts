@@ -11,6 +11,7 @@ registerTranslations("en", {
     title: "Plugins",
     description: "Enable or disable optional extensions for your workspace.",
     empty: "No plugins available.",
+    load_failed: "Could not load the plugin catalog: {{reason}}",
     enable: "Enable",
     disable: "Disable",
     enabled_toast: "Plugin enabled",
@@ -40,6 +41,7 @@ registerTranslations("en", {
     source_link: "Source",
     vote_button: "I want this",
     votes_count: "{{count}} votes",
+    vote_failed: "Your vote could not be recorded.",
     update_banner:
       "Version {{version}} is available. Upgrade Inkvoice to {{app}} or newer to get it.",
     update_banner_simple: "Version {{version}} is available. Upgrade Inkvoice to get it.",
@@ -65,6 +67,7 @@ registerTranslations("tr", {
     title: "Eklentiler",
     description: "Çalışma alanınız için isteğe bağlı eklentileri açın veya kapatın.",
     empty: "Kullanılabilir eklenti yok.",
+    load_failed: "Eklenti kataloğu yüklenemedi: {{reason}}",
     enable: "Etkinleştir",
     disable: "Devre dışı bırak",
     enabled_toast: "Eklenti etkinleştirildi",
@@ -94,6 +97,7 @@ registerTranslations("tr", {
     source_link: "Kaynak",
     vote_button: "Bunu istiyorum",
     votes_count: "{{count}} oy",
+    vote_failed: "Oyunuz kaydedilemedi.",
     update_banner:
       "Sürüm {{version}} hazır. Bunu almak için Inkvoice'u {{app}} veya daha yenisine yükseltin.",
     update_banner_simple: "Sürüm {{version}} hazır. Bunu almak için Inkvoice'u yükseltin.",
@@ -119,6 +123,7 @@ registerTranslations("de", {
     title: "Plugins",
     description: "Optionale Erweiterungen für Ihren Arbeitsbereich aktivieren oder deaktivieren.",
     empty: "Keine Plugins verfügbar.",
+    load_failed: "Der Plugin-Katalog konnte nicht geladen werden: {{reason}}",
     enable: "Aktivieren",
     disable: "Deaktivieren",
     enabled_toast: "Plugin aktiviert",
@@ -148,6 +153,7 @@ registerTranslations("de", {
     source_link: "Quelle",
     vote_button: "Das möchte ich",
     votes_count: "{{count}} Stimmen",
+    vote_failed: "Ihre Stimme konnte nicht erfasst werden.",
     update_banner:
       "Version {{version}} ist verfügbar. Führen Sie ein Upgrade auf Inkvoice {{app}} oder neuer durch, um sie zu erhalten.",
     update_banner_simple:
@@ -175,6 +181,7 @@ registerTranslations("es", {
     title: "Plugins",
     description: "Active o desactive extensiones opcionales para su espacio de trabajo.",
     empty: "No hay plugins disponibles.",
+    load_failed: "No se pudo cargar el catálogo de plugins: {{reason}}",
     enable: "Activar",
     disable: "Desactivar",
     enabled_toast: "Plugin activado",
@@ -186,7 +193,7 @@ registerTranslations("es", {
     filter_productivity: "Productividad",
     filter_integrations: "Integraciones",
     filter_reporting: "Informes",
-    status_all: "Todas",
+    status_all: "Todos",
     status_enabled: "Activados",
     status_disabled: "Desactivados",
     status_planned: "Planificados",
@@ -204,6 +211,7 @@ registerTranslations("es", {
     source_link: "Código fuente",
     vote_button: "Lo quiero",
     votes_count: "{{count}} votos",
+    vote_failed: "No se pudo registrar su voto.",
     update_banner:
       "La versión {{version}} está disponible. Actualice Inkvoice a {{app}} o superior para obtenerla.",
     update_banner_simple:
@@ -230,6 +238,7 @@ registerTranslations("fr", {
     title: "Plugins",
     description: "Activez ou désactivez les extensions optionnelles de votre espace de travail.",
     empty: "Aucun plugin disponible.",
+    load_failed: "Impossible de charger le catalogue des plugins : {{reason}}",
     enable: "Activer",
     disable: "Désactiver",
     enabled_toast: "Plugin activé",
@@ -259,6 +268,7 @@ registerTranslations("fr", {
     source_link: "Source",
     vote_button: "Je le veux",
     votes_count: "{{count}} votes",
+    vote_failed: "Votre vote n'a pas pu être enregistré.",
     update_banner:
       "La version {{version}} est disponible. Mettez Inkvoice à jour vers {{app}} ou plus récent pour l'obtenir.",
     update_banner_simple:

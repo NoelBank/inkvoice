@@ -140,7 +140,12 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
         <RotateCw className="h-3 w-3" />
         {t("plugins.footer_refresh")}
       </Button>
-      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => void turnOff()}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 px-2 text-xs"
+        onClick={() => turnOff().catch((e: Error) => toast.error(e.message))}
+      >
         {t("plugins.footer_turn_off")}
       </Button>
     </div>
@@ -152,6 +157,8 @@ function PluginsMasterView() {
   const entries = usePluginsStore((s) => s.entries);
   const provenance = usePluginsStore((s) => s.provenance);
   const loaded = usePluginsStore((s) => s.loaded);
+  const error = usePluginsStore((s) => s.error);
+  const refresh = usePluginsStore((s) => s.refresh);
   const ensureFetched = usePluginsStore((s) => s.ensureFetched);
 
   const [query, setQuery] = useState("");
@@ -234,8 +241,16 @@ function PluginsMasterView() {
           </div>
         </div>
 
-        {loaded && entries.length === 0 && (
+        {loaded && entries.length === 0 && !(error && !provenance) && (
           <p className="text-sm text-muted-foreground">{t("plugins.empty")}</p>
+        )}
+        {loaded && error && !provenance && (
+          <div className="flex items-center gap-3 text-sm text-destructive">
+            <span>{t("plugins.load_failed", { reason: error })}</span>
+            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+              {t("plugins.footer_refresh")}
+            </Button>
+          </div>
         )}
         {loaded && entries.length > 0 && filtered.length === 0 && (
           <div className="flex items-center gap-3 text-sm text-muted-foreground">

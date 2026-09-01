@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/i18n";
-import { blockedChipKey, canVote, RELEASES_URL } from "./catalog";
+import { blockedChipKey, CATEGORIES, canVote, RELEASES_URL } from "./catalog";
 import { catalogIcon } from "./icon-map";
 import { getPlugins } from "./registry";
 import { usePluginsStore } from "./use-plugins.store";
@@ -53,6 +53,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
   }
 
   const Icon = catalogIcon(entry.icon);
+  const categoryKnown = (CATEGORIES as readonly string[]).includes(entry.category);
   const chipKey = blockedChipKey(entry.blockedReason);
   const settingsPlugin = getPlugins().find((p) => p.id === entry.id);
   const SettingsPanel = settingsPlugin?.settings;
@@ -72,7 +73,11 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
     setVoting(true);
     try {
       const count = await vote(entry.id);
-      if (count !== null) toast.success(t("plugins.votes_count", { count }));
+      if (count !== null) {
+        toast.success(t("plugins.votes_count", { count }));
+      } else {
+        toast.error(t("plugins.vote_failed"));
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -95,7 +100,9 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
           <div className="min-w-0">
             <CardTitle className="flex flex-wrap items-center gap-2">
               {entry.name}
-              <Badge variant="outline">{t(`plugins.filter_${entry.category}`)}</Badge>
+              <Badge variant="outline">
+                {categoryKnown ? t(`plugins.filter_${entry.category}`) : entry.category}
+              </Badge>
               {chipKey && <Badge variant="secondary">{t(chipKey)}</Badge>}
             </CardTitle>
             <p className="text-sm text-muted-foreground">{entry.tagline}</p>

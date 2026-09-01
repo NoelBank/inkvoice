@@ -107,6 +107,7 @@ describe("plugins store on the catalog endpoint", () => {
       "/api/v1/plugins/catalog/refresh",
       "/api/v1/plugins/catalog",
     ]);
+    expect(calls[0]?.init?.method).toBe("POST");
   });
 
   test("a failed refresh marks loaded and records the error, keeping guards honest", async () => {
