@@ -1071,6 +1071,52 @@ export default function Settings() {
 
           <Card className="mt-4">
             <CardHeader>
+              <CardTitle className="text-sm">{t("settings.tax_reserve_section")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormField label={t("settings.tax_reserve_salary")}>
+                  <NumberInput
+                    value={settings.tax_reserve_annual_salary || ""}
+                    min={0}
+                    decimals={2}
+                    onValueChange={(v) =>
+                      setSettings({ ...settings, tax_reserve_annual_salary: String(v) })
+                    }
+                  />
+                </FormField>
+                <FormField label={t("settings.tax_reserve_joint")}>
+                  <select
+                    value={settings.tax_reserve_joint_assessment || "false"}
+                    onChange={(e) =>
+                      setSettings({ ...settings, tax_reserve_joint_assessment: e.target.value })
+                    }
+                    className="form-select"
+                  >
+                    <option value="false">{t("common.no")}</option>
+                    <option value="true">{t("common.yes")}</option>
+                  </select>
+                </FormField>
+                <FormField label={t("settings.tax_reserve_rate")}>
+                  <NumberInput
+                    value={settings.tax_reserve_income_rate || "30"}
+                    min={0}
+                    max={100}
+                    decimals={2}
+                    onValueChange={(v) =>
+                      setSettings({ ...settings, tax_reserve_income_rate: String(v) })
+                    }
+                  />
+                </FormField>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("settings.tax_reserve_salary_hint")}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">{t("settings.tax_definitions")}</CardTitle>
                 <Button variant="outline" size="sm" onClick={openAddTax}>

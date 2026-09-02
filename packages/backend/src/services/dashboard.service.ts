@@ -1,5 +1,7 @@
 import { getDb } from "../database/connection";
+import { extraTaxOnSideIncome } from "../utils/income-tax";
 import { getBaseCurrency } from "./exchange-rate.service";
+import { getSetting } from "./settings.service";
 
 /** YYYY-MM keys for the trailing 12 months ending at the current month. */
 function trailingMonthKeys(): string[] {
@@ -26,6 +28,109 @@ function densifyMonthly(rows: { month: string; value: number }[]): {
 function deltaPct(current: number, previous: number): number {
   if (previous === 0) return current === 0 ? 0 : 100;
   return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+/** German Arbeitnehmer-Pauschbetrag, subtracted from the configured gross
+ *  salary as a rough zvE proxy for the tariff-based reserve estimate. */
+const EMPLOYEE_ALLOWANCE = 1_230;
+
+const round2 = (v: number): number => Math.round(v * 100) / 100;
+
+/** § 19 Abs. 1 UStG (2025): Kleinunternehmer limits on gross receipts. */
+const SMALL_BUSINESS_LIMIT_PREVIOUS_YEAR = 25_000;
+const SMALL_BUSINESS_LIMIT_CURRENT_YEAR = 100_000;
+
+const isoDate = (year: number, monthIndex: number): string =>
+  `${year}-${String(monthIndex + 1).padStart(2, "0")}-01`;
+
+/**
+ * Estimated tax reserve for the dashboard: the VAT balance of the current
+ * quarter (cash basis: VAT share of payments received minus input VAT on
+ * expenses) plus an income-tax estimate on the year-to-date net profit —
+ * either via the German 2025 tariff on top of a configured salary, or a flat
+ * percentage when no salary is set. All amounts in base currency.
+ */
+export function getTaxReserve(now: Date = new Date()) {
+  const db = getDb();
+  const year = now.getFullYear();
+  const quarterIndex = Math.floor(now.getMonth() / 3);
+  const quarterStart = isoDate(year, quarterIndex * 3);
+  const quarterEnd =
+    quarterIndex === 3 ? isoDate(year + 1, 0) : isoDate(year, (quarterIndex + 1) * 3);
+  const yearStart = isoDate(year, 0);
+  const yearEnd = isoDate(year + 1, 0);
+  const previousYearStart = isoDate(year - 1, 0);
+
+  // Each payment carries its invoice's VAT proportionally (Ist-Versteuerung).
+  const paymentShares = db.query(
+    `SELECT
+       COALESCE(SUM(p.amount * (i.tax_total / i.total) * COALESCE(i.exchange_rate, 1)), 0) as vat,
+       COALESCE(SUM(p.amount * ((i.total - i.tax_total) / i.total) * COALESCE(i.exchange_rate, 1)), 0) as net
+     FROM payments p
+     JOIN invoices i ON i.id = p.invoice_id
+     WHERE i.deleted_at IS NULL AND i.total != 0
+       AND p.payment_date >= ? AND p.payment_date < ?`,
+  );
+  const expenseSums = db.query(
+    `SELECT
+       COALESCE(SUM(tax_amount * COALESCE(exchange_rate, 1)), 0) as vat,
+       COALESCE(SUM(amount * COALESCE(exchange_rate, 1)), 0) as net
+     FROM expenses
+     WHERE expense_date >= ? AND expense_date < ?`,
+  );
+
+  // § 19 UStG measures the Gesamtumsatz by gross receipts (vereinnahmte
+  // Entgelte); the 2025 limits are 25.000 € for the previous and 100.000 € for
+  // the current calendar year.
+  const grossReceipts = db.query(
+    `SELECT COALESCE(SUM(p.amount * COALESCE(i.exchange_rate, 1)), 0) as gross
+     FROM payments p
+     JOIN invoices i ON i.id = p.invoice_id
+     WHERE i.deleted_at IS NULL AND p.payment_date >= ? AND p.payment_date < ?`,
+  );
+  const previousYearGross = grossReceipts.get(previousYearStart, yearStart) as { gross: number };
+  const currentYearGross = grossReceipts.get(yearStart, yearEnd) as { gross: number };
+
+  const quarterIn = paymentShares.get(quarterStart, quarterEnd) as { vat: number; net: number };
+  const quarterOut = expenseSums.get(quarterStart, quarterEnd) as { vat: number; net: number };
+  const yearIn = paymentShares.get(yearStart, yearEnd) as { vat: number; net: number };
+  const yearOut = expenseSums.get(yearStart, yearEnd) as { vat: number; net: number };
+
+  const vatReserve = round2(quarterIn.vat - quarterOut.vat);
+  const profitYtd = Math.max(0, yearIn.net - yearOut.net);
+
+  const salary = Number.parseFloat(getSetting("tax_reserve_annual_salary") || "");
+  const joint = getSetting("tax_reserve_joint_assessment") === "true";
+  const rateSetting = Number.parseFloat(getSetting("tax_reserve_income_rate") || "");
+  const flatRate = Number.isFinite(rateSetting) ? rateSetting : 30;
+
+  const mode: "tariff" | "flat" = Number.isFinite(salary) && salary > 0 ? "tariff" : "flat";
+  const incomeTaxReserve =
+    mode === "tariff"
+      ? extraTaxOnSideIncome(Math.max(0, salary - EMPLOYEE_ALLOWANCE), profitYtd, joint)
+      : round2((profitYtd * flatRate) / 100);
+
+  return {
+    vat_reserve: vatReserve,
+    income_tax_reserve: incomeTaxReserve,
+    total: round2(vatReserve + incomeTaxReserve),
+    mode,
+    flat_rate: flatRate,
+    kleinunternehmer: getSetting("einvoice_kleinunternehmer") === "true",
+    quarter: `${year}-Q${quarterIndex + 1}`,
+    small_business: {
+      previous_year: {
+        year: year - 1,
+        revenue: round2(previousYearGross.gross),
+        limit: SMALL_BUSINESS_LIMIT_PREVIOUS_YEAR,
+      },
+      current_year: {
+        year,
+        revenue: round2(currentYearGross.gross),
+        limit: SMALL_BUSINESS_LIMIT_CURRENT_YEAR,
+      },
+    },
+  };
 }
 
 export function getStats() {
@@ -132,6 +237,7 @@ export function getStats() {
 
   return {
     base_currency: baseCurrency,
+    tax_reserve: getTaxReserve(),
     total_revenue: revenue.total,
     total_outstanding: outstanding.total,
     total_expenses: expenses.total,

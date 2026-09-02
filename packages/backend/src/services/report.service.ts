@@ -1,6 +1,7 @@
 import { getDb } from "../database/connection";
 import { todayIso } from "../utils/date";
 import { getBaseCurrency } from "./exchange-rate.service";
+import { getSetting } from "./settings.service";
 
 interface DateRangeParams {
   date_from?: string;
@@ -497,4 +498,93 @@ export function getCashFlowForecast(monthsAhead = 6): CashFlowForecastRow[] {
       total: expected_invoiced + expected_recurring,
     };
   });
+}
+
+export interface EuerCategoryRow {
+  category: string;
+  count: number;
+  gross: number;
+  net: number;
+  vat: number;
+}
+
+export interface EuerReport {
+  year: number;
+  base_currency: string;
+  kleinunternehmer: boolean;
+  receipts: { gross: number; net: number; vat: number };
+  expenses: { gross: number; net: number; vat: number; by_category: EuerCategoryRow[] };
+  profit: number;
+}
+
+/**
+ * Einnahmen-Überschuss-Rechnung for one calendar year on a cash basis
+ * (Zuflussprinzip): receipts are payments received in the year, carrying their
+ * invoice's VAT proportionally; expenses are grouped by category. The profit
+ * uses gross figures for Kleinunternehmer (§ 19 UStG, no VAT deduction) and net
+ * figures otherwise. All amounts in base currency.
+ */
+export function getEuerReport(params: { year: number }): EuerReport {
+  const db = getDb();
+  const from = `${params.year}-01-01`;
+  const to = `${params.year + 1}-01-01`;
+  const round2 = (v: number): number => Math.round(v * 100) / 100;
+
+  const receipts = db
+    .query(
+      `SELECT
+         COALESCE(SUM(p.amount * COALESCE(i.exchange_rate, 1)), 0) as gross,
+         COALESCE(SUM(CASE WHEN i.total != 0 THEN p.amount * (i.tax_total / i.total) ELSE 0 END * COALESCE(i.exchange_rate, 1)), 0) as vat
+       FROM payments p
+       JOIN invoices i ON i.id = p.invoice_id
+       WHERE i.deleted_at IS NULL AND p.payment_date >= ? AND p.payment_date < ?`,
+    )
+    .get(from, to) as { gross: number; vat: number };
+
+  const byCategory = db
+    .query(
+      `SELECT COALESCE(category, '') as category,
+              COUNT(*) as count,
+              COALESCE(SUM(total * COALESCE(exchange_rate, 1)), 0) as gross,
+              COALESCE(SUM(amount * COALESCE(exchange_rate, 1)), 0) as net,
+              COALESCE(SUM(tax_amount * COALESCE(exchange_rate, 1)), 0) as vat
+       FROM expenses
+       WHERE expense_date >= ? AND expense_date < ?
+       GROUP BY COALESCE(category, '')
+       ORDER BY gross DESC, category ASC`,
+    )
+    .all(from, to) as EuerCategoryRow[];
+
+  const expenseTotals = byCategory.reduce(
+    (acc, r) => ({ gross: acc.gross + r.gross, net: acc.net + r.net, vat: acc.vat + r.vat }),
+    { gross: 0, net: 0, vat: 0 },
+  );
+  const kleinunternehmer = getSetting("einvoice_kleinunternehmer") === "true";
+  const receiptsNet = receipts.gross - receipts.vat;
+  const profit = kleinunternehmer
+    ? receipts.gross - expenseTotals.gross
+    : receiptsNet - expenseTotals.net;
+
+  return {
+    year: params.year,
+    base_currency: getBaseCurrency(),
+    kleinunternehmer,
+    receipts: {
+      gross: round2(receipts.gross),
+      net: round2(receiptsNet),
+      vat: round2(receipts.vat),
+    },
+    expenses: {
+      gross: round2(expenseTotals.gross),
+      net: round2(expenseTotals.net),
+      vat: round2(expenseTotals.vat),
+      by_category: byCategory.map((r) => ({
+        ...r,
+        gross: round2(r.gross),
+        net: round2(r.net),
+        vat: round2(r.vat),
+      })),
+    },
+    profit: round2(profit),
+  };
 }

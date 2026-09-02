@@ -34,6 +34,7 @@ const REPORT_TABS = [
   "revenue-customer",
   "revenue-product",
   "profit-loss",
+  "euer",
   "expenses-category",
   "currency-breakdown",
   "cash-flow",
@@ -154,6 +155,7 @@ export default function Reports() {
   const [dateFrom, setDateFrom] = useState(() => fmtDate(startOfFiscalYear(now, fiscalStartMonth)));
   const [dateTo, setDateTo] = useState(() => fmtDate(now));
   const [monthsAhead, setMonthsAhead] = useState(6);
+  const [euerYear, setEuerYear] = useState(now.getFullYear());
   const [aeFormat, setAeFormat] = useState<"xero" | "quickbooks">("xero");
   const [aeSalesAccount, setAeSalesAccount] = useState("200");
   const [aeExpenseAccount, setAeExpenseAccount] = useState("400");
@@ -191,6 +193,9 @@ export default function Reports() {
       } else if (tab === "profit-loss") {
         const res = await api.getProfitLoss(params);
         setData(res.data);
+      } else if (tab === "euer") {
+        const res = await api.getEuerReport(euerYear);
+        setData(res.data);
       } else if (tab === "expenses-category") {
         const res = await api.getExpensesByCategory(params);
         setData(res.data);
@@ -207,7 +212,7 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
-  }, [tab, dateFrom, dateTo, monthsAhead, t]);
+  }, [tab, dateFrom, dateTo, monthsAhead, euerYear, t]);
 
   useEffect(() => {
     fetchReport();
@@ -233,6 +238,8 @@ export default function Reports() {
     const params: Record<string, string> = {};
     if (tab === "cash-flow") {
       params.months = String(monthsAhead);
+    } else if (tab === "euer") {
+      params.year = String(euerYear);
     } else {
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
@@ -284,6 +291,7 @@ export default function Reports() {
           <TabsTrigger value="revenue-customer">{t("reports.tab_revenue_customer")}</TabsTrigger>
           <TabsTrigger value="revenue-product">{t("reports.tab_revenue_product")}</TabsTrigger>
           <TabsTrigger value="profit-loss">{t("reports.tab_profit_loss")}</TabsTrigger>
+          <TabsTrigger value="euer">{t("reports.tab_euer")}</TabsTrigger>
           <TabsTrigger value="expenses-category">{t("reports.tab_expenses_category")}</TabsTrigger>
           <TabsTrigger value="currency-breakdown">
             {t("reports.tab_currency_breakdown")}
@@ -294,7 +302,7 @@ export default function Reports() {
         </TabsList>
       </Tabs>
 
-      {tab !== "aging" && tab !== "cash-flow" && tab !== "year-archive" && (
+      {tab !== "aging" && tab !== "cash-flow" && tab !== "year-archive" && tab !== "euer" && (
         <DateRangePicker
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -316,6 +324,22 @@ export default function Reports() {
               onClick={() => setMonthsAhead(n)}
             >
               {n}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {tab === "euer" && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">{t("reports.euer_year")}:</span>
+          {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map((y) => (
+            <Button
+              key={y}
+              variant={euerYear === y ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEuerYear(y)}
+            >
+              {y}
             </Button>
           ))}
         </div>
@@ -688,6 +712,136 @@ export default function Reports() {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {!loading && tab === "euer" && data && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t("reports.euer_intro")}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                label: t("reports.euer_receipts"),
+                value: data.kleinunternehmer ? data.receipts.gross : data.receipts.net,
+                signed: false,
+              },
+              {
+                label: t("reports.euer_expenses"),
+                value: data.kleinunternehmer ? data.expenses.gross : data.expenses.net,
+                signed: false,
+              },
+              { label: t("reports.euer_profit"), value: data.profit, signed: true },
+            ].map((c) => (
+              <Card key={c.label}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs text-muted-foreground">{c.label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p
+                    className={`text-xl font-bold tabular-nums ${
+                      c.signed && (c.value ?? 0) < 0 ? "text-red-500 dark:text-red-400" : ""
+                    }`}
+                  >
+                    {formatCurrency(c.value ?? 0, data.base_currency)}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("reports.euer_line")}</TableHead>
+                    <TableHead className="text-right">{t("reports.euer_amount")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.receipts.gross === 0 && data.expenses.by_category.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                        {t("reports.euer_no_data", { year: String(data.year) })}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {data.kleinunternehmer ? (
+                    <TableRow>
+                      <TableCell className="font-medium">{t("reports.euer_receipts_ku")}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(data.receipts.gross, data.base_currency)}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      <TableRow>
+                        <TableCell className="font-medium">
+                          {t("reports.euer_receipts_net")}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(data.receipts.net, data.base_currency)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-muted-foreground">
+                          {t("reports.euer_vat_collected")}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                          {formatCurrency(data.receipts.vat, data.base_currency)}
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  )}
+                  {data.expenses.by_category.map((r: any) => (
+                    <TableRow key={r.category}>
+                      <TableCell>
+                        {t("reports.euer_expense_category", {
+                          category: r.category || t("reports.euer_uncategorized"),
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(
+                          data.kleinunternehmer ? r.gross : r.net,
+                          data.base_currency,
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!data.kleinunternehmer && (
+                    <TableRow>
+                      <TableCell className="text-muted-foreground">
+                        {t("reports.euer_input_vat")}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {formatCurrency(data.expenses.vat, data.base_currency)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      {t("reports.euer_total_expenses")}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">
+                      {formatCurrency(
+                        data.kleinunternehmer ? data.expenses.gross : data.expenses.net,
+                        data.base_currency,
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-semibold">{t("reports.euer_profit")}</TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums font-semibold ${
+                        data.profit < 0 ? "text-red-500 dark:text-red-400" : ""
+                      }`}
+                    >
+                      {formatCurrency(data.profit, data.base_currency)}
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </CardContent>

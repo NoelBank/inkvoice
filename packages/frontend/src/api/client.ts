@@ -890,6 +890,8 @@ export const api = {
     const query = params ? `?${new URLSearchParams(params).toString()}` : "";
     return request<{ success: boolean; data: any }>(`/reports/profit-loss${query}`);
   },
+  getEuerReport: (year: number) =>
+    request<{ success: boolean; data: any }>(`/reports/euer?year=${year}`),
   getCurrencyBreakdown: (params?: Record<string, string>) => {
     const query = params ? `?${new URLSearchParams(params).toString()}` : "";
     return request<{ success: boolean; data: any }>(`/reports/currency-breakdown${query}`);

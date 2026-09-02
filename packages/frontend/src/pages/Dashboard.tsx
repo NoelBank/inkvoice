@@ -6,6 +6,7 @@ import {
   Clock,
   DollarSign,
   FileText,
+  Landmark,
   Plus,
   Users,
   Wallet,
@@ -328,6 +329,106 @@ export default function Dashboard() {
           );
         })}
       </div>
+
+      {/* Tax reserve estimate */}
+      {stats?.tax_reserve && (
+        <Card className="py-0">
+          <div className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center justify-center h-9 w-9 rounded-md border border-border/80 bg-background/40 text-muted-foreground shrink-0">
+                <Landmark className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                  {t("dashboard.tax_reserve")}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {t("dashboard.tax_reserve_eyebrow")}
+                </p>
+              </div>
+            </div>
+            <div className="font-mono text-[26px] font-semibold tabular-nums tracking-tight leading-none sm:ml-4">
+              {formatCurrency(stats.tax_reserve.total ?? 0, stats.base_currency)}
+            </div>
+            <div className="sm:ml-auto space-y-1 text-sm sm:min-w-[280px]">
+              {stats.tax_reserve.kleinunternehmer ? (
+                // § 19 UStG: no VAT line, but the Kleinunternehmer limits matter.
+                (
+                  [
+                    ["previous_year", "dashboard.small_business_limit_previous"],
+                    ["current_year", "dashboard.small_business_limit_current"],
+                  ] as const
+                ).map(([key, labelKey]) => {
+                  const row = stats.tax_reserve.small_business?.[key];
+                  if (!row) return null;
+                  const pct = row.limit > 0 ? Math.min(100, (row.revenue / row.limit) * 100) : 0;
+                  const tone =
+                    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex items-center justify-between gap-6">
+                        <span className="text-muted-foreground">
+                          {t(labelKey, { year: String(row.year) })}
+                        </span>
+                        <span className="font-mono tabular-nums">
+                          {t("dashboard.small_business_of", {
+                            revenue: formatCurrency(row.revenue, stats.base_currency),
+                            limit: formatCurrency(row.limit, stats.base_currency),
+                          })}
+                        </span>
+                      </div>
+                      <div
+                        className="h-1 rounded-full bg-muted overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={Math.round(pct)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      {pct >= 100 && (
+                        <p className="text-xs text-red-500 dark:text-red-400">
+                          {t("dashboard.small_business_exceeded")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-muted-foreground">
+                    {t("dashboard.tax_reserve_vat", {
+                      quarter: String(stats.tax_reserve.quarter ?? "")
+                        .split("-")
+                        .reverse()
+                        .join(" "),
+                    })}
+                  </span>
+                  <span className="font-mono tabular-nums">
+                    {formatCurrency(stats.tax_reserve.vat_reserve ?? 0, stats.base_currency)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-muted-foreground">
+                  {t("dashboard.tax_reserve_income_tax")}
+                </span>
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(stats.tax_reserve.income_tax_reserve ?? 0, stats.base_currency)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground/70">
+                {stats.tax_reserve.mode === "tariff"
+                  ? t("dashboard.tax_reserve_tariff_note")
+                  : t("dashboard.tax_reserve_flat_note", {
+                      rate: String(stats.tax_reserve.flat_rate ?? 30),
+                    })}{" "}
+                · {t("dashboard.tax_reserve_hint")}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Main grid: Chart + Recent Invoices */}
       <div className="grid gap-4 lg:grid-cols-3">

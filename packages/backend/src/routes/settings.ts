@@ -121,6 +121,9 @@ const ALLOWED_SETTINGS = new Set([
   "france_transport",
   "france_sender_siren",
   "plugin_catalog_url",
+  "tax_reserve_annual_salary",
+  "tax_reserve_joint_assessment",
+  "tax_reserve_income_rate",
 ]);
 
 // Number patterns with neither a sequence nor a random token render the same
@@ -164,6 +167,22 @@ settings.put("/", async (c) => {
         },
         400,
       );
+    }
+  }
+
+  // Tax reserve inputs feed the dashboard estimate; a non-numeric salary would
+  // silently fall back to the flat rate, so reject bad values instead. Empty
+  // means "not configured" and is always fine.
+  const numericTaxReserveSettings: Array<{ key: string; max: number }> = [
+    { key: "tax_reserve_annual_salary", max: Number.MAX_SAFE_INTEGER },
+    { key: "tax_reserve_income_rate", max: 100 },
+  ];
+  for (const { key, max } of numericTaxReserveSettings) {
+    const value = filtered[key];
+    if (value === undefined || value.trim() === "") continue;
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > max) {
+      return c.json({ success: false, error: `Setting "${key}" must be a number` }, 400);
     }
   }
 

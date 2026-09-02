@@ -283,4 +283,52 @@ reports.get("/accounting-export/csv", (c) => {
   return c.body(csv);
 });
 
+// Cash-basis EÜR for one calendar year; `year` defaults to the current one.
+function parseEuerYear(raw: string | undefined): number | null {
+  if (raw === undefined || raw === "") return new Date().getFullYear();
+  const year = Number.parseInt(raw, 10);
+  if (!Number.isInteger(year) || year < 1970 || year > 2200) return null;
+  return year;
+}
+
+reports.get("/euer", (c) => {
+  const year = parseEuerYear(c.req.query("year"));
+  if (year === null) return c.json({ success: false, error: "Invalid year" }, 400);
+  return c.json({ success: true, data: reportService.getEuerReport({ year }) });
+});
+
+reports.get("/euer/csv", (c) => {
+  const year = parseEuerYear(c.req.query("year"));
+  if (year === null) return c.json({ success: false, error: "Invalid year" }, 400);
+  const data = reportService.getEuerReport({ year });
+  type Row = { line: string; amount: number };
+  const rows: Row[] = data.kleinunternehmer
+    ? [{ line: "Betriebseinnahmen (Kleinunternehmer, brutto)", amount: data.receipts.gross }]
+    : [
+        { line: "Betriebseinnahmen (netto)", amount: data.receipts.net },
+        { line: "Vereinnahmte Umsatzsteuer", amount: data.receipts.vat },
+      ];
+  for (const r of data.expenses.by_category) {
+    rows.push({
+      line: `Betriebsausgaben: ${r.category || "Ohne Kategorie"}`,
+      amount: data.kleinunternehmer ? r.gross : r.net,
+    });
+  }
+  if (!data.kleinunternehmer) {
+    rows.push({ line: "Gezahlte Vorsteuer", amount: data.expenses.vat });
+  }
+  rows.push({
+    line: "Summe Betriebsausgaben",
+    amount: data.kleinunternehmer ? data.expenses.gross : data.expenses.net,
+  });
+  rows.push({ line: "Gewinn", amount: data.profit });
+  const cols: CsvColumn<Row>[] = [
+    { header: "Position", key: "line" },
+    { header: `Betrag (${data.base_currency})`, key: "amount" },
+  ];
+  const headers = csvHeaders(`euer-${year}.csv`);
+  for (const [k, v] of Object.entries(headers)) c.header(k, v);
+  return c.body(buildCsv(rows, cols));
+});
+
 export { reports };
