@@ -18,6 +18,11 @@ const INTERNAL_SETTINGS = new Set([
   "plugin_catalog_cache",
   "plugin_catalog_synced_at",
   "plugin_catalog_votes",
+  "plugin_catalog_votes_at",
+  // Install-local secret behind the opaque vote identity. Never leaves the
+  // server; handing it to a browser would let anyone mint another install's
+  // vote identities.
+  "plugin_vote_secret",
 ]);
 
 function stripInternalSettings(data: Record<string, string>): Record<string, string> {

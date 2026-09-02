@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/i18n";
-import { blockedChipKey, CATEGORIES, canVote, RELEASES_URL } from "./catalog";
+import { blockedChipKey, CATEGORIES, canVote, RELEASES_URL, voteToastKey } from "./catalog";
 import { catalogIcon } from "./icon-map";
 import { getPlugins } from "./registry";
 import { usePluginsStore } from "./use-plugins.store";
@@ -72,12 +72,11 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
   const sendVote = async () => {
     setVoting(true);
     try {
-      const count = await vote(entry.id);
-      if (count !== null) {
-        toast.success(t("plugins.votes_count", { count }));
-      } else {
-        toast.error(t("plugins.vote_failed"));
-      }
+      const outcome = await vote(entry.id);
+      const message = t(voteToastKey(outcome.status));
+      if (outcome.status === "recorded") toast.success(message);
+      else if (outcome.status === "already_voted") toast.info(message);
+      else toast.error(message);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

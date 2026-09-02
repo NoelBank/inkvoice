@@ -10,7 +10,12 @@
 import { create } from "zustand";
 import { api } from "@/api/client";
 import { pluginFetch } from "./api";
-import { type CatalogPluginEntry, type CatalogProvenance, deriveEnabledIds } from "./catalog";
+import {
+  type CatalogPluginEntry,
+  type CatalogProvenance,
+  deriveEnabledIds,
+  type VoteOutcome,
+} from "./catalog";
 
 interface CatalogResponse {
   data: {
@@ -35,9 +40,9 @@ interface PluginsState {
   refresh: (opts?: { force?: boolean }) => Promise<void>;
   isEnabled: (id: string) => boolean;
   setEnabled: (id: string, enabled: boolean) => Promise<void>;
-  /** Register demand for a planned plugin. Returns the new count, or null
-   *  when egress is off or the request failed. */
-  vote: (id: string) => Promise<number | null>;
+  /** Register demand for a planned plugin. Reports what actually happened, so
+   *  the caller can tell a recorded vote from a repeat one from a refusal. */
+  vote: (id: string) => Promise<VoteOutcome>;
   /** The self-hoster off switch: clears plugin_catalog_url, then refetches so
    *  provenance reflects the snapshot-only state. */
   turnOff: () => Promise<void>;
@@ -95,19 +100,21 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
 
   vote: async (id) => {
     try {
-      const res = await pluginFetch<{ data: { count: number | null } }>("/plugins/catalog/vote", {
+      const res = await pluginFetch<{ data: VoteOutcome }>("/plugins/catalog/vote", {
         method: "POST",
         body: JSON.stringify({ id }),
       });
-      const count = res.data.count;
-      if (count !== null) {
+      const outcome = res.data;
+      // The endpoint returns the authoritative count for both a fresh and a
+      // repeat vote, so adopt it either way rather than incrementing locally.
+      if (outcome.count !== null) {
         set((s) => ({
-          entries: s.entries.map((e) => (e.id === id ? { ...e, votes: count } : e)),
+          entries: s.entries.map((e) => (e.id === id ? { ...e, votes: outcome.count! } : e)),
         }));
       }
-      return count;
+      return outcome;
     } catch {
-      return null;
+      return { count: null, alreadyVoted: false, status: "failed" };
     }
   },
 

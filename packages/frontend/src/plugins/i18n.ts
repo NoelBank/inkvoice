@@ -41,6 +41,9 @@ registerTranslations("en", {
     source_link: "Source",
     vote_button: "I want this",
     votes_count: "{{count}} votes",
+    vote_recorded: "Thanks, your vote was recorded.",
+    vote_already: "You have already voted for this plugin.",
+    vote_rejected: "This plugin is not open for votes right now.",
     vote_failed: "Your vote could not be recorded.",
     update_banner:
       "Version {{version}} is available. Upgrade Inkvoice to {{app}} or newer to get it.",
@@ -103,6 +106,9 @@ registerTranslations("tr", {
     source_link: "Kaynak",
     vote_button: "Bunu istiyorum",
     votes_count: "{{count}} oy",
+    vote_recorded: "Teşekkürler, oyunuz kaydedildi.",
+    vote_already: "Bu eklenti için zaten oy verdiniz.",
+    vote_rejected: "Bu eklenti şu anda oylamaya açık değil.",
     vote_failed: "Oyunuz kaydedilemedi.",
     update_banner:
       "Sürüm {{version}} hazır. Bunu almak için Inkvoice'u {{app}} veya daha yenisine yükseltin.",
@@ -165,6 +171,9 @@ registerTranslations("de", {
     source_link: "Quelle",
     vote_button: "Das möchte ich",
     votes_count: "{{count}} Stimmen",
+    vote_recorded: "Danke, Ihre Stimme wurde erfasst.",
+    vote_already: "Sie haben für dieses Plugin bereits abgestimmt.",
+    vote_rejected: "Dieses Plugin steht derzeit nicht zur Abstimmung.",
     vote_failed: "Ihre Stimme konnte nicht erfasst werden.",
     update_banner:
       "Version {{version}} ist verfügbar. Führen Sie ein Upgrade auf Inkvoice {{app}} oder neuer durch, um sie zu erhalten.",
@@ -229,6 +238,9 @@ registerTranslations("es", {
     source_link: "Código fuente",
     vote_button: "Lo quiero",
     votes_count: "{{count}} votos",
+    vote_recorded: "Gracias, su voto se ha registrado.",
+    vote_already: "Ya ha votado por este complemento.",
+    vote_rejected: "Este complemento no está abierto a votos ahora mismo.",
     vote_failed: "No se pudo registrar su voto.",
     update_banner:
       "La versión {{version}} está disponible. Actualice Inkvoice a {{app}} o superior para obtenerla.",
@@ -292,6 +304,9 @@ registerTranslations("fr", {
     source_link: "Source",
     vote_button: "Je le veux",
     votes_count: "{{count}} votes",
+    vote_recorded: "Merci, votre vote a été enregistré.",
+    vote_already: "Vous avez déjà voté pour ce plugin.",
+    vote_rejected: "Ce plugin n'est pas ouvert aux votes pour le moment.",
     vote_failed: "Votre vote n'a pas pu être enregistré.",
     update_banner:
       "La version {{version}} est disponible. Mettez Inkvoice à jour vers {{app}} ou plus récent pour l'obtenir.",

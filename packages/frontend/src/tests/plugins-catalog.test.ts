@@ -13,6 +13,7 @@ import {
   minutesSince,
   saveViewPreference,
   VIEW_STORAGE_KEY,
+  voteToastKey,
 } from "../plugins/catalog";
 
 function entry(over: Partial<CatalogPluginEntry> = {}): CatalogPluginEntry {
@@ -170,6 +171,16 @@ describe("minutesSince", () => {
     expect(minutesSince("2026-09-01T11:30:00Z", now)).toBe(30);
     expect(minutesSince("2026-08-31T12:00:00Z", now)).toBe(1440);
     expect(minutesSince("2026-09-01T12:00:01Z", now)).toBe(0);
+  });
+});
+
+describe("voteToastKey", () => {
+  test("each outcome gets its own message, and unknown falls back to failure", () => {
+    expect(voteToastKey("recorded")).toBe("plugins.vote_recorded");
+    expect(voteToastKey("already_voted")).toBe("plugins.vote_already");
+    expect(voteToastKey("rejected")).toBe("plugins.vote_rejected");
+    expect(voteToastKey("off")).toBe("plugins.vote_failed");
+    expect(voteToastKey("failed")).toBe("plugins.vote_failed");
   });
 });
 

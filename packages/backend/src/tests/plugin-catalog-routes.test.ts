@@ -9,6 +9,7 @@ import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { setPluginEntitlementCheck } from "../plugins/entitlement";
 import { getBackendPlugins } from "../plugins/registry";
+import { resetVoteBudget } from "../plugins/routes";
 import { runPluginMigrations } from "../plugins/runner";
 import { updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
@@ -165,6 +166,51 @@ describe("POST /api/v1/plugins/catalog/vote", () => {
     const json = (await res.json()) as { data: { count: number | null } };
     expect(json.data.count).toBe(9);
     expect(calls[0]).toContain("accounts-payable");
+  });
+
+  test("sends a per-user vote identity, not the request address", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    let sentKey: string | null = null;
+    globalThis.fetch = ((_url: RequestInfo | URL, init?: RequestInit) => {
+      sentKey = new Headers(init?.headers).get("x-inkvoice-vote-key");
+      return Promise.resolve(
+        new Response(JSON.stringify({ count: 1, voted: true, alreadyVoted: false }), {
+          status: 200,
+        }),
+      );
+    }) as typeof fetch;
+
+    resetVoteBudget();
+    const res = await app.request("/api/v1/plugins/catalog/vote", {
+      method: "POST",
+      headers: { ...auth(), "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "accounts-payable" }),
+    });
+    expect(res.status).toBe(200);
+    expect(sentKey).toMatch(/^[a-f0-9]{32}$/);
+  });
+
+  test("budgets a single user's votes so one account cannot drive unbounded egress", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    globalThis.fetch = (() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ count: 1, voted: true, alreadyVoted: true }), {
+          status: 200,
+        }),
+      )) as typeof fetch;
+
+    resetVoteBudget();
+    const send = () =>
+      app.request("/api/v1/plugins/catalog/vote", {
+        method: "POST",
+        headers: { ...auth(), "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "accounts-payable" }),
+      });
+
+    let last = await send();
+    for (let i = 0; i < 12 && last.status === 200; i++) last = await send();
+    expect(last.status).toBe(429);
+    resetVoteBudget();
   });
 
   test("is a no-op with egress off, and opens no socket", async () => {

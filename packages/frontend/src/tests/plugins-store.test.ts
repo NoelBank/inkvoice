@@ -137,20 +137,39 @@ describe("plugins store on the catalog endpoint", () => {
   test("vote POSTs the id and patches the entry's votes; a failed vote leaves it alone", async () => {
     stubFetch([
       ["/api/v1/plugins/catalog", CATALOG_RESPONSE],
-      ["/api/v1/plugins/catalog/vote", { success: true, data: { count: 9, voted: true } }],
+      [
+        "/api/v1/plugins/catalog/vote",
+        { success: true, data: { count: 9, alreadyVoted: false, status: "recorded" } },
+      ],
     ]);
     await usePluginsStore.getState().refresh();
-    const count = await usePluginsStore.getState().vote("planned-one");
-    expect(count).toBe(9);
+    const outcome = await usePluginsStore.getState().vote("planned-one");
+    expect(outcome).toEqual({ count: 9, alreadyVoted: false, status: "recorded" });
     expect(usePluginsStore.getState().entries.find((e) => e.id === "planned-one")?.votes).toBe(9);
     const voteCalls = calls.filter((c) => c.url.endsWith("/plugins/catalog/vote"));
     expect(JSON.parse(String(voteCalls[0]?.init?.body))).toEqual({ id: "planned-one" });
 
-    // A second vote whose request fails returns null and keeps the old count.
+    // A second vote whose request fails reports failure and keeps the old count.
     stubFetch([["/api/v1/plugins/catalog/vote", { success: false, error: "down" }, 500]]);
     const again = await usePluginsStore.getState().vote("planned-one");
-    expect(again).toBeNull();
+    expect(again).toEqual({ count: null, alreadyVoted: false, status: "failed" });
     expect(usePluginsStore.getState().entries.find((e) => e.id === "planned-one")?.votes).toBe(9);
+  });
+
+  test("a repeat vote adopts the server count and reports already_voted", async () => {
+    stubFetch([
+      ["/api/v1/plugins/catalog", CATALOG_RESPONSE],
+      [
+        "/api/v1/plugins/catalog/vote",
+        { success: true, data: { count: 4, alreadyVoted: true, status: "already_voted" } },
+      ],
+    ]);
+    await usePluginsStore.getState().refresh();
+    const outcome = await usePluginsStore.getState().vote("planned-one");
+    expect(outcome.status).toBe("already_voted");
+    // The count is authoritative even when nothing was written, so the tab
+    // shows the real number rather than an optimistic increment.
+    expect(usePluginsStore.getState().entries.find((e) => e.id === "planned-one")?.votes).toBe(4);
   });
 
   test("turnOff clears plugin_catalog_url then refetches the snapshot state", async () => {

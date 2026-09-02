@@ -7,14 +7,13 @@
 // The tab must never be empty and never spin: a remote fetch only ever improves
 // the data. Every failure path still returns a usable catalog plus a reason.
 
+import { createHmac, randomBytes } from "node:crypto";
 import { getSetting, updateSettings } from "../services/settings.service";
 import { logger } from "../utils/logger";
 import { SafeFetchError, type SafeFetchErrorCode, safeFetchJson } from "../utils/safe-fetch";
 import snapshot from "./catalog-snapshot.json";
 
 export const DEFAULT_CATALOG_URL = "https://inkvoice.app/plugins/catalog.v1.json";
-export const DEFAULT_VOTES_URL = "https://inkvoice.app/api/plugin-votes";
-export const DEFAULT_VOTE_POST_URL = "https://inkvoice.app/api/plugin-vote";
 export const CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 5_000;
 /** The published catalog is a few KB. The cap exists so a hostile endpoint
@@ -25,6 +24,8 @@ const KEY_URL = "plugin_catalog_url";
 const KEY_CACHE = "plugin_catalog_cache";
 const KEY_SYNCED_AT = "plugin_catalog_synced_at";
 const KEY_VOTES = "plugin_catalog_votes";
+const KEY_VOTES_AT = "plugin_catalog_votes_at";
+const KEY_VOTE_SECRET = "plugin_vote_secret";
 
 export interface CatalogVersion {
   version: string;
@@ -86,6 +87,20 @@ function catalogUrl(): string {
 
 export function catalogEgressEnabled(): boolean {
   return catalogUrl() !== "";
+}
+
+/** Vote endpoints live on the same origin as the catalog. Derived rather than
+ *  hardcoded so that repointing the catalog at a private mirror moves ALL of
+ *  this feature's egress with it, instead of leaving votes going to
+ *  inkvoice.app from an install that thought it had been redirected. */
+function voteUrl(path: string): string | null {
+  const url = catalogUrl();
+  if (url === "") return null;
+  try {
+    return new URL(path, new URL(url).origin).toString();
+  } catch {
+    return null;
+  }
 }
 
 /** Shape check. Deliberately shallow: we validate the envelope and let unknown
@@ -174,16 +189,41 @@ export async function getCatalog(opts: { force?: boolean } = {}): Promise<Catalo
   return snapshotResult(code, null);
 }
 
+/** Per-install secret behind the vote identity below. Created on first use and
+ *  never leaves the server; only HMACs of it are sent. */
+function voteSecret(): string {
+  const existing = getSetting(KEY_VOTE_SECRET);
+  if (existing) return existing;
+  const secret = randomBytes(32).toString("hex");
+  updateSettings({ [KEY_VOTE_SECRET]: secret });
+  return secret;
+}
+
+/**
+ * Opaque per-install, per-user vote identity.
+ *
+ * Votes are proxied through this server, so the address the vote endpoint sees
+ * belongs to the install, not the person. Without this every user of a
+ * self-hosted install (and every tenant of a hosted deployment) would be one
+ * voter, and the second person to click would get a success message for a vote
+ * that was silently discarded. Hashing the user id under an install-local
+ * secret keeps the user id off the wire and makes the identity meaningless to
+ * anyone but this install.
+ */
+export function voteIdentity(userId: string): string {
+  return createHmac("sha256", voteSecret()).update(userId).digest("hex").slice(0, 32);
+}
+
 /** Demand-vote counts by plugin id. Empty when egress is off or unreachable.
- *  Deliberately reuses the catalog's synced_at as its freshness window rather
- *  than keeping a second timestamp: votes are a soft signal, and one clock is
- *  one fewer thing to keep consistent. */
+ *  Votes carry their own freshness clock: sharing the catalog's would let a
+ *  catalog refresh mark a stale vote map fresh, and a failing catalog fetch
+ *  make every request refetch the votes. */
 export async function getVotes(): Promise<Record<string, number>> {
-  if (!catalogEgressEnabled()) return {};
+  const url = voteUrl("/api/plugin-votes");
+  if (url === null) return {};
 
   const cachedRaw = getSetting(KEY_VOTES);
-  const syncedAt = getSetting(KEY_SYNCED_AT);
-  if (cachedRaw && isFresh(syncedAt)) {
+  if (cachedRaw && isFresh(getSetting(KEY_VOTES_AT))) {
     try {
       return JSON.parse(cachedRaw) as Record<string, number>;
     } catch {
@@ -192,16 +232,19 @@ export async function getVotes(): Promise<Record<string, number>> {
   }
 
   try {
-    const payload = await safeFetchJson(DEFAULT_VOTES_URL, {
+    const payload = await safeFetchJson(url, {
       timeoutMs: FETCH_TIMEOUT_MS,
       maxBytes: MAX_CATALOG_BYTES,
     });
     if (typeof payload !== "object" || payload === null) return {};
     const counts = payload as Record<string, number>;
-    updateSettings({ [KEY_VOTES]: JSON.stringify(counts) });
+    updateSettings({
+      [KEY_VOTES]: JSON.stringify(counts),
+      [KEY_VOTES_AT]: new Date().toISOString(),
+    });
     return counts;
   } catch (err) {
-    errorCode(err, { url: DEFAULT_VOTES_URL });
+    errorCode(err, { url });
     if (cachedRaw) {
       try {
         return JSON.parse(cachedRaw) as Record<string, number>;
@@ -213,20 +256,39 @@ export async function getVotes(): Promise<Record<string, number>> {
   }
 }
 
-/** Registers interest in a planned plugin. Returns the new count, or null when
- *  egress is off or the request failed. */
-export async function postVote(id: string): Promise<number | null> {
-  if (!catalogEgressEnabled()) return null;
+export interface VoteOutcome {
+  /** The new count, null when nothing could be read. */
+  count: number | null;
+  /** True when this identity had already voted, so nothing was recorded.
+   *  Distinguished from a fresh vote so the UI can say which happened rather
+   *  than showing success for a write that never occurred. */
+  alreadyVoted: boolean;
+  status: "recorded" | "already_voted" | "off" | "rejected" | "failed";
+}
+
+/** Registers interest in a planned plugin on behalf of one user. */
+export async function postVote(id: string, userId: string): Promise<VoteOutcome> {
+  const url = voteUrl("/api/plugin-vote");
+  if (url === null) return { count: null, alreadyVoted: false, status: "off" };
   try {
-    const data = (await safeFetchJson(DEFAULT_VOTE_POST_URL, {
+    const data = (await safeFetchJson(url, {
       method: "POST",
       timeoutMs: FETCH_TIMEOUT_MS,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Inkvoice-Vote-Key": voteIdentity(userId),
+      },
       body: JSON.stringify({ id }),
-    })) as { count?: number };
-    return typeof data.count === "number" ? data.count : null;
+    })) as { count?: number; alreadyVoted?: boolean };
+    const count = typeof data.count === "number" ? data.count : null;
+    const alreadyVoted = data.alreadyVoted === true;
+    return { count, alreadyVoted, status: alreadyVoted ? "already_voted" : "recorded" };
   } catch (err) {
-    errorCode(err, { id, url: DEFAULT_VOTE_POST_URL });
-    return null;
+    const code = errorCode(err, { id, url });
+    // A 4xx means the endpoint understood us and said no: the plugin is not
+    // open for votes, or the cap was hit. That is not the same as being
+    // offline, and the user deserves to be told the difference.
+    const status = code === "http_error" ? "rejected" : "failed";
+    return { count: null, alreadyVoted: false, status };
   }
 }

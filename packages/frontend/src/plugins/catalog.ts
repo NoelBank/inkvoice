@@ -57,6 +57,28 @@ export interface CatalogProvenance {
   egressEnabled: boolean;
 }
 
+/** Mirrors the backend's VoteOutcome. `already_voted` is its own state because
+ *  votes are proxied: the identity that already voted may be this user on
+ *  another device, and reporting it as a fresh success would be a lie. */
+export interface VoteOutcome {
+  count: number | null;
+  alreadyVoted: boolean;
+  status: "recorded" | "already_voted" | "off" | "rejected" | "failed";
+}
+
+export function voteToastKey(status: VoteOutcome["status"]): string {
+  switch (status) {
+    case "recorded":
+      return "plugins.vote_recorded";
+    case "already_voted":
+      return "plugins.vote_already";
+    case "rejected":
+      return "plugins.vote_rejected";
+    default:
+      return "plugins.vote_failed";
+  }
+}
+
 export interface CatalogResponse {
   data: {
     plugins: CatalogPluginEntry[];
