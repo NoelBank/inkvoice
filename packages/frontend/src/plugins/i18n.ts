@@ -34,6 +34,7 @@ registerTranslations("en", {
     chip_requires_feature: "Plan required",
     chip_requires_app_upgrade: "Update Inkvoice",
     chip_unavailable: "Not available",
+    chip_not_in_build: "Not in this build",
     update_badge: "Update available",
     installed_version: "Installed",
     latest_version: "Latest",
@@ -48,7 +49,6 @@ registerTranslations("en", {
     vote_failed: "Your vote could not be recorded.",
     update_banner:
       "Version {{version}} is available. Upgrade Inkvoice to {{app}} or newer to get it.",
-    update_banner_simple: "Version {{version}} is available. Upgrade Inkvoice to get it.",
     view_release: "Release notes",
     footer_synced: "Catalog synced {{age}}",
     footer_off: "Remote catalog is turned off.",
@@ -103,6 +103,7 @@ registerTranslations("tr", {
     chip_requires_feature: "Plan gerekli",
     chip_requires_app_upgrade: "Inkvoice güncelleyin",
     chip_unavailable: "Kullanılamıyor",
+    chip_not_in_build: "Bu sürümde yok",
     update_badge: "Güncelleme var",
     installed_version: "Yüklü",
     latest_version: "Son sürüm",
@@ -117,7 +118,6 @@ registerTranslations("tr", {
     vote_failed: "Oyunuz kaydedilemedi.",
     update_banner:
       "Sürüm {{version}} hazır. Bunu almak için Inkvoice'u {{app}} veya daha yenisine yükseltin.",
-    update_banner_simple: "Sürüm {{version}} hazır. Bunu almak için Inkvoice'u yükseltin.",
     view_release: "Sürüm notları",
     footer_synced: "Katalog senkronize edildi: {{age}}",
     footer_off: "Uzak katalog kapatıldı.",
@@ -172,6 +172,7 @@ registerTranslations("de", {
     chip_requires_feature: "Plan erforderlich",
     chip_requires_app_upgrade: "Inkvoice aktualisieren",
     chip_unavailable: "Nicht verfügbar",
+    chip_not_in_build: "Nicht in diesem Build",
     update_badge: "Update verfügbar",
     installed_version: "Installiert",
     latest_version: "Neueste",
@@ -186,8 +187,6 @@ registerTranslations("de", {
     vote_failed: "Ihre Stimme konnte nicht erfasst werden.",
     update_banner:
       "Version {{version}} ist verfügbar. Führen Sie ein Upgrade auf Inkvoice {{app}} oder neuer durch, um sie zu erhalten.",
-    update_banner_simple:
-      "Version {{version}} ist verfügbar. Führen Sie ein Upgrade von Inkvoice durch, um sie zu erhalten.",
     view_release: "Versionshinweise",
     footer_synced: "Katalog synchronisiert: {{age}}",
     footer_off: "Der Remote-Katalog ist deaktiviert.",
@@ -244,6 +243,7 @@ registerTranslations("es", {
     chip_requires_feature: "Requiere plan",
     chip_requires_app_upgrade: "Actualice Inkvoice",
     chip_unavailable: "No disponible",
+    chip_not_in_build: "No está en esta compilación",
     update_badge: "Actualización disponible",
     installed_version: "Instalado",
     latest_version: "Última",
@@ -258,8 +258,6 @@ registerTranslations("es", {
     vote_failed: "No se pudo registrar su voto.",
     update_banner:
       "La versión {{version}} está disponible. Actualice Inkvoice a {{app}} o superior para obtenerla.",
-    update_banner_simple:
-      "La versión {{version}} está disponible. Actualice Inkvoice para obtenerla.",
     view_release: "Notas de la versión",
     footer_synced: "Catálogo sincronizado {{age}}",
     footer_off: "El catálogo remoto está desactivado.",
@@ -314,6 +312,7 @@ registerTranslations("fr", {
     chip_requires_feature: "Plan requis",
     chip_requires_app_upgrade: "Mettre à jour Inkvoice",
     chip_unavailable: "Non disponible",
+    chip_not_in_build: "Absent de cette version",
     update_badge: "Mise à jour disponible",
     installed_version: "Installé",
     latest_version: "Dernière",
@@ -328,8 +327,6 @@ registerTranslations("fr", {
     vote_failed: "Votre vote n'a pas pu être enregistré.",
     update_banner:
       "La version {{version}} est disponible. Mettez Inkvoice à jour vers {{app}} ou plus récent pour l'obtenir.",
-    update_banner_simple:
-      "La version {{version}} est disponible. Mettez Inkvoice à jour pour l'obtenir.",
     view_release: "Notes de version",
     footer_synced: "Catalogue synchronisé {{age}}",
     footer_off: "Le catalogue distant est désactivé.",

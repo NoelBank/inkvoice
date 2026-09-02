@@ -123,13 +123,13 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
       <CardContent className="space-y-4">
         {entry.updateAvailable && canShowUpdates(provenance) && (
           <div className="rounded-lg border p-3 text-sm space-y-1">
+            {/* updateAvailable now implies updateRequiresApp, so there is
+                always a concrete app version to name. */}
             <p>
-              {entry.updateRequiresApp
-                ? t("plugins.update_banner", {
-                    version: entry.latestVersion ?? "",
-                    app: entry.updateRequiresApp,
-                  })
-                : t("plugins.update_banner_simple", { version: entry.latestVersion ?? "" })}
+              {t("plugins.update_banner", {
+                version: entry.latestVersion ?? "",
+                app: entry.updateRequiresApp ?? "",
+              })}
             </p>
             <a
               href={RELEASES_URL}

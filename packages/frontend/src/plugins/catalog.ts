@@ -8,7 +8,8 @@ export type BlockedReason =
   | "planned"
   | "cloud_only"
   | "requires_feature"
-  | "requires_app_upgrade";
+  | "requires_app_upgrade"
+  | "not_in_this_build";
 
 export interface CatalogScreenshot {
   url: string;
@@ -207,6 +208,8 @@ export function blockedChipKey(reason: BlockedReason, managed = false): string |
       return "plugins.chip_requires_feature";
     case "requires_app_upgrade":
       return managed ? "plugins.chip_unavailable" : "plugins.chip_requires_app_upgrade";
+    case "not_in_this_build":
+      return "plugins.chip_not_in_build";
   }
 }
 

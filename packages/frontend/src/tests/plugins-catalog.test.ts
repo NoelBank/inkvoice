@@ -185,6 +185,9 @@ describe("managed deployments", () => {
     expect(blockedChipKey("cloud_only", true)).toBe("plugins.chip_cloud_only");
     expect(blockedChipKey("requires_feature", true)).toBe("plugins.chip_requires_feature");
     expect(blockedChipKey(null, true)).toBeNull();
+    // not_in_this_build reads the same either way: nobody can act on it.
+    expect(blockedChipKey("not_in_this_build")).toBe("plugins.chip_not_in_build");
+    expect(blockedChipKey("not_in_this_build", true)).toBe("plugins.chip_not_in_build");
   });
 
   test("update affordances are hidden on a managed deployment and shown otherwise", () => {
