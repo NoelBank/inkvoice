@@ -8,10 +8,11 @@ import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { setPluginEntitlementCheck } from "../plugins/entitlement";
-import { getBackendPlugins } from "../plugins/registry";
+import { resetVoteBudget } from "../plugins/routes";
 import { runPluginMigrations } from "../plugins/runner";
 import { updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
+import { setAddressResolver } from "../utils/ssrf-protection";
 
 const TEST_DB = "./data/test-plugin-catalog-routes.db";
 
@@ -26,6 +27,9 @@ beforeAll(async () => {
   process.env.ADMIN_PASS = "admin-password-1";
   process.env.JWT_SECRET = "test-secret-that-is-at-least-32-chars";
   resetEnvCache();
+  // See plugin-catalog-service.test.ts: the catalog fetch resolves the host
+  // before opening a socket, so a stubbed fetch alone is not enough.
+  setAddressResolver(async () => ["93.184.216.34"]);
 
   initDatabase();
   runMigrations();
@@ -43,6 +47,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
+  setAddressResolver(null);
   closeDatabase();
   // SQLite leaves -wal and -shm alongside the db; the existing suites clean all
   // three, and leaving them behind makes a later run start from stale state.
@@ -89,25 +94,50 @@ describe("GET /api/v1/plugins/catalog", () => {
     expect(tt!.blockedReason).toBeNull();
   });
 
-  // Skipped when a composition has registered the plugin. This test documents
-  // the pristine-OSS view of the snapshot's cloud-only entry: not installed,
-  // so the merge reports cloud_only. A downstream overlay (for example the
-  // cloud build) legitimately registers peppol as a backend plugin, which
-  // makes installed true and the reason plan-dependent instead; those merged
-  // semantics are covered composition-proof in plugin-merge.test.ts.
-  test.skipIf(getBackendPlugins().some((p) => p.id === "peppol"))(
-    "shows a cloud-only plugin as blocked rather than enableable",
-    async () => {
-      updateSettings({ plugin_catalog_url: "" });
-      const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
-      const body = (await res.json()) as {
-        data: { plugins: { id: string; blockedReason: string | null }[] };
-      };
-      const peppol = body.data.plugins.find((p) => p.id === "peppol");
-      expect(peppol).toBeDefined();
-      expect(peppol!.blockedReason).toBe("cloud_only");
-    },
-  );
+  // Composition-proof: the id below is registered by nothing, in OSS or in any
+  // overlay, so this asserts the route's cloud_only branch without depending on
+  // which plugins the running build happens to ship. The previous version read
+  // the snapshot's real peppol entry and had to disable itself whenever an
+  // overlay registered it, which meant the assertion silently stopped running
+  // in exactly the build most likely to break it.
+  test("shows a cloud-only plugin this build does not ship as blocked", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    globalThis.fetch = (() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            schema: 1,
+            plugins: [
+              {
+                id: "hosted-only-fixture",
+                name: "Hosted Only",
+                tagline: "",
+                description: "",
+                category: "billing",
+                status: "available",
+                availability: "cloud",
+                requires_feature: null,
+                icon: "Clock",
+                docs: "https://example.com",
+                source: null,
+                screenshots: [],
+                latest: { version: "1.0.0", min_app: "0.1.0", released: "2026-01-01" },
+                versions: [],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      )) as unknown as typeof fetch;
+
+    const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
+    const body = (await res.json()) as {
+      data: { plugins: { id: string; blockedReason: string | null }[] };
+    };
+    const hosted = body.data.plugins.find((p) => p.id === "hosted-only-fixture");
+    expect(hosted).toBeDefined();
+    expect(hosted!.blockedReason).toBe("cloud_only");
+  });
 
   test("requires authentication", async () => {
     const res = await app.request("/api/v1/plugins/catalog");
@@ -160,6 +190,51 @@ describe("POST /api/v1/plugins/catalog/vote", () => {
     const json = (await res.json()) as { data: { count: number | null } };
     expect(json.data.count).toBe(9);
     expect(calls[0]).toContain("accounts-payable");
+  });
+
+  test("sends a per-user vote identity, not the request address", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    let sentKey: string | null = null;
+    globalThis.fetch = ((_url: RequestInfo | URL, init?: RequestInit) => {
+      sentKey = new Headers(init?.headers).get("x-inkvoice-vote-key");
+      return Promise.resolve(
+        new Response(JSON.stringify({ count: 1, voted: true, alreadyVoted: false }), {
+          status: 200,
+        }),
+      );
+    }) as typeof fetch;
+
+    resetVoteBudget();
+    const res = await app.request("/api/v1/plugins/catalog/vote", {
+      method: "POST",
+      headers: { ...auth(), "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "accounts-payable" }),
+    });
+    expect(res.status).toBe(200);
+    expect(sentKey).toMatch(/^[a-f0-9]{32}$/);
+  });
+
+  test("budgets a single user's votes so one account cannot drive unbounded egress", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    globalThis.fetch = (() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ count: 1, voted: true, alreadyVoted: true }), {
+          status: 200,
+        }),
+      )) as unknown as typeof fetch;
+
+    resetVoteBudget();
+    const send = () =>
+      app.request("/api/v1/plugins/catalog/vote", {
+        method: "POST",
+        headers: { ...auth(), "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "accounts-payable" }),
+      });
+
+    let last = await send();
+    for (let i = 0; i < 12 && last.status === 200; i++) last = await send();
+    expect(last.status).toBe(429);
+    resetVoteBudget();
   });
 
   test("is a no-op with egress off, and opens no socket", async () => {

@@ -49,14 +49,29 @@ describe("mergePlugins", () => {
     expect(p!.blockedReason).toBeNull();
   });
 
-  test("a newer catalog version sets updateAvailable", () => {
+  test("a newer catalog version sets updateAvailable when an app upgrade delivers it", () => {
+    const [p] = mergePlugins({
+      ...base,
+      catalog: [entry({ latest: { version: "1.1.0", min_app: "0.3.0", released: "2026-09-01" } })],
+      installed: [installed("time-tracker", "1.0.0", true)],
+    });
+    expect(p!.updateAvailable).toBe(true);
+    expect(p!.latestVersion).toBe("1.1.0");
+    expect(p!.updateRequiresApp).toBe("0.3.0");
+  });
+
+  test("a newer plugin version this app should already carry is not offered as an update", () => {
+    // min_app 0.2.0 with the app at 0.2.0 says this build ships 1.1.0, while
+    // the registry says 1.0.0. That is a packaging or catalog fault, not
+    // something the reader can act on, so the tab must not tell them to
+    // upgrade to a version they already run.
     const [p] = mergePlugins({
       ...base,
       catalog: [entry({ latest: { version: "1.1.0", min_app: "0.2.0", released: "2026-09-01" } })],
       installed: [installed("time-tracker", "1.0.0", true)],
     });
-    expect(p!.updateAvailable).toBe(true);
     expect(p!.latestVersion).toBe("1.1.0");
+    expect(p!.updateAvailable).toBe(false);
     expect(p!.updateRequiresApp).toBeNull();
   });
 
@@ -132,10 +147,44 @@ describe("mergePlugins", () => {
     expect(p!.installed).toBe(false);
   });
 
-  test("an oss entry this build does not ship asks for an app upgrade", () => {
+  test("an oss entry that needs a newer app asks for an app upgrade", () => {
     const [p] = mergePlugins({
       ...base,
-      catalog: [entry({ id: "future-plugin", availability: "both" })],
+      catalog: [
+        entry({
+          id: "future-plugin",
+          availability: "both",
+          latest: { version: "1.0.0", min_app: "0.3.0", released: "2026-09-01" },
+        }),
+      ],
+      installed: [],
+    });
+    expect(p!.blockedReason).toBe("requires_app_upgrade");
+  });
+
+  test("an oss entry this app already satisfies is reported as missing from the build", () => {
+    // The old code said "upgrade Inkvoice" here, which is provably wrong: the
+    // app is already at or above the release's min_app, so upgrading cannot
+    // deliver the plugin.
+    const [p] = mergePlugins({
+      ...base,
+      catalog: [
+        entry({
+          id: "removed-plugin",
+          availability: "both",
+          latest: { version: "1.0.0", min_app: "0.1.0", released: "2026-01-01" },
+        }),
+      ],
+      installed: [],
+    });
+    expect(p!.blockedReason).toBe("not_in_this_build");
+  });
+
+  test("an entry with no release at all still asks for an upgrade", () => {
+    // Nothing to compare against, so the honest default is the old one.
+    const [p] = mergePlugins({
+      ...base,
+      catalog: [entry({ id: "unreleased", availability: "oss", latest: null })],
       installed: [],
     });
     expect(p!.blockedReason).toBe("requires_app_upgrade");

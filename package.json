@@ -16,6 +16,7 @@
     "test": "bun run --filter backend test && bun run --filter frontend test",
     "start": "bun run --filter backend start",
     "typecheck": "tsc --noEmit -p packages/backend/tsconfig.json && tsc --noEmit -p packages/frontend/tsconfig.json",
+    "sync:catalog": "bun run scripts/sync-catalog.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "check": "bun run lint && bun run typecheck && bun test",

@@ -10,7 +10,15 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { APP_VERSION } from "../utils/version";
-import { catalogEgressEnabled, getCatalog, getVotes, postVote } from "./catalog.service";
+import {
+  catalogEgressEnabled,
+  catalogHost,
+  DEFAULT_CATALOG_URL,
+  getCatalog,
+  getVotes,
+  postVote,
+} from "./catalog.service";
+import { isManagedDeployment } from "./deployment";
 import { getPluginEntitlementCheck } from "./entitlement";
 import { mergePlugins } from "./merge";
 import { getBackendPlugin, getBackendPlugins } from "./registry";
@@ -60,6 +68,19 @@ pluginsAdminRoutes.get("/catalog", async (c) => {
         syncedAt: result.syncedAt,
         error: result.error,
         egressEnabled: catalogEgressEnabled(),
+        // Named so the footer can say where the data came from instead of
+        // asserting inkvoice.app at an install pointed somewhere else.
+        host: catalogHost(),
+        // When the catalog itself was built upstream, as opposed to when this
+        // install last fetched it. Without this a tab can report "synced just
+        // now" over data that has not moved in months.
+        publishedAt: result.catalog.generated_at ?? null,
+        // So the tab can offer a way back after switching egress off, without
+        // hardcoding the published URL in the frontend.
+        defaultUrl: DEFAULT_CATALOG_URL,
+        // Drives which affordances the tab may offer: upgrading the app and
+        // switching the catalog off are the operator's, not the reader's.
+        managed: isManagedDeployment(),
       },
     },
   });
@@ -79,16 +100,49 @@ pluginsAdminRoutes.post("/catalog/refresh", async (c) => {
 
 const voteSchema = z.object({ id: z.string().min(1).max(64) });
 
+// Voting is the one route where a non-admin can make this server open an
+// outbound connection, so it carries its own budget. In memory on purpose: it
+// bounds a single process's egress, resets on restart, and needs no schema.
+const VOTE_LIMIT_PER_HOUR = 10;
+const VOTE_WINDOW_MS = 60 * 60 * 1000;
+const voteHits = new Map<string, number[]>();
+
+function withinVoteBudget(userId: string, now = Date.now()): boolean {
+  const recent = (voteHits.get(userId) ?? []).filter((t) => now - t < VOTE_WINDOW_MS);
+  if (recent.length >= VOTE_LIMIT_PER_HOUR) {
+    voteHits.set(userId, recent);
+    return false;
+  }
+  recent.push(now);
+  voteHits.set(userId, recent);
+  return true;
+}
+
+/** Test seam: the budget is process-global, so a suite must be able to clear it. */
+export function resetVoteBudget(): void {
+  voteHits.clear();
+}
+
 // POST /api/v1/plugins/catalog/vote: register interest in a planned plugin.
 // Proxied so a self-hosted browser never talks to inkvoice.app directly, and so
-// clearing plugin_catalog_url disables voting as a consequence.
+// clearing plugin_catalog_url disables voting as a consequence. Rate-limited
+// per user, because proxying makes this the one route where any authenticated
+// user can drive an outbound request from the server.
 pluginsAdminRoutes.post("/catalog/vote", async (c) => {
   const parsed = voteSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
     return c.json({ success: false, error: "Invalid request body" }, 400);
   }
-  const count = await postVote(parsed.data.id);
-  return c.json({ success: true, data: { count } });
+  // The vote identity is derived from the user, not the request address: the
+  // outbound POST comes from this server, so every user here shares one IP.
+  const userId = c.get("userId") as string | undefined;
+  if (!userId) return c.json({ success: false, error: "Unauthorized" }, 401);
+  if (!withinVoteBudget(userId)) {
+    return c.json({ success: false, error: "Too many votes, try again later" }, 429);
+  }
+
+  const outcome = await postVote(parsed.data.id, userId);
+  return c.json({ success: true, data: outcome });
 });
 
 // PUT /api/v1/plugins/:id: enable/disable a plugin (admin only).

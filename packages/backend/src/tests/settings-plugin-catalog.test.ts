@@ -99,6 +99,17 @@ describe("plugin_catalog_url validation on save", () => {
     expect(data.plugin_catalog_url).toBe(url);
   });
 
+  test("rejects a plaintext http URL", async () => {
+    // Every other server-side fetch of a user-supplied URL is HTTPS-only
+    // (utils/ssrf-protection.ts); accepting http here would have made the
+    // catalog the one exception, on the one setting that makes the server
+    // issue a request to an address the caller chose.
+    const res = await saveSettings({ plugin_catalog_url: "http://example.test/catalog.v1.json" });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/https/i);
+  });
+
   test("rejects a non-URL value with 400 and keeps the stored value", async () => {
     const res = await saveSettings({ plugin_catalog_url: "not a url" });
     expect(res.status).toBe(400);

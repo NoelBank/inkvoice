@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   blockedChipKey,
+  type CatalogErrorCode,
   type CatalogPluginEntry,
   type CatalogProvenance,
+  canShowUpdates,
   canVote,
+  catalogErrorKey,
+  catalogOrigin,
   deriveEnabledIds,
   filterPlugins,
   footerState,
@@ -11,6 +15,7 @@ import {
   minutesSince,
   saveViewPreference,
   VIEW_STORAGE_KEY,
+  voteToastKey,
 } from "../plugins/catalog";
 
 function entry(over: Partial<CatalogPluginEntry> = {}): CatalogPluginEntry {
@@ -171,18 +176,85 @@ describe("minutesSince", () => {
   });
 });
 
+describe("managed deployments", () => {
+  test("the upgrade chip becomes a plain unavailable, because the reader is not the operator", () => {
+    expect(blockedChipKey("requires_app_upgrade")).toBe("plugins.chip_requires_app_upgrade");
+    expect(blockedChipKey("requires_app_upgrade", true)).toBe("plugins.chip_unavailable");
+    // Every other reason reads the same either way.
+    expect(blockedChipKey("planned", true)).toBe("plugins.chip_planned");
+    expect(blockedChipKey("cloud_only", true)).toBe("plugins.chip_cloud_only");
+    expect(blockedChipKey("requires_feature", true)).toBe("plugins.chip_requires_feature");
+    expect(blockedChipKey(null, true)).toBeNull();
+    // not_in_this_build reads the same either way: nobody can act on it.
+    expect(blockedChipKey("not_in_this_build")).toBe("plugins.chip_not_in_build");
+    expect(blockedChipKey("not_in_this_build", true)).toBe("plugins.chip_not_in_build");
+  });
+
+  test("update affordances are hidden on a managed deployment and shown otherwise", () => {
+    expect(canShowUpdates(prov({ managed: true }))).toBe(false);
+    expect(canShowUpdates(prov({ managed: false }))).toBe(true);
+    // An older backend sends no flag at all; self-hosted is the safe reading.
+    expect(canShowUpdates(prov({}))).toBe(true);
+    expect(canShowUpdates(null)).toBe(true);
+  });
+});
+
+describe("voteToastKey", () => {
+  test("each outcome gets its own message, and unknown falls back to failure", () => {
+    expect(voteToastKey("recorded")).toBe("plugins.vote_recorded");
+    expect(voteToastKey("already_voted")).toBe("plugins.vote_already");
+    expect(voteToastKey("rejected")).toBe("plugins.vote_rejected");
+    expect(voteToastKey("off")).toBe("plugins.vote_failed");
+    expect(voteToastKey("failed")).toBe("plugins.vote_failed");
+  });
+});
+
+describe("catalogErrorKey", () => {
+  test("maps every code, and falls back rather than rendering a raw key", () => {
+    expect(catalogErrorKey("blocked")).toBe("plugins.catalog_error_blocked");
+    expect(catalogErrorKey("invalid_schema")).toBe("plugins.catalog_error_invalid");
+    expect(catalogErrorKey(null)).toBe("plugins.catalog_error_unknown");
+    // A code a newer backend added must not reach the UI as a missing key.
+    expect(catalogErrorKey("something_new" as CatalogErrorCode)).toBe(
+      "plugins.catalog_error_unknown",
+    );
+  });
+});
+
 describe("footerState", () => {
   test("egress off wins over everything", () => {
     expect(
-      footerState(prov({ egressEnabled: false, source: "snapshot", error: "HTTP 404" }), 0),
+      footerState(prov({ egressEnabled: false, source: "snapshot", error: "http_error" }), 0),
     ).toEqual({ kind: "off" });
   });
   test("a failed sync on the snapshot path reports the reason", () => {
-    expect(footerState(prov({ source: "snapshot", error: "HTTP 404" }), 0)).toEqual({
+    expect(footerState(prov({ source: "snapshot", error: "http_error" }), 0)).toEqual({
       kind: "failed",
-      reason: "HTTP 404",
+      reason: "http_error",
     });
   });
+  test("a stale cache with a failed refresh is its own state, not a plain sync", () => {
+    // Regression: this used to render as "Synced 20 days ago" with the error
+    // dropped, so an install whose catalog had been unreachable for weeks
+    // looked healthy and the refresh button looked inert.
+    expect(
+      footerState(
+        prov({
+          source: "cache",
+          syncedAt: "2026-08-12T12:00:00Z",
+          error: "unreachable",
+        }),
+        Date.parse("2026-09-01T12:00:00Z"),
+      ),
+    ).toEqual({ kind: "stale", ageMinutes: 28800, reason: "unreachable" });
+  });
+
+  test("catalogOrigin names the configured host rather than assuming one", () => {
+    expect(catalogOrigin(prov({ host: "mirror.internal" }))).toBe("mirror.internal");
+    expect(catalogOrigin(prov({ host: null }))).toBeNull();
+    expect(catalogOrigin(prov({}))).toBeNull();
+  });
+
   test("a synced catalog reports its age in minutes for both remote and cache", () => {
     const syncedAt = "2026-09-01T10:00:00Z";
     expect(

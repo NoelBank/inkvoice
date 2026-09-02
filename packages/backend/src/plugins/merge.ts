@@ -15,7 +15,11 @@ export type BlockedReason =
   | "planned"
   | "cloud_only"
   | "requires_feature"
-  | "requires_app_upgrade";
+  | "requires_app_upgrade"
+  /** Catalogued, absent from this build, and this app already satisfies the
+   *  release's min_app. Telling the reader to upgrade would be provably wrong,
+   *  so say what is true: the build does not carry it. */
+  | "not_in_this_build";
 
 export interface InstalledPlugin {
   id: string;
@@ -59,6 +63,7 @@ function blockedReasonFor(
   entry: CatalogPlugin | undefined,
   local: InstalledPlugin | undefined,
   isEntitled: (feature: string) => boolean,
+  appVersion: string,
 ): BlockedReason {
   // Order matters. Planned wins over everything: it does not exist yet.
   if (entry?.status === "planned") return "planned";
@@ -66,6 +71,12 @@ function blockedReasonFor(
   if (!local) {
     // The catalog knows it, this binary does not ship it.
     if (entry?.availability === "cloud") return "cloud_only";
+    // "Upgrade" is only honest advice when there is a version to move to. If
+    // this app already meets the release's min_app, upgrading provably cannot
+    // deliver the plugin, and the mismatch is a packaging or catalog fault
+    // rather than something the reader can fix.
+    const minApp = entry?.latest?.min_app ?? null;
+    if (minApp !== null && gte(appVersion, minApp)) return "not_in_this_build";
     return "requires_app_upgrade";
   }
 
@@ -91,8 +102,16 @@ export function mergePlugins(input: MergeInput): MergedPlugin[] {
     const latestVersion = entry?.latest?.version ?? null;
     const minApp = entry?.latest?.min_app ?? null;
 
+    // An update is only offered when it is reachable: the catalog names a newer
+    // plugin release AND an app version that carries it which this install does
+    // not yet have. Without the second condition the tab announced updates that
+    // upgrading could not deliver, with a releases link and no instruction.
+    const appBelowMinApp = minApp !== null && !gte(appVersion, minApp);
     const updateAvailable =
-      installedVersion !== null && latestVersion !== null && gt(latestVersion, installedVersion);
+      installedVersion !== null &&
+      latestVersion !== null &&
+      gt(latestVersion, installedVersion) &&
+      appBelowMinApp;
 
     return {
       id,
@@ -112,9 +131,9 @@ export function mergePlugins(input: MergeInput): MergedPlugin[] {
       installedVersion,
       latestVersion,
       updateAvailable,
-      updateRequiresApp: minApp !== null && !gte(appVersion, minApp) ? minApp : null,
+      updateRequiresApp: appBelowMinApp ? minApp : null,
       enabled: local?.enabled ?? false,
-      blockedReason: blockedReasonFor(entry, local, isEntitled),
+      blockedReason: blockedReasonFor(entry, local, isEntitled, appVersion),
       votes: votes[id] ?? 0,
     };
   });

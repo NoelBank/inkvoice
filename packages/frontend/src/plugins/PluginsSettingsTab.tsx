@@ -26,6 +26,9 @@ import {
   CATEGORIES,
   type CatalogPluginEntry,
   type CatalogProvenance,
+  canShowUpdates,
+  catalogErrorKey,
+  catalogOrigin,
   filterPlugins,
   footerState,
   loadViewPreference,
@@ -41,14 +44,16 @@ const STATUS_FILTERS: StatusFilter[] = ["all", "enabled", "disabled", "planned"]
 
 function BlockedChip({ entry }: { entry: CatalogPluginEntry }) {
   const { t } = useTranslation();
-  const key = blockedChipKey(entry.blockedReason);
+  const managed = usePluginsStore((s) => s.provenance?.managed === true);
+  const key = blockedChipKey(entry.blockedReason, managed);
   if (!key) return null;
   return <Badge variant="secondary">{t(key)}</Badge>;
 }
 
 function UpdateBadge({ entry }: { entry: CatalogPluginEntry }) {
   const { t } = useTranslation();
-  if (!entry.updateAvailable) return null;
+  const provenance = usePluginsStore((s) => s.provenance);
+  if (!entry.updateAvailable || !canShowUpdates(provenance)) return null;
   return <Badge variant="secondary">{t("plugins.update_badge")}</Badge>;
 }
 
@@ -56,16 +61,20 @@ function EnableSwitch({ entry }: { entry: CatalogPluginEntry }) {
   const { t } = useTranslation();
   const loaded = usePluginsStore((s) => s.loaded);
   const setEnabled = usePluginsStore((s) => s.setEnabled);
+  // Held while the PUT is in flight, so a double click cannot fire two writes.
+  const [saving, setSaving] = useState(false);
   if (entry.blockedReason !== null) return null;
   return (
     <Switch
       checked={entry.enabled}
-      disabled={!loaded}
+      disabled={!loaded || saving}
       aria-label={`${t(entry.enabled ? "plugins.disable" : "plugins.enable")}: ${entry.name}`}
       onCheckedChange={(next) => {
+        setSaving(true);
         setEnabled(entry.id, next)
           .then(() => toast.success(t(next ? "plugins.enabled_toast" : "plugins.disabled_toast")))
-          .catch((e: Error) => toast.error(e.message));
+          .catch((e: Error) => toast.error(e.message))
+          .finally(() => setSaving(false));
       }}
     />
   );
@@ -111,6 +120,7 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
   const { t } = useTranslation();
   const refresh = usePluginsStore((s) => s.refresh);
   const turnOff = usePluginsStore((s) => s.turnOff);
+  const turnOn = usePluginsStore((s) => s.turnOn);
   const loading = usePluginsStore((s) => s.loading);
   const state = footerState(provenance, Date.now());
   const age = (minutes: number | null) => {
@@ -119,16 +129,56 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
     if (minutes < 1440) return t("plugins.time_hours_ago", { count: Math.floor(minutes / 60) });
     return t("plugins.time_days_ago", { count: Math.floor(minutes / 1440) });
   };
+  // The source is whatever the operator configured, so name it rather than
+  // asserting inkvoice.app at a mirror.
+  const origin = catalogOrigin(provenance);
+  // The catalog's own build date, so a fresh fetch of stale data reads as
+  // stale data rather than as freshness.
+  const published = provenance.publishedAt
+    ? new Date(provenance.publishedAt).toLocaleDateString()
+    : null;
 
+  // Off is not a dead end: the same footer offers the way back, or an install
+  // that switched egress off could only restore it through the settings API.
   if (state.kind === "off") {
-    return <p className="text-xs text-muted-foreground">{t("plugins.footer_off")}</p>;
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>{t("plugins.footer_off")}</span>
+        {!provenance.managed && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            disabled={loading}
+            onClick={() => turnOn().catch((e: Error) => toast.error(e.message))}
+          >
+            {t("plugins.footer_turn_on")}
+          </Button>
+        )}
+      </div>
+    );
   }
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      {state.kind === "synced" ? (
-        <span>{t("plugins.footer_synced", { age: age(state.ageMinutes) })} · inkvoice.app</span>
-      ) : (
-        <span>{t("plugins.footer_failed", { reason: state.reason })}</span>
+      {state.kind === "synced" && (
+        <span>
+          {t("plugins.footer_synced", { age: age(state.ageMinutes) })}
+          {published ? ` · ${t("plugins.footer_published", { date: published })}` : ""}
+          {origin ? ` · ${origin}` : ""}
+        </span>
+      )}
+      {state.kind === "stale" && (
+        <span className="text-destructive">
+          {t("plugins.footer_stale", {
+            age: age(state.ageMinutes),
+            reason: t(catalogErrorKey(state.reason)),
+          })}
+        </span>
+      )}
+      {state.kind === "failed" && (
+        <span className="text-destructive">
+          {t("plugins.footer_failed", { reason: t(catalogErrorKey(state.reason)) })}
+        </span>
       )}
       <Button
         variant="ghost"
@@ -140,14 +190,16 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
         <RotateCw className="h-3 w-3" />
         {t("plugins.footer_refresh")}
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 px-2 text-xs"
-        onClick={() => turnOff().catch((e: Error) => toast.error(e.message))}
-      >
-        {t("plugins.footer_turn_off")}
-      </Button>
+      {!provenance.managed && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs"
+          onClick={() => turnOff().catch((e: Error) => toast.error(e.message))}
+        >
+          {t("plugins.footer_turn_off")}
+        </Button>
+      )}
     </div>
   );
 }
@@ -241,12 +293,20 @@ function PluginsMasterView() {
           </div>
         </div>
 
-        {loaded && entries.length === 0 && !(error && !provenance) && (
+        {loaded && entries.length === 0 && !error && (
           <p className="text-sm text-muted-foreground">{t("plugins.empty")}</p>
         )}
-        {loaded && error && !provenance && (
+        {/* Shown whenever the last request failed, not only on a cold start.
+            Gating this on `!provenance` meant that after one good load a failing
+            refresh set `error` and rendered nothing at all, so the refresh
+            button looked inert. */}
+        {loaded && error && (
           <div className="flex items-center gap-3 text-sm text-destructive">
-            <span>{t("plugins.load_failed", { reason: error })}</span>
+            <span>
+              {t(entries.length > 0 ? "plugins.refresh_failed" : "plugins.load_failed", {
+                reason: error,
+              })}
+            </span>
             <Button variant="outline" size="sm" onClick={() => void refresh()}>
               {t("plugins.footer_refresh")}
             </Button>

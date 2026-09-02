@@ -12,6 +12,11 @@ const ICONS: Record<string, LucideIcon> = {
   Receipt,
 };
 
+/** The names this app can actually draw. Mirrors icons.json in the catalog
+ *  repo, which is what validation there enforces, so an icon can never be
+ *  published that every consumer would silently render as a puzzle piece. */
+export const KNOWN_ICONS: ReadonlySet<string> = new Set(Object.keys(ICONS));
+
 export function catalogIcon(name: string): LucideIcon {
   return ICONS[name] ?? Puzzle;
 }

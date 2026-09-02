@@ -16,7 +16,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/i18n";
-import { blockedChipKey, CATEGORIES, canVote, RELEASES_URL } from "./catalog";
+import {
+  blockedChipKey,
+  CATEGORIES,
+  canShowUpdates,
+  canVote,
+  RELEASES_URL,
+  voteToastKey,
+} from "./catalog";
 import { catalogIcon } from "./icon-map";
 import { getPlugins } from "./registry";
 import { usePluginsStore } from "./use-plugins.store";
@@ -30,6 +37,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
   const setEnabled = usePluginsStore((s) => s.setEnabled);
   const vote = usePluginsStore((s) => s.vote);
   const [voting, setVoting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     ensureFetched();
@@ -54,30 +62,32 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
 
   const Icon = catalogIcon(entry.icon);
   const categoryKnown = (CATEGORIES as readonly string[]).includes(entry.category);
-  const chipKey = blockedChipKey(entry.blockedReason);
+  const chipKey = blockedChipKey(entry.blockedReason, provenance?.managed === true);
   const settingsPlugin = getPlugins().find((p) => p.id === entry.id);
   const SettingsPanel = settingsPlugin?.settings;
   const showSettings = entry.installed && entry.blockedReason === null && Boolean(SettingsPanel);
   const egressEnabled = provenance?.egressEnabled ?? false;
 
   const toggle = async (next: boolean) => {
+    setSaving(true);
     try {
       await setEnabled(entry.id, next);
       toast.success(t(next ? "plugins.enabled_toast" : "plugins.disabled_toast"));
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const sendVote = async () => {
     setVoting(true);
     try {
-      const count = await vote(entry.id);
-      if (count !== null) {
-        toast.success(t("plugins.votes_count", { count }));
-      } else {
-        toast.error(t("plugins.vote_failed"));
-      }
+      const outcome = await vote(entry.id);
+      const message = t(voteToastKey(outcome.status));
+      if (outcome.status === "recorded") toast.success(message);
+      else if (outcome.status === "already_voted") toast.info(message);
+      else toast.error(message);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -115,15 +125,15 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {entry.updateAvailable && (
+        {entry.updateAvailable && canShowUpdates(provenance) && (
           <div className="rounded-lg border p-3 text-sm space-y-1">
+            {/* updateAvailable now implies updateRequiresApp, so there is
+                always a concrete app version to name. */}
             <p>
-              {entry.updateRequiresApp
-                ? t("plugins.update_banner", {
-                    version: entry.latestVersion ?? "",
-                    app: entry.updateRequiresApp,
-                  })
-                : t("plugins.update_banner_simple", { version: entry.latestVersion ?? "" })}
+              {t("plugins.update_banner", {
+                version: entry.latestVersion ?? "",
+                app: entry.updateRequiresApp ?? "",
+              })}
             </p>
             <a
               href={RELEASES_URL}
@@ -144,7 +154,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
             </span>
             <Switch
               checked={entry.enabled}
-              disabled={!loaded}
+              disabled={!loaded || saving}
               aria-label={`${t(entry.enabled ? "plugins.disable" : "plugins.enable")}: ${entry.name}`}
               onCheckedChange={(next) => void toggle(next)}
             />

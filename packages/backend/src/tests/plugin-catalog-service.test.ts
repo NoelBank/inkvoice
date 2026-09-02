@@ -5,6 +5,7 @@ import { runMigrations } from "../database/migrations";
 import { getCatalog, getVotes, postVote } from "../plugins/catalog.service";
 import { getSetting, updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
+import { setAddressResolver } from "../utils/ssrf-protection";
 
 const TEST_DB = "./data/test-plugin-catalog-service.db";
 
@@ -55,9 +56,15 @@ beforeAll(() => {
   resetEnvCache();
   initDatabase();
   runMigrations();
+  // The catalog fetch is SSRF-guarded, which resolves the host before opening a
+  // socket. Stubbing fetch alone is not enough: without this the suite would
+  // depend on live DNS for example.test, which does not resolve. A fixed public
+  // address keeps every test below exercising the real guard.
+  setAddressResolver(async () => ["93.184.216.34"]);
 });
 
 afterAll(() => {
+  setAddressResolver(null);
   closeDatabase();
   // SQLite leaves -wal and -shm alongside the db; the existing suites clean all
   // three, and leaving them behind makes a later run start from stale state.
@@ -158,7 +165,9 @@ describe("catalog service", () => {
     stubFetch(() => Promise.reject(new Error("network down")));
     const res = await getCatalog();
     expect(res.source).toBe("cache");
-    expect(res.error).toContain("network down");
+    // The raw "network down" is logged, never returned: the code is coarse on
+    // purpose so the response cannot be used to probe the network.
+    expect(res.error).toBe("unreachable");
     expect(res.catalog.plugins[0]!.id).toBe("remote-only");
   });
 
@@ -167,7 +176,7 @@ describe("catalog service", () => {
     stubFetch(() => Promise.reject(new Error("network down")));
     const res = await getCatalog();
     expect(res.source).toBe("snapshot");
-    expect(res.error).toContain("network down");
+    expect(res.error).toBe("unreachable");
     expect(res.catalog.plugins.some((p) => p.id === "time-tracker")).toBe(true);
   });
 
@@ -184,7 +193,7 @@ describe("catalog service", () => {
     stubFetch(() => ok({ ...REMOTE, schema: 2 }));
     const res = await getCatalog();
     expect(res.source).toBe("snapshot");
-    expect(res.error).toMatch(/schema/i);
+    expect(res.error).toBe("invalid_schema");
     expect(getSetting("plugin_catalog_cache")).toBeFalsy();
   });
 
@@ -228,15 +237,86 @@ describe("catalog service", () => {
 
   test("postVote returns the new count and is a no-op when egress is off", async () => {
     enableEgress();
-    stubFetch(() => ok({ count: 8, voted: true }));
-    expect(await postVote("accounts-payable")).toBe(8);
+    stubFetch(() => ok({ count: 8, voted: true, alreadyVoted: false }));
+    expect(await postVote("accounts-payable", "user-1")).toEqual({
+      count: 8,
+      alreadyVoted: false,
+      status: "recorded",
+    });
 
     updateSettings({ plugin_catalog_url: "" });
     fetchCalls = [];
     stubFetch(() => {
       throw new Error("must not post a vote with egress off");
     });
-    expect(await postVote("accounts-payable")).toBeNull();
+    expect(await postVote("accounts-payable", "user-1")).toEqual({
+      count: null,
+      alreadyVoted: false,
+      status: "off",
+    });
     expect(fetchCalls).toEqual([]);
+  });
+
+  test("postVote reports a repeat vote as already_voted rather than success", async () => {
+    enableEgress();
+    stubFetch(() => ok({ count: 8, voted: true, alreadyVoted: true }));
+    expect(await postVote("accounts-payable", "user-1")).toEqual({
+      count: 8,
+      alreadyVoted: true,
+      status: "already_voted",
+    });
+  });
+
+  test("postVote separates a refusal from being offline", async () => {
+    enableEgress();
+    stubFetch(() => Promise.resolve(new Response("{}", { status: 400 })));
+    expect((await postVote("accounts-payable", "user-1")).status).toBe("rejected");
+
+    stubFetch(() => Promise.reject(new Error("network down")));
+    expect((await postVote("accounts-payable", "user-1")).status).toBe("failed");
+  });
+
+  test("the vote identity is per user and per install, and never the raw user id", async () => {
+    enableEgress();
+    let sentKey: string | null = null;
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      sentKey = new Headers(init?.headers).get("x-inkvoice-vote-key");
+      void input;
+      return ok({ count: 1, voted: true, alreadyVoted: false });
+    }) as typeof fetch;
+
+    await postVote("accounts-payable", "user-1");
+    const first = sentKey;
+    await postVote("accounts-payable", "user-2");
+    const second = sentKey;
+
+    expect(first).toMatch(/^[a-f0-9]{32}$/);
+    expect(first).not.toBe(second);
+    expect(first).not.toContain("user-1");
+    // Stable for the same user, so a repeat vote dedupes upstream.
+    await postVote("accounts-payable", "user-1");
+    expect(sentKey).toBe(first);
+  });
+
+  test("vote endpoints follow the configured catalog origin", async () => {
+    updateSettings({ plugin_catalog_url: "https://mirror.test/plugins/catalog.v1.json" });
+    stubFetch(() => ok({ count: 1, voted: true, alreadyVoted: false }));
+    await postVote("accounts-payable", "user-1");
+    // Repointing the catalog must move the votes with it, or an install that
+    // believed it had been redirected keeps talking to inkvoice.app.
+    expect(fetchCalls).toEqual(["https://mirror.test/api/plugin-vote"]);
+  });
+
+  test("votes keep their own freshness clock", async () => {
+    enableEgress();
+    updateSettings({
+      plugin_catalog_votes: JSON.stringify({ "accounts-payable": 1 }),
+      plugin_catalog_votes_at: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+      // A catalog sync that just happened must NOT make a stale vote map look
+      // fresh, which is what sharing plugin_catalog_synced_at used to do.
+      plugin_catalog_synced_at: new Date().toISOString(),
+    });
+    stubFetch(() => ok({ "accounts-payable": 9 }));
+    expect(await getVotes()).toEqual({ "accounts-payable": 9 });
   });
 });
