@@ -6,6 +6,8 @@ import {
   Clock,
   DollarSign,
   FileText,
+  Gauge,
+  Info,
   Landmark,
   Plus,
   Users,
@@ -330,105 +332,150 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Tax reserve estimate */}
-      {stats?.tax_reserve && (
-        <Card className="py-0">
-          <div className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center justify-center h-9 w-9 rounded-md border border-border/80 bg-background/40 text-muted-foreground shrink-0">
-                <Landmark className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-                  {t("dashboard.tax_reserve")}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {t("dashboard.tax_reserve_eyebrow")}
-                </p>
-              </div>
-            </div>
-            <div className="font-mono text-[26px] font-semibold tabular-nums tracking-tight leading-none sm:ml-4">
-              {formatCurrency(stats.tax_reserve.total ?? 0, stats.base_currency)}
-            </div>
-            <div className="sm:ml-auto space-y-1 text-sm sm:min-w-[280px]">
-              {stats.tax_reserve.kleinunternehmer ? (
-                // § 19 UStG: no VAT line, but the Kleinunternehmer limits matter.
-                (
-                  [
-                    ["previous_year", "dashboard.small_business_limit_previous"],
-                    ["current_year", "dashboard.small_business_limit_current"],
-                  ] as const
-                ).map(([key, labelKey]) => {
-                  const row = stats.tax_reserve.small_business?.[key];
-                  if (!row) return null;
-                  const pct = row.limit > 0 ? Math.min(100, (row.revenue / row.limit) * 100) : 0;
-                  const tone =
-                    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
-                  return (
-                    <div key={key} className="space-y-1">
-                      <div className="flex items-center justify-between gap-6">
-                        <span className="text-muted-foreground">
-                          {t(labelKey, { year: String(row.year) })}
-                        </span>
-                        <span className="font-mono tabular-nums">
-                          {t("dashboard.small_business_of", {
-                            revenue: formatCurrency(row.revenue, stats.base_currency),
-                            limit: formatCurrency(row.limit, stats.base_currency),
-                          })}
-                        </span>
-                      </div>
-                      <div
-                        className="h-1 rounded-full bg-muted overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={Math.round(pct)}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
-                      </div>
-                      {pct >= 100 && (
-                        <p className="text-xs text-red-500 dark:text-red-400">
-                          {t("dashboard.small_business_exceeded")}
-                        </p>
-                      )}
+      {/* Tax reserve + Kleinunternehmer limits, in the stat-card grammar */}
+      {stats?.tax_reserve &&
+        (() => {
+          const tr = stats.tax_reserve;
+          const prev = tr.small_business?.previous_year;
+          const cur = tr.small_business?.current_year;
+          const pct = (row?: { revenue: number; limit: number }) =>
+            row && row.limit > 0 ? Math.min(100, (row.revenue / row.limit) * 100) : 0;
+          const prevPct = pct(prev);
+          const worst = Math.max(prevPct, pct(cur));
+          const tone =
+            worst >= 100 ? "bg-red-500" : worst >= 80 ? "bg-amber-500" : "bg-emerald-500";
+          const cardClass =
+            "group cursor-pointer py-0 transition-all duration-200 hover:-translate-y-0.5 hover:border-black/[0.16] dark:hover:border-white/[0.14]";
+          const eyebrow =
+            "font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80 truncate";
+          const big =
+            "font-mono text-[26px] font-semibold tabular-nums tracking-tight leading-none";
+          const go = () => navigate("/reports/euer");
+          const onKey = (e: { key: string; preventDefault: () => void }) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              go();
+            }
+          };
+          const money = (v: number) => formatCurrency(v ?? 0, stats.base_currency);
+          const quarter = String(tr.quarter ?? "")
+            .split("-")
+            .reverse()
+            .join(" ");
+          return (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Card role="button" tabIndex={0} className={cardClass} onClick={go} onKeyDown={onKey}>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <span className={eyebrow}>{t("dashboard.tax_reserve")}</span>
+                    <Info
+                      className="h-3.5 w-3.5 text-muted-foreground shrink-0"
+                      aria-label={t("dashboard.tax_reserve_hint")}
+                    >
+                      <title>{t("dashboard.tax_reserve_hint")}</title>
+                    </Info>
+                  </div>
+                  <div className="flex items-end justify-between gap-3">
+                    <div className={big}>{money(tr.total)}</div>
+                    <div
+                      className="flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-background/40"
+                      style={{ color: "var(--chart-4)" }}
+                    >
+                      <Landmark className="h-3.5 w-3.5" />
                     </div>
-                  );
-                })
-              ) : (
-                <div className="flex items-center justify-between gap-6">
-                  <span className="text-muted-foreground">
-                    {t("dashboard.tax_reserve_vat", {
-                      quarter: String(stats.tax_reserve.quarter ?? "")
-                        .split("-")
-                        .reverse()
-                        .join(" "),
-                    })}
-                  </span>
-                  <span className="font-mono tabular-nums">
-                    {formatCurrency(stats.tax_reserve.vat_reserve ?? 0, stats.base_currency)}
-                  </span>
+                  </div>
+                  <p className="mt-3 text-[11px] text-muted-foreground tabular-nums">
+                    {t("dashboard.tax_reserve_profit_note", { profit: money(tr.profit_ytd) })}
+                    {" · "}
+                    {tr.mode === "tariff"
+                      ? t("dashboard.tax_reserve_tariff_note")
+                      : t("dashboard.tax_reserve_flat_note", { rate: String(tr.flat_rate ?? 30) })}
+                  </p>
                 </div>
+              </Card>
+
+              {tr.kleinunternehmer && prev && cur ? (
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  className={cardClass}
+                  onClick={go}
+                  onKeyDown={onKey}
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <span className={eyebrow}>{t("dashboard.small_business_title")}</span>
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                        {Math.round(prevPct)}%
+                      </span>
+                    </div>
+                    <div className="flex items-end justify-between gap-3">
+                      <div className={big}>{money(prev.revenue)}</div>
+                      <div
+                        className="flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-background/40"
+                        style={{ color: "var(--chart-3)" }}
+                      >
+                        <Gauge className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+                    <div
+                      className="mt-3 h-1 rounded-full bg-muted overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={Math.round(prevPct)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div className={`h-full ${tone}`} style={{ width: `${prevPct}%` }} />
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground tabular-nums">
+                      {t("dashboard.small_business_previous_label", {
+                        year: String(prev.year),
+                        limit: money(prev.limit),
+                      })}
+                      {" · "}
+                      {t("dashboard.small_business_current_line", {
+                        year: String(cur.year),
+                        revenue: money(cur.revenue),
+                        limit: money(cur.limit),
+                      })}
+                    </p>
+                    {worst >= 100 && (
+                      <p className="mt-1 text-[11px] text-red-500 dark:text-red-400">
+                        {t("dashboard.small_business_exceeded")}
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              ) : (
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  className={cardClass}
+                  onClick={go}
+                  onKeyDown={onKey}
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <span className={eyebrow}>{t("dashboard.tax_reserve_vat", { quarter })}</span>
+                    </div>
+                    <div className="flex items-end justify-between gap-3">
+                      <div className={big}>{money(tr.vat_reserve)}</div>
+                      <div
+                        className="flex items-center justify-center h-7 w-7 rounded-md border border-border/80 bg-background/40"
+                        style={{ color: "var(--chart-3)" }}
+                      >
+                        <Gauge className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[11px] text-muted-foreground">
+                      {t("dashboard.tax_reserve_vat_note")}
+                    </p>
+                  </div>
+                </Card>
               )}
-              <div className="flex items-center justify-between gap-6">
-                <span className="text-muted-foreground">
-                  {t("dashboard.tax_reserve_income_tax")}
-                </span>
-                <span className="font-mono tabular-nums">
-                  {formatCurrency(stats.tax_reserve.income_tax_reserve ?? 0, stats.base_currency)}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground/70">
-                {stats.tax_reserve.mode === "tariff"
-                  ? t("dashboard.tax_reserve_tariff_note")
-                  : t("dashboard.tax_reserve_flat_note", {
-                      rate: String(stats.tax_reserve.flat_rate ?? 30),
-                    })}{" "}
-                · {t("dashboard.tax_reserve_hint")}
-              </p>
             </div>
-          </div>
-        </Card>
-      )}
+          );
+        })()}
 
       {/* Main grid: Chart + Recent Invoices */}
       <div className="grid gap-4 lg:grid-cols-3">

@@ -21,9 +21,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { type Language, languages, useTranslation } from "@/i18n";
+import { deriveCapabilities } from "@/lib/capabilities";
 import { formatApiError } from "@/lib/format-api-error";
 import ProductSettings from "@/pages/ProductSettings";
 import { getSettingsTabs } from "@/pages/settings-tab-registry";
@@ -285,6 +287,8 @@ export default function Settings() {
       setWipeConfirmText("");
     }
   };
+
+  const smallBusiness = deriveCapabilities(settings).smallBusiness;
 
   const openAddTax = () => {
     setEditingTax(null);
@@ -1023,51 +1027,78 @@ export default function Settings() {
         <TabsContent value="tax" className="max-w-3xl">
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="text-sm">{t("settings.tax_settings")}</CardTitle>
+              <CardTitle className="text-sm">{t("settings.small_business_section")}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField label={t("settings.tax_label")}>
-                  <Input
-                    value={settings.tax_label || ""}
-                    onChange={set("tax_label")}
-                    placeholder={t("settings.tax_label_placeholder")}
-                  />
-                </FormField>
-                <FormField label={t("settings.default_tax_rate")}>
-                  <NumberInput
-                    value={settings.default_tax_rate || "0"}
-                    min={0}
-                    max={100}
-                    decimals={2}
-                    onValueChange={(v) => setSettings({ ...settings, default_tax_rate: String(v) })}
-                  />
-                </FormField>
-                <FormField label={t("settings.prices_include_tax")}>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">{t("settings.small_business_toggle")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.small_business_hint")}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.einvoice_kleinunternehmer === "true"}
+                  onCheckedChange={(v) =>
+                    setSettings({ ...settings, einvoice_kleinunternehmer: v ? "true" : "false" })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+          {!smallBusiness && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-sm">{t("settings.tax_settings")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormField label={t("settings.tax_label")}>
+                    <Input
+                      value={settings.tax_label || ""}
+                      onChange={set("tax_label")}
+                      placeholder={t("settings.tax_label_placeholder")}
+                    />
+                  </FormField>
+                  <FormField label={t("settings.default_tax_rate")}>
+                    <NumberInput
+                      value={settings.default_tax_rate || "0"}
+                      min={0}
+                      max={100}
+                      decimals={2}
+                      onValueChange={(v) =>
+                        setSettings({ ...settings, default_tax_rate: String(v) })
+                      }
+                    />
+                  </FormField>
+                  <FormField label={t("settings.prices_include_tax")}>
+                    <select
+                      value={settings.prices_include_tax || "false"}
+                      onChange={(e) =>
+                        setSettings({ ...settings, prices_include_tax: e.target.value })
+                      }
+                      className="form-select"
+                    >
+                      <option value="false">{t("common.no")}</option>
+                      <option value="true">{t("common.yes")}</option>
+                    </select>
+                  </FormField>
+                </div>
+                <FormField label={t("settings.tax_rounding_mode")}>
                   <select
-                    value={settings.prices_include_tax || "false"}
+                    value={settings.tax_rounding_mode || "line"}
                     onChange={(e) =>
-                      setSettings({ ...settings, prices_include_tax: e.target.value })
+                      setSettings({ ...settings, tax_rounding_mode: e.target.value })
                     }
                     className="form-select"
                   >
-                    <option value="false">{t("common.no")}</option>
-                    <option value="true">{t("common.yes")}</option>
+                    <option value="line">{t("settings.rounding_per_line")}</option>
+                    <option value="total">{t("settings.rounding_on_total")}</option>
                   </select>
                 </FormField>
-              </div>
-              <FormField label={t("settings.tax_rounding_mode")}>
-                <select
-                  value={settings.tax_rounding_mode || "line"}
-                  onChange={(e) => setSettings({ ...settings, tax_rounding_mode: e.target.value })}
-                  className="form-select"
-                >
-                  <option value="line">{t("settings.rounding_per_line")}</option>
-                  <option value="total">{t("settings.rounding_on_total")}</option>
-                </select>
-              </FormField>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="mt-4">
             <CardHeader>
@@ -1115,71 +1146,73 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card className="mt-4">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">{t("settings.tax_definitions")}</CardTitle>
-                <Button variant="outline" size="sm" onClick={openAddTax}>
-                  <Plus className="h-4 w-4 mr-1" /> {t("settings.add_tax")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {taxDefs.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-6">
-                  {t("settings.no_tax_definitions")}
-                </p>
-              ) : (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="text-left px-4 py-2 font-medium">
-                          {t("settings.tax_name")}
-                        </th>
-                        <th className="text-left px-4 py-2 font-medium">
-                          {t("settings.tax_rate")}
-                        </th>
-                        <th className="text-left px-4 py-2 font-medium">
-                          {t("settings.tax_description")}
-                        </th>
-                        <th className="text-right px-4 py-2 font-medium" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {taxDefs.map((td) => (
-                        <tr key={td.id} className="border-b last:border-b-0">
-                          <td className="px-4 py-2">{td.name}</td>
-                          <td className="px-4 py-2">{td.rate}%</td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {td.description || "—"}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => openEditTax(td)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => setDeletingTaxId(td.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {!smallBusiness && (
+            <Card className="mt-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">{t("settings.tax_definitions")}</CardTitle>
+                  <Button variant="outline" size="sm" onClick={openAddTax}>
+                    <Plus className="h-4 w-4 mr-1" /> {t("settings.add_tax")}
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                {taxDefs.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-6">
+                    {t("settings.no_tax_definitions")}
+                  </p>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="text-left px-4 py-2 font-medium">
+                            {t("settings.tax_name")}
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium">
+                            {t("settings.tax_rate")}
+                          </th>
+                          <th className="text-left px-4 py-2 font-medium">
+                            {t("settings.tax_description")}
+                          </th>
+                          <th className="text-right px-4 py-2 font-medium" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taxDefs.map((td) => (
+                          <tr key={td.id} className="border-b last:border-b-0">
+                            <td className="px-4 py-2">{td.name}</td>
+                            <td className="px-4 py-2">{td.rate}%</td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {td.description || "—"}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => openEditTax(td)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => setDeletingTaxId(td.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Dialog open={taxDialogOpen} onOpenChange={setTaxDialogOpen}>
             <DialogContent className="sm:max-w-md">

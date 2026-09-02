@@ -205,3 +205,21 @@ describe("getTaxReserve — § 19 UStG small business limits", () => {
     expect(limits.current_year.revenue).toBe(0);
   });
 });
+
+describe("getTaxReserve — profit_ytd", () => {
+  test("exposes the year-to-date net profit the income-tax estimate is based on", () => {
+    const inv = insertInvoice({ total: 1190, taxTotal: 190 });
+    insertPayment(inv, 1190, "2026-03-01"); // net 1.000
+    insertExpense({ amount: 200, taxAmount: 38, date: "2026-02-01" }); // net 200
+
+    expect(getTaxReserve(NOW).profit_ytd).toBeCloseTo(800, 2);
+  });
+
+  test("profit_ytd stays negative on a loss even though the reserve is clamped to zero", () => {
+    insertExpense({ amount: 500, taxAmount: 0, date: "2026-02-01" });
+
+    const reserve = getTaxReserve(NOW);
+    expect(reserve.profit_ytd).toBe(-500);
+    expect(reserve.income_tax_reserve).toBe(0);
+  });
+});

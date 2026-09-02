@@ -97,7 +97,8 @@ export function getTaxReserve(now: Date = new Date()) {
   const yearOut = expenseSums.get(yearStart, yearEnd) as { vat: number; net: number };
 
   const vatReserve = round2(quarterIn.vat - quarterOut.vat);
-  const profitYtd = Math.max(0, yearIn.net - yearOut.net);
+  const netProfitYtd = yearIn.net - yearOut.net;
+  const profitYtd = Math.max(0, netProfitYtd);
 
   const salary = Number.parseFloat(getSetting("tax_reserve_annual_salary") || "");
   const joint = getSetting("tax_reserve_joint_assessment") === "true";
@@ -113,6 +114,7 @@ export function getTaxReserve(now: Date = new Date()) {
   return {
     vat_reserve: vatReserve,
     income_tax_reserve: incomeTaxReserve,
+    profit_ytd: round2(netProfitYtd),
     total: round2(vatReserve + incomeTaxReserve),
     mode,
     flat_rate: flatRate,

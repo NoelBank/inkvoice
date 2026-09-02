@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useTranslation } from "@/i18n";
 import { toLocalIsoDate } from "@/lib/date";
 import {
@@ -142,6 +143,7 @@ export default function Reports() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { tab: tabParam } = useParams<{ tab: string }>();
+  const { smallBusiness } = useCapabilities();
   const tab: ReportTab = isReportTab(tabParam) ? tabParam : "tax-summary";
   const fiscalStartMonth = useSettingsStore((s) =>
     parseFiscalYearStartMonth(s.settings.fiscal_year_start_month),
@@ -221,8 +223,11 @@ export default function Reports() {
   useEffect(() => {
     if (tabParam && !isReportTab(tabParam)) {
       navigate("/reports/tax-summary", { replace: true });
+    } else if (smallBusiness && tab === "tax-summary") {
+      // Kleinunternehmer: no VAT to report, land on the EÜR instead.
+      navigate("/reports/euer", { replace: true });
     }
-  }, [tabParam, navigate]);
+  }, [tabParam, tab, smallBusiness, navigate]);
 
   const csvReport =
     tab === "revenue-customer"
@@ -286,7 +291,9 @@ export default function Reports() {
         }}
       >
         <TabsList>
-          <TabsTrigger value="tax-summary">{t("reports.tab_tax_summary")}</TabsTrigger>
+          {!smallBusiness && (
+            <TabsTrigger value="tax-summary">{t("reports.tab_tax_summary")}</TabsTrigger>
+          )}
           <TabsTrigger value="aging">{t("reports.tab_aging")}</TabsTrigger>
           <TabsTrigger value="revenue-customer">{t("reports.tab_revenue_customer")}</TabsTrigger>
           <TabsTrigger value="revenue-product">{t("reports.tab_revenue_product")}</TabsTrigger>

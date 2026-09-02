@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from "@/components/ui/textarea";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useTranslation } from "@/i18n";
 import { isInvoiceFormEditable } from "@/lib/constants";
 import { addDaysIso, todayIso } from "@/lib/date";
@@ -68,6 +69,7 @@ function SortableLineItem({
   isFirst,
   products,
   taxDefs,
+  showTax,
   errors,
   itemCount,
   currency,
@@ -83,6 +85,7 @@ function SortableLineItem({
   isFirst: boolean;
   products: any[];
   taxDefs: any[];
+  showTax: boolean;
   errors: Record<string, string>;
   itemCount: number;
   currency: string;
@@ -111,7 +114,13 @@ function SortableLineItem({
 
   return (
     <div ref={setNodeRef} style={style} className={cn("space-y-1", isDragging && "opacity-50")}>
-      <div className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_1.5fr_1.5fr_1fr] gap-2 items-end min-w-[720px] sm:min-w-0">
+      <div
+        className={`grid gap-2 items-end min-w-[720px] sm:min-w-0 ${
+          showTax
+            ? "grid-cols-[auto_2fr_2fr_1fr_1fr_1.5fr_1.5fr_1fr]"
+            : "grid-cols-[auto_2fr_2fr_1fr_1fr_1.5fr_1fr]"
+        }`}
+      >
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -186,21 +195,25 @@ function SortableLineItem({
             aria-invalid={!!errors[`item_${index}_unit_price`]}
           />
         </div>
-        <div>
-          {isFirst && <Label className="text-xs text-muted-foreground">{t("invoices.tax")}</Label>}
-          <select
-            value={item.tax_id}
-            onChange={(e) => onUpdateItem(index, "tax_id", e.target.value)}
-            className="form-select"
-          >
-            <option value="">{t("invoices.no_tax")}</option>
-            {taxDefs.map((td: any) => (
-              <option key={td.id} value={td.id}>
-                {td.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {showTax && (
+          <div>
+            {isFirst && (
+              <Label className="text-xs text-muted-foreground">{t("invoices.tax")}</Label>
+            )}
+            <select
+              value={item.tax_id}
+              onChange={(e) => onUpdateItem(index, "tax_id", e.target.value)}
+              className="form-select"
+            >
+              <option value="">{t("invoices.no_tax")}</option>
+              {taxDefs.map((td: any) => (
+                <option key={td.id} value={td.id}>
+                  {td.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex items-center gap-1">
           <span className="text-sm font-medium w-full text-right tabular-nums">
             {formatCurrency(item.quantity * item.unit_price, currency)}
@@ -264,6 +277,7 @@ export default function InvoiceForm({ onSave }: Props) {
   });
   const [products, setProducts] = useState<any[]>([]);
   const [taxDefs, setTaxDefs] = useState<any[]>([]);
+  const { vat: showTax } = useCapabilities();
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -988,6 +1002,7 @@ export default function InvoiceForm({ onSave }: Props) {
                         isFirst={i === 0}
                         products={products}
                         taxDefs={taxDefs}
+                        showTax={showTax}
                         errors={errors}
                         itemCount={items.length}
                         currency={form.currency}
@@ -1139,10 +1154,12 @@ export default function InvoiceForm({ onSave }: Props) {
                   </div>
                 )}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("invoices.tax")}</span>
-                <span className="tabular-nums">{formatCurrency(taxTotal, form.currency)}</span>
-              </div>
+              {showTax && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("invoices.tax")}</span>
+                  <span className="tabular-nums">{formatCurrency(taxTotal, form.currency)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold text-lg border-t pt-3">
                 <span>{t("common.total")}</span>
                 <span className="tabular-nums">{formatCurrency(total, form.currency)}</span>
