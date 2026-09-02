@@ -62,6 +62,10 @@ export interface CatalogProvenance {
   managed?: boolean;
   /** Host of the configured catalog source, null when egress is off. */
   host?: string | null;
+  /** When the catalog was built upstream. Distinct from syncedAt, which is only
+   *  when THIS install last fetched: a fresh fetch of a stale catalog is not
+   *  fresh data, and reporting only syncedAt hid that entirely. */
+  publishedAt?: string | null;
   /** The published default, so the tab can switch egress back on. */
   defaultUrl?: string;
 }
@@ -120,7 +124,9 @@ export function deriveEnabledIds(entries: CatalogPluginEntry[]): string[] {
 }
 
 /** Client-side narrowing is deliberate: the catalog is a few dozen entries
- *  already in memory. Search covers name, tagline and category. */
+ *  already in memory. Search covers everything the reader can see on the card
+ *  and the detail page, description included: searching for a word visible on
+ *  screen and getting "no matches" is the worst possible answer. */
 export function filterPlugins(
   entries: CatalogPluginEntry[],
   filters: PluginFilters,
@@ -132,7 +138,7 @@ export function filterPlugins(
     if (filters.status === "disabled" && !(p.installed && !p.enabled)) return false;
     if (filters.status === "planned" && p.status !== "planned") return false;
     if (q) {
-      const hay = `${p.name}\n${p.tagline}\n${p.category}`.toLowerCase();
+      const hay = `${p.name}\n${p.tagline}\n${p.category}\n${p.description}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;

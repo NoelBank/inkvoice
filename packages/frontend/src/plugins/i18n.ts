@@ -54,6 +54,7 @@ registerTranslations("en", {
     footer_off: "Remote catalog is turned off.",
     footer_stale: "Showing a catalog from {{age}}; the last refresh failed: {{reason}}",
     footer_turn_on: "Turn on",
+    footer_published: "catalog from {{date}}",
     refresh_failed: "Could not refresh the plugin catalog: {{reason}}",
     footer_failed: "Using bundled catalog. Last sync failed: {{reason}}",
     catalog_error_blocked: "the address is not allowed",
@@ -123,6 +124,7 @@ registerTranslations("tr", {
     footer_off: "Uzak katalog kapatıldı.",
     footer_stale: "{{age}} alınan katalog gösteriliyor; son yenileme başarısız: {{reason}}",
     footer_turn_on: "Aç",
+    footer_published: "{{date}} tarihli katalog",
     refresh_failed: "Eklenti kataloğu yenilenemedi: {{reason}}",
     footer_failed: "Paket kataloğu kullanılıyor. Son senkronizasyon başarısız: {{reason}}",
     catalog_error_blocked: "adrese izin verilmiyor",
@@ -193,6 +195,7 @@ registerTranslations("de", {
     footer_stale:
       "Katalog von {{age}} wird angezeigt; die letzte Aktualisierung schlug fehl: {{reason}}",
     footer_turn_on: "Aktivieren",
+    footer_published: "Katalog vom {{date}}",
     refresh_failed: "Der Plugin-Katalog konnte nicht aktualisiert werden: {{reason}}",
     footer_failed:
       "Mitgelieferter Katalog wird verwendet. Letzte Synchronisierung fehlgeschlagen: {{reason}}",
@@ -263,6 +266,7 @@ registerTranslations("es", {
     footer_off: "El catálogo remoto está desactivado.",
     footer_stale: "Mostrando un catálogo de {{age}}; la última actualización falló: {{reason}}",
     footer_turn_on: "Activar",
+    footer_published: "catálogo del {{date}}",
     refresh_failed: "No se pudo actualizar el catálogo de complementos: {{reason}}",
     footer_failed: "Usando el catálogo incluido. La última sincronización falló: {{reason}}",
     catalog_error_blocked: "la dirección no está permitida",
@@ -333,6 +337,7 @@ registerTranslations("fr", {
     footer_stale:
       "Catalogue datant de {{age}} affiché ; la dernière actualisation a échoué : {{reason}}",
     footer_turn_on: "Activer",
+    footer_published: "catalogue du {{date}}",
     refresh_failed: "Impossible d'actualiser le catalogue de plugins : {{reason}}",
     footer_failed: "Catalogue intégré utilisé. Échec de la dernière synchronisation : {{reason}}",
     catalog_error_blocked: "l'adresse n'est pas autorisée",

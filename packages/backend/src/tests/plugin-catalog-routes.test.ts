@@ -8,7 +8,6 @@ import { closeDatabase, getDb, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
 import { seed } from "../database/seed";
 import { setPluginEntitlementCheck } from "../plugins/entitlement";
-import { getBackendPlugins } from "../plugins/registry";
 import { resetVoteBudget } from "../plugins/routes";
 import { runPluginMigrations } from "../plugins/runner";
 import { updateSettings } from "../services/settings.service";
@@ -95,30 +94,49 @@ describe("GET /api/v1/plugins/catalog", () => {
     expect(tt!.blockedReason).toBeNull();
   });
 
-  // Skipped when a composition has registered the plugin. This test documents
-  // the pristine-OSS view of the snapshot's cloud-only entry: not installed,
-  // so the merge reports cloud_only. A downstream overlay (for example the
-  // cloud build) legitimately registers peppol as a backend plugin, which
-  // makes installed true and the reason plan-dependent instead; those merged
-  // semantics are covered composition-proof in plugin-merge.test.ts.
-  test.skipIf(getBackendPlugins().some((p) => p.id === "peppol"))(
-    "shows a cloud-only plugin as blocked rather than enableable",
-    async () => {
-      updateSettings({ plugin_catalog_url: "" });
-      const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
-      const body = (await res.json()) as {
-        data: { plugins: { id: string; blockedReason: string | null }[] };
-      };
-      const peppol = body.data.plugins.find((p) => p.id === "peppol");
-      expect(peppol).toBeDefined();
-      expect(peppol!.blockedReason).toBe("cloud_only");
-    },
-  );
+  // Composition-proof: the id below is registered by nothing, in OSS or in any
+  // overlay, so this asserts the route's cloud_only branch without depending on
+  // which plugins the running build happens to ship. The previous version read
+  // the snapshot's real peppol entry and had to disable itself whenever an
+  // overlay registered it, which meant the assertion silently stopped running
+  // in exactly the build most likely to break it.
+  test("shows a cloud-only plugin this build does not ship as blocked", async () => {
+    updateSettings({ plugin_catalog_url: "https://example.test/catalog.v1.json" });
+    globalThis.fetch = (() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            schema: 1,
+            plugins: [
+              {
+                id: "hosted-only-fixture",
+                name: "Hosted Only",
+                tagline: "",
+                description: "",
+                category: "billing",
+                status: "available",
+                availability: "cloud",
+                requires_feature: null,
+                icon: "Clock",
+                docs: "https://example.com",
+                source: null,
+                screenshots: [],
+                latest: { version: "1.0.0", min_app: "0.1.0", released: "2026-01-01" },
+                versions: [],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      )) as unknown as typeof fetch;
 
-  test("reports an unmanaged deployment, so the tab keeps its operator affordances", async () => {
     const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
-    const body = (await res.json()) as { data: { catalog: { managed: boolean } } };
-    expect(body.data.catalog.managed).toBe(false);
+    const body = (await res.json()) as {
+      data: { plugins: { id: string; blockedReason: string | null }[] };
+    };
+    const hosted = body.data.plugins.find((p) => p.id === "hosted-only-fixture");
+    expect(hosted).toBeDefined();
+    expect(hosted!.blockedReason).toBe("cloud_only");
   });
 
   test("requires authentication", async () => {

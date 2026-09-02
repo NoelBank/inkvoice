@@ -37,6 +37,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
   const setEnabled = usePluginsStore((s) => s.setEnabled);
   const vote = usePluginsStore((s) => s.vote);
   const [voting, setVoting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     ensureFetched();
@@ -68,11 +69,14 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
   const egressEnabled = provenance?.egressEnabled ?? false;
 
   const toggle = async (next: boolean) => {
+    setSaving(true);
     try {
       await setEnabled(entry.id, next);
       toast.success(t(next ? "plugins.enabled_toast" : "plugins.disabled_toast"));
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -150,7 +154,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
             </span>
             <Switch
               checked={entry.enabled}
-              disabled={!loaded}
+              disabled={!loaded || saving}
               aria-label={`${t(entry.enabled ? "plugins.disable" : "plugins.enable")}: ${entry.name}`}
               onCheckedChange={(next) => void toggle(next)}
             />

@@ -61,16 +61,20 @@ function EnableSwitch({ entry }: { entry: CatalogPluginEntry }) {
   const { t } = useTranslation();
   const loaded = usePluginsStore((s) => s.loaded);
   const setEnabled = usePluginsStore((s) => s.setEnabled);
+  // Held while the PUT is in flight, so a double click cannot fire two writes.
+  const [saving, setSaving] = useState(false);
   if (entry.blockedReason !== null) return null;
   return (
     <Switch
       checked={entry.enabled}
-      disabled={!loaded}
+      disabled={!loaded || saving}
       aria-label={`${t(entry.enabled ? "plugins.disable" : "plugins.enable")}: ${entry.name}`}
       onCheckedChange={(next) => {
+        setSaving(true);
         setEnabled(entry.id, next)
           .then(() => toast.success(t(next ? "plugins.enabled_toast" : "plugins.disabled_toast")))
-          .catch((e: Error) => toast.error(e.message));
+          .catch((e: Error) => toast.error(e.message))
+          .finally(() => setSaving(false));
       }}
     />
   );
@@ -128,6 +132,11 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
   // The source is whatever the operator configured, so name it rather than
   // asserting inkvoice.app at a mirror.
   const origin = catalogOrigin(provenance);
+  // The catalog's own build date, so a fresh fetch of stale data reads as
+  // stale data rather than as freshness.
+  const published = provenance.publishedAt
+    ? new Date(provenance.publishedAt).toLocaleDateString()
+    : null;
 
   // Off is not a dead end: the same footer offers the way back, or an install
   // that switched egress off could only restore it through the settings API.
@@ -154,6 +163,7 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
       {state.kind === "synced" && (
         <span>
           {t("plugins.footer_synced", { age: age(state.ageMinutes) })}
+          {published ? ` · ${t("plugins.footer_published", { date: published })}` : ""}
           {origin ? ` · ${origin}` : ""}
         </span>
       )}

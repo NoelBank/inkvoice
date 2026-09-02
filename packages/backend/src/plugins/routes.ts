@@ -71,6 +71,10 @@ pluginsAdminRoutes.get("/catalog", async (c) => {
         // Named so the footer can say where the data came from instead of
         // asserting inkvoice.app at an install pointed somewhere else.
         host: catalogHost(),
+        // When the catalog itself was built upstream, as opposed to when this
+        // install last fetched it. Without this a tab can report "synced just
+        // now" over data that has not moved in months.
+        publishedAt: result.catalog.generated_at ?? null,
         // So the tab can offer a way back after switching egress off, without
         // hardcoding the published URL in the frontend.
         defaultUrl: DEFAULT_CATALOG_URL,
