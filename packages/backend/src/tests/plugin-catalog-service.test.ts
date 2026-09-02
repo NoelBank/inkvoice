@@ -5,6 +5,7 @@ import { runMigrations } from "../database/migrations";
 import { getCatalog, getVotes, postVote } from "../plugins/catalog.service";
 import { getSetting, updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
+import { setAddressResolver } from "../utils/ssrf-protection";
 
 const TEST_DB = "./data/test-plugin-catalog-service.db";
 
@@ -55,9 +56,15 @@ beforeAll(() => {
   resetEnvCache();
   initDatabase();
   runMigrations();
+  // The catalog fetch is SSRF-guarded, which resolves the host before opening a
+  // socket. Stubbing fetch alone is not enough: without this the suite would
+  // depend on live DNS for example.test, which does not resolve. A fixed public
+  // address keeps every test below exercising the real guard.
+  setAddressResolver(async () => ["93.184.216.34"]);
 });
 
 afterAll(() => {
+  setAddressResolver(null);
   closeDatabase();
   // SQLite leaves -wal and -shm alongside the db; the existing suites clean all
   // three, and leaving them behind makes a later run start from stale state.
@@ -158,7 +165,9 @@ describe("catalog service", () => {
     stubFetch(() => Promise.reject(new Error("network down")));
     const res = await getCatalog();
     expect(res.source).toBe("cache");
-    expect(res.error).toContain("network down");
+    // The raw "network down" is logged, never returned: the code is coarse on
+    // purpose so the response cannot be used to probe the network.
+    expect(res.error).toBe("unreachable");
     expect(res.catalog.plugins[0]!.id).toBe("remote-only");
   });
 
@@ -167,7 +176,7 @@ describe("catalog service", () => {
     stubFetch(() => Promise.reject(new Error("network down")));
     const res = await getCatalog();
     expect(res.source).toBe("snapshot");
-    expect(res.error).toContain("network down");
+    expect(res.error).toBe("unreachable");
     expect(res.catalog.plugins.some((p) => p.id === "time-tracker")).toBe(true);
   });
 
@@ -184,7 +193,7 @@ describe("catalog service", () => {
     stubFetch(() => ok({ ...REMOTE, schema: 2 }));
     const res = await getCatalog();
     expect(res.source).toBe("snapshot");
-    expect(res.error).toMatch(/schema/i);
+    expect(res.error).toBe("invalid_schema");
     expect(getSetting("plugin_catalog_cache")).toBeFalsy();
   });
 

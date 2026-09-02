@@ -38,10 +38,22 @@ export interface CatalogPluginEntry {
   votes: number;
 }
 
+/** Mirrors the backend's CatalogErrorCode. Coarse on purpose: the backend
+ *  refuses to hand the browser the underlying network error, because the
+ *  catalog URL is configurable and a verbatim message would let this tab report
+ *  which internal hosts and ports answer. */
+export type CatalogErrorCode =
+  | "blocked"
+  | "unreachable"
+  | "http_error"
+  | "too_large"
+  | "invalid_json"
+  | "invalid_schema";
+
 export interface CatalogProvenance {
   source: "remote" | "cache" | "snapshot";
   syncedAt: string | null;
-  error: string | null;
+  error: CatalogErrorCode | null;
   egressEnabled: boolean;
 }
 
@@ -116,15 +128,30 @@ export function minutesSince(syncedAt: string | null, now: number): number | nul
  *  states; nothing else may render. */
 export type FooterState =
   | { kind: "synced"; ageMinutes: number | null }
-  | { kind: "failed"; reason: string }
+  | { kind: "failed"; reason: CatalogErrorCode | null }
   | { kind: "off" };
 
 export function footerState(p: CatalogProvenance, now: number): FooterState {
   if (!p.egressEnabled) return { kind: "off" };
   if (p.source === "snapshot") {
-    return { kind: "failed", reason: p.error ?? "" };
+    return { kind: "failed", reason: p.error };
   }
   return { kind: "synced", ageMinutes: minutesSince(p.syncedAt, now) };
+}
+
+const ERROR_KEYS: Record<CatalogErrorCode, string> = {
+  blocked: "plugins.catalog_error_blocked",
+  unreachable: "plugins.catalog_error_unreachable",
+  http_error: "plugins.catalog_error_http",
+  too_large: "plugins.catalog_error_too_large",
+  invalid_json: "plugins.catalog_error_invalid",
+  invalid_schema: "plugins.catalog_error_invalid",
+};
+
+/** i18n key for a failure code. Falls back to the generic string for a code
+ *  a newer backend introduced, so an upgraded server never renders a raw key. */
+export function catalogErrorKey(code: CatalogErrorCode | null): string {
+  return (code && ERROR_KEYS[code]) || "plugins.catalog_error_unknown";
 }
 
 /** i18n key for the reason chip. Null when there is no blocker, so the caller

@@ -26,6 +26,7 @@ import {
   CATEGORIES,
   type CatalogPluginEntry,
   type CatalogProvenance,
+  catalogErrorKey,
   filterPlugins,
   footerState,
   loadViewPreference,
@@ -128,7 +129,7 @@ function SyncFooter({ provenance }: { provenance: CatalogProvenance }) {
       {state.kind === "synced" ? (
         <span>{t("plugins.footer_synced", { age: age(state.ageMinutes) })} · inkvoice.app</span>
       ) : (
-        <span>{t("plugins.footer_failed", { reason: state.reason })}</span>
+        <span>{t("plugins.footer_failed", { reason: t(catalogErrorKey(state.reason)) })}</span>
       )}
       <Button
         variant="ghost"

@@ -187,8 +187,16 @@ settings.put("/", async (c) => {
 
   // The catalog source URL doubles as the documented off switch: an empty value
   // turns all catalog egress off, so it must be accepted as-is. Anything else
-  // has to be an http(s) URL the server can actually fetch, so a typo cannot
+  // has to be an HTTPS URL the server can actually fetch, so a typo cannot
   // silently break the Plugins tab.
+  //
+  // HTTPS only, matching the policy every other server-side fetch of a
+  // user-supplied URL follows (utils/ssrf-protection.ts). This value makes the
+  // server issue a request, so it is reachable by whoever can write settings;
+  // the fetch itself is additionally guarded (private ranges refused, redirects
+  // re-validated, body capped) in utils/safe-fetch.ts. An overlay that lets
+  // untrusted tenants administer their own settings must block this key
+  // outright rather than rely on those guards.
   if (filtered.plugin_catalog_url !== undefined && filtered.plugin_catalog_url !== "") {
     const url = filtered.plugin_catalog_url;
     if (url.length > 2048) {
@@ -205,13 +213,13 @@ settings.put("/", async (c) => {
       parsed = new URL(url);
     } catch {
       return c.json(
-        { success: false, error: `Setting "plugin_catalog_url" must be a valid http(s) URL` },
+        { success: false, error: `Setting "plugin_catalog_url" must be a valid https URL` },
         400,
       );
     }
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (parsed.protocol !== "https:") {
       return c.json(
-        { success: false, error: `Setting "plugin_catalog_url" must be a valid http(s) URL` },
+        { success: false, error: `Setting "plugin_catalog_url" must be a valid https URL` },
         400,
       );
     }

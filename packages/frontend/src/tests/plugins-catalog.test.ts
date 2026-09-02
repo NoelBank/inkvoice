@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   blockedChipKey,
+  type CatalogErrorCode,
   type CatalogPluginEntry,
   type CatalogProvenance,
   canVote,
+  catalogErrorKey,
   deriveEnabledIds,
   filterPlugins,
   footerState,
@@ -171,16 +173,28 @@ describe("minutesSince", () => {
   });
 });
 
+describe("catalogErrorKey", () => {
+  test("maps every code, and falls back rather than rendering a raw key", () => {
+    expect(catalogErrorKey("blocked")).toBe("plugins.catalog_error_blocked");
+    expect(catalogErrorKey("invalid_schema")).toBe("plugins.catalog_error_invalid");
+    expect(catalogErrorKey(null)).toBe("plugins.catalog_error_unknown");
+    // A code a newer backend added must not reach the UI as a missing key.
+    expect(catalogErrorKey("something_new" as CatalogErrorCode)).toBe(
+      "plugins.catalog_error_unknown",
+    );
+  });
+});
+
 describe("footerState", () => {
   test("egress off wins over everything", () => {
     expect(
-      footerState(prov({ egressEnabled: false, source: "snapshot", error: "HTTP 404" }), 0),
+      footerState(prov({ egressEnabled: false, source: "snapshot", error: "http_error" }), 0),
     ).toEqual({ kind: "off" });
   });
   test("a failed sync on the snapshot path reports the reason", () => {
-    expect(footerState(prov({ source: "snapshot", error: "HTTP 404" }), 0)).toEqual({
+    expect(footerState(prov({ source: "snapshot", error: "http_error" }), 0)).toEqual({
       kind: "failed",
-      reason: "HTTP 404",
+      reason: "http_error",
     });
   });
   test("a synced catalog reports its age in minutes for both remote and cache", () => {

@@ -12,6 +12,7 @@ import { getBackendPlugins } from "../plugins/registry";
 import { runPluginMigrations } from "../plugins/runner";
 import { updateSettings } from "../services/settings.service";
 import { resetEnvCache } from "../utils/env";
+import { setAddressResolver } from "../utils/ssrf-protection";
 
 const TEST_DB = "./data/test-plugin-catalog-routes.db";
 
@@ -26,6 +27,9 @@ beforeAll(async () => {
   process.env.ADMIN_PASS = "admin-password-1";
   process.env.JWT_SECRET = "test-secret-that-is-at-least-32-chars";
   resetEnvCache();
+  // See plugin-catalog-service.test.ts: the catalog fetch resolves the host
+  // before opening a socket, so a stubbed fetch alone is not enough.
+  setAddressResolver(async () => ["93.184.216.34"]);
 
   initDatabase();
   runMigrations();
@@ -43,6 +47,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
+  setAddressResolver(null);
   closeDatabase();
   // SQLite leaves -wal and -shm alongside the db; the existing suites clean all
   // three, and leaving them behind makes a later run start from stale state.

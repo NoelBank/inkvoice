@@ -9,6 +9,7 @@
 
 import { getSetting, updateSettings } from "../services/settings.service";
 import { logger } from "../utils/logger";
+import { SafeFetchError, type SafeFetchErrorCode, safeFetchJson } from "../utils/safe-fetch";
 import snapshot from "./catalog-snapshot.json";
 
 export const DEFAULT_CATALOG_URL = "https://inkvoice.app/plugins/catalog.v1.json";
@@ -16,6 +17,9 @@ export const DEFAULT_VOTES_URL = "https://inkvoice.app/api/plugin-votes";
 export const DEFAULT_VOTE_POST_URL = "https://inkvoice.app/api/plugin-vote";
 export const CATALOG_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 5_000;
+/** The published catalog is a few KB. The cap exists so a hostile endpoint
+ *  cannot stream gigabytes into memory and then into the settings row. */
+const MAX_CATALOG_BYTES = 1024 * 1024;
 
 const KEY_URL = "plugin_catalog_url";
 const KEY_CACHE = "plugin_catalog_cache";
@@ -58,13 +62,20 @@ export interface Catalog {
   plugins: CatalogPlugin[];
 }
 
+/** Coarse, non-identifying failure reason. Deliberately not the underlying
+ *  message: the catalog URL is operator-configurable and the result is shown to
+ *  any authenticated user, so a verbatim "connect ECONNREFUSED 10.0.0.5:6379"
+ *  would turn the Plugins tab into an internal network scanner. The detail is
+ *  logged instead. */
+export type CatalogErrorCode = SafeFetchErrorCode | "invalid_schema";
+
 export interface CatalogResult {
   catalog: Catalog;
   source: "remote" | "cache" | "snapshot";
   /** ISO timestamp of the last successful remote fetch, null if never. */
   syncedAt: string | null;
   /** Why the remote was not used this time, null when it was. */
-  error: string | null;
+  error: CatalogErrorCode | null;
 }
 
 /** The configured source URL. Empty string means egress is switched off. */
@@ -104,16 +115,21 @@ function isFresh(syncedAt: string | null): boolean {
   return Date.now() - at < CATALOG_TTL_MS;
 }
 
+/** The URL is settings-controlled, so every fetch goes through the SSRF-aware
+ *  helper: private ranges refused, redirects re-validated, body size capped. */
 async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url, {
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return safeFetchJson(url, { timeoutMs: FETCH_TIMEOUT_MS, maxBytes: MAX_CATALOG_BYTES });
 }
 
-function snapshotResult(error: string | null, syncedAt: string | null): CatalogResult {
+/** Map any thrown value onto the coarse code the client is allowed to see,
+ *  logging the real reason for the operator. */
+function errorCode(err: unknown, context: Record<string, unknown>): CatalogErrorCode {
+  const code: CatalogErrorCode = err instanceof SafeFetchError ? err.code : "unreachable";
+  logger.warn({ ...context, code, err: (err as Error).message }, "Plugin catalog request failed");
+  return code;
+}
+
+function snapshotResult(error: CatalogErrorCode | null, syncedAt: string | null): CatalogResult {
   return {
     catalog: snapshot as unknown as Catalog,
     source: "snapshot",
@@ -135,30 +151,27 @@ export async function getCatalog(opts: { force?: boolean } = {}): Promise<Catalo
     return { catalog: cached.catalog, source: "cache", syncedAt: cached.syncedAt, error: null };
   }
 
+  let code: CatalogErrorCode;
   try {
     const payload = await fetchJson(url);
-    if (!isCatalog(payload)) {
-      throw new Error("unexpected catalog schema or shape");
+    if (isCatalog(payload)) {
+      const syncedAt = new Date().toISOString();
+      updateSettings({
+        [KEY_CACHE]: JSON.stringify(payload),
+        [KEY_SYNCED_AT]: syncedAt,
+      });
+      return { catalog: payload, source: "remote", syncedAt, error: null };
     }
-    const syncedAt = new Date().toISOString();
-    updateSettings({
-      [KEY_CACHE]: JSON.stringify(payload),
-      [KEY_SYNCED_AT]: syncedAt,
-    });
-    return { catalog: payload, source: "remote", syncedAt, error: null };
+    logger.warn({ url }, "Plugin catalog response had an unexpected shape");
+    code = "invalid_schema";
   } catch (err) {
-    const message = (err as Error).message || "catalog fetch failed";
-    logger.warn({ url, err: message }, "Plugin catalog fetch failed");
-    if (cached) {
-      return {
-        catalog: cached.catalog,
-        source: "cache",
-        syncedAt: cached.syncedAt,
-        error: message,
-      };
-    }
-    return snapshotResult(message, null);
+    code = errorCode(err, { url });
   }
+
+  if (cached) {
+    return { catalog: cached.catalog, source: "cache", syncedAt: cached.syncedAt, error: code };
+  }
+  return snapshotResult(code, null);
 }
 
 /** Demand-vote counts by plugin id. Empty when egress is off or unreachable.
@@ -179,13 +192,16 @@ export async function getVotes(): Promise<Record<string, number>> {
   }
 
   try {
-    const payload = await fetchJson(DEFAULT_VOTES_URL);
+    const payload = await safeFetchJson(DEFAULT_VOTES_URL, {
+      timeoutMs: FETCH_TIMEOUT_MS,
+      maxBytes: MAX_CATALOG_BYTES,
+    });
     if (typeof payload !== "object" || payload === null) return {};
     const counts = payload as Record<string, number>;
     updateSettings({ [KEY_VOTES]: JSON.stringify(counts) });
     return counts;
   } catch (err) {
-    logger.warn({ err: (err as Error).message }, "Plugin vote fetch failed");
+    errorCode(err, { url: DEFAULT_VOTES_URL });
     if (cachedRaw) {
       try {
         return JSON.parse(cachedRaw) as Record<string, number>;
@@ -202,17 +218,15 @@ export async function getVotes(): Promise<Record<string, number>> {
 export async function postVote(id: string): Promise<number | null> {
   if (!catalogEgressEnabled()) return null;
   try {
-    const res = await fetch(DEFAULT_VOTE_POST_URL, {
+    const data = (await safeFetchJson(DEFAULT_VOTE_POST_URL, {
       method: "POST",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      timeoutMs: FETCH_TIMEOUT_MS,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as { count?: number };
+    })) as { count?: number };
     return typeof data.count === "number" ? data.count : null;
   } catch (err) {
-    logger.warn({ id, err: (err as Error).message }, "Plugin vote failed");
+    errorCode(err, { id, url: DEFAULT_VOTE_POST_URL });
     return null;
   }
 }
