@@ -172,6 +172,34 @@ describe("plugins store on the catalog endpoint", () => {
     expect(usePluginsStore.getState().entries.find((e) => e.id === "planned-one")?.votes).toBe(4);
   });
 
+  test("turnOn restores the backend's published default, so off is not a dead end", async () => {
+    stubFetch([
+      [
+        "/api/v1/plugins/catalog",
+        {
+          data: {
+            plugins: [entry()],
+            catalog: {
+              source: "snapshot",
+              syncedAt: null,
+              error: null,
+              egressEnabled: false,
+              defaultUrl: "https://inkvoice.app/plugins/catalog.v1.json",
+            },
+          },
+        },
+      ],
+      ["/api/v1/settings", { success: true, data: {} }],
+    ]);
+    await usePluginsStore.getState().refresh();
+    await usePluginsStore.getState().turnOn();
+
+    const settingsCall = calls.find((c) => c.url.endsWith("/settings"));
+    expect(JSON.parse(String(settingsCall?.init?.body))).toEqual({
+      plugin_catalog_url: "https://inkvoice.app/plugins/catalog.v1.json",
+    });
+  });
+
   test("turnOff clears plugin_catalog_url then refetches the snapshot state", async () => {
     stubFetch([
       ["/api/v1/settings", { success: true, data: {} }],

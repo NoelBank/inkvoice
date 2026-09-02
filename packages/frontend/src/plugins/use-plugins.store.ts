@@ -46,6 +46,9 @@ interface PluginsState {
   /** The self-hoster off switch: clears plugin_catalog_url, then refetches so
    *  provenance reflects the snapshot-only state. */
   turnOff: () => Promise<void>;
+  /** Its inverse. Without this, turning the catalog off is a one-way door that
+   *  only a settings API call can undo. */
+  turnOn: () => Promise<void>;
 }
 
 export const usePluginsStore = create<PluginsState>((set, get) => ({
@@ -121,5 +124,14 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
   turnOff: async () => {
     await api.updateSettings({ plugin_catalog_url: "" });
     await get().refresh();
+  },
+
+  turnOn: async () => {
+    // The backend publishes its own default, so the frontend never has to hold
+    // a copy of the URL that could drift from it.
+    const url = get().provenance?.defaultUrl;
+    if (!url) return;
+    await api.updateSettings({ plugin_catalog_url: url });
+    await get().refresh({ force: true });
   },
 }));

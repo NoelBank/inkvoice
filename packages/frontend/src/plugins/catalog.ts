@@ -55,6 +55,14 @@ export interface CatalogProvenance {
   syncedAt: string | null;
   error: CatalogErrorCode | null;
   egressEnabled: boolean;
+  /** True on a hosted deployment, where the reader is a customer rather than
+   *  the operator. Suppresses every affordance that assumes the two are the
+   *  same person: upgrading the app, and turning catalog egress off. */
+  managed?: boolean;
+  /** Host of the configured catalog source, null when egress is off. */
+  host?: string | null;
+  /** The published default, so the tab can switch egress back on. */
+  defaultUrl?: string;
 }
 
 /** Mirrors the backend's VoteOutcome. `already_voted` is its own state because
@@ -150,6 +158,11 @@ export function minutesSince(syncedAt: string | null, now: number): number | nul
  *  states; nothing else may render. */
 export type FooterState =
   | { kind: "synced"; ageMinutes: number | null }
+  /** Serving cached data that could not be refreshed. Distinct from "failed"
+   *  (which falls all the way back to the bundled snapshot) and from "synced",
+   *  because an install whose catalog has been unreachable for weeks used to
+   *  render as a plain "Synced 20 days ago" with the error dropped entirely. */
+  | { kind: "stale"; ageMinutes: number | null; reason: CatalogErrorCode | null }
   | { kind: "failed"; reason: CatalogErrorCode | null }
   | { kind: "off" };
 
@@ -158,7 +171,9 @@ export function footerState(p: CatalogProvenance, now: number): FooterState {
   if (p.source === "snapshot") {
     return { kind: "failed", reason: p.error };
   }
-  return { kind: "synced", ageMinutes: minutesSince(p.syncedAt, now) };
+  const ageMinutes = minutesSince(p.syncedAt, now);
+  if (p.error !== null) return { kind: "stale", ageMinutes, reason: p.error };
+  return { kind: "synced", ageMinutes };
 }
 
 const ERROR_KEYS: Record<CatalogErrorCode, string> = {
@@ -177,8 +192,10 @@ export function catalogErrorKey(code: CatalogErrorCode | null): string {
 }
 
 /** i18n key for the reason chip. Null when there is no blocker, so the caller
- *  renders the enable switch instead. */
-export function blockedChipKey(reason: BlockedReason): string | null {
+ *  renders the enable switch instead. On a managed deployment the upgrade
+ *  reason becomes a plain "not available", because the reader cannot upgrade
+ *  the server and telling them to is worse than saying nothing. */
+export function blockedChipKey(reason: BlockedReason, managed = false): string | null {
   switch (reason) {
     case null:
       return null;
@@ -189,8 +206,20 @@ export function blockedChipKey(reason: BlockedReason): string | null {
     case "requires_feature":
       return "plugins.chip_requires_feature";
     case "requires_app_upgrade":
-      return "plugins.chip_requires_app_upgrade";
+      return managed ? "plugins.chip_unavailable" : "plugins.chip_requires_app_upgrade";
   }
+}
+
+/** Where the catalog came from, for the provenance line. Null when unknown, so
+ *  a footer talking to an older backend says nothing rather than guessing. */
+export function catalogOrigin(p: CatalogProvenance): string | null {
+  return p.host ?? null;
+}
+
+/** Whether the tab may offer an update affordance at all. A hosted customer
+ *  cannot act on one, and pointing them at a GitHub release is noise. */
+export function canShowUpdates(provenance: CatalogProvenance | null): boolean {
+  return provenance?.managed !== true;
 }
 
 export type PluginsView = "grid" | "list";

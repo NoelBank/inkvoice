@@ -89,6 +89,19 @@ export function catalogEgressEnabled(): boolean {
   return catalogUrl() !== "";
 }
 
+/** Host of the configured source, for the tab's provenance line. Null when
+ *  egress is off. The host rather than the full URL: it is what identifies the
+ *  source to a reader, and a path can carry a token. */
+export function catalogHost(): string | null {
+  const url = catalogUrl();
+  if (url === "") return null;
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+}
+
 /** Vote endpoints live on the same origin as the catalog. Derived rather than
  *  hardcoded so that repointing the catalog at a private mirror moves ALL of
  *  this feature's egress with it, instead of leaving votes going to

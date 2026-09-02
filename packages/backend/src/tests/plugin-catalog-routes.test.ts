@@ -115,6 +115,12 @@ describe("GET /api/v1/plugins/catalog", () => {
     },
   );
 
+  test("reports an unmanaged deployment, so the tab keeps its operator affordances", async () => {
+    const res = await app.request("/api/v1/plugins/catalog", { headers: auth() });
+    const body = (await res.json()) as { data: { catalog: { managed: boolean } } };
+    expect(body.data.catalog.managed).toBe(false);
+  });
+
   test("requires authentication", async () => {
     const res = await app.request("/api/v1/plugins/catalog");
     expect(res.status).toBe(401);
@@ -197,7 +203,7 @@ describe("POST /api/v1/plugins/catalog/vote", () => {
         new Response(JSON.stringify({ count: 1, voted: true, alreadyVoted: true }), {
           status: 200,
         }),
-      )) as typeof fetch;
+      )) as unknown as typeof fetch;
 
     resetVoteBudget();
     const send = () =>

@@ -16,7 +16,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/i18n";
-import { blockedChipKey, CATEGORIES, canVote, RELEASES_URL, voteToastKey } from "./catalog";
+import {
+  blockedChipKey,
+  CATEGORIES,
+  canShowUpdates,
+  canVote,
+  RELEASES_URL,
+  voteToastKey,
+} from "./catalog";
 import { catalogIcon } from "./icon-map";
 import { getPlugins } from "./registry";
 import { usePluginsStore } from "./use-plugins.store";
@@ -54,7 +61,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
 
   const Icon = catalogIcon(entry.icon);
   const categoryKnown = (CATEGORIES as readonly string[]).includes(entry.category);
-  const chipKey = blockedChipKey(entry.blockedReason);
+  const chipKey = blockedChipKey(entry.blockedReason, provenance?.managed === true);
   const settingsPlugin = getPlugins().find((p) => p.id === entry.id);
   const SettingsPanel = settingsPlugin?.settings;
   const showSettings = entry.installed && entry.blockedReason === null && Boolean(SettingsPanel);
@@ -114,7 +121,7 @@ export function PluginDetailView({ pluginId }: { pluginId: string }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {entry.updateAvailable && (
+        {entry.updateAvailable && canShowUpdates(provenance) && (
           <div className="rounded-lg border p-3 text-sm space-y-1">
             <p>
               {entry.updateRequiresApp

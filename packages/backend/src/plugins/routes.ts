@@ -10,7 +10,15 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { APP_VERSION } from "../utils/version";
-import { catalogEgressEnabled, getCatalog, getVotes, postVote } from "./catalog.service";
+import {
+  catalogEgressEnabled,
+  catalogHost,
+  DEFAULT_CATALOG_URL,
+  getCatalog,
+  getVotes,
+  postVote,
+} from "./catalog.service";
+import { isManagedDeployment } from "./deployment";
 import { getPluginEntitlementCheck } from "./entitlement";
 import { mergePlugins } from "./merge";
 import { getBackendPlugin, getBackendPlugins } from "./registry";
@@ -60,6 +68,15 @@ pluginsAdminRoutes.get("/catalog", async (c) => {
         syncedAt: result.syncedAt,
         error: result.error,
         egressEnabled: catalogEgressEnabled(),
+        // Named so the footer can say where the data came from instead of
+        // asserting inkvoice.app at an install pointed somewhere else.
+        host: catalogHost(),
+        // So the tab can offer a way back after switching egress off, without
+        // hardcoding the published URL in the frontend.
+        defaultUrl: DEFAULT_CATALOG_URL,
+        // Drives which affordances the tab may offer: upgrading the app and
+        // switching the catalog off are the operator's, not the reader's.
+        managed: isManagedDeployment(),
       },
     },
   });
