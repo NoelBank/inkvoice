@@ -1,21 +1,15 @@
 import { createContext, useContext } from "react";
 import de from "./de";
 import en, { type TranslationKeys } from "./en";
-import es from "./es";
-import fr from "./fr";
-import tr from "./tr";
 
-export type Language = "en" | "tr" | "es" | "de" | "fr";
+export type Language = "de" | "en";
 
 export const languages: Record<Language, string> = {
-  en: "English",
-  tr: "Türkçe",
-  es: "Español",
   de: "Deutsch",
-  fr: "Français",
+  en: "English",
 };
 
-const translations: Record<Language, TranslationKeys> = { en, tr, es, de, fr };
+const translations: Record<Language, TranslationKeys> = { de, en };
 
 /**
  * Deep-merge partial translations into a language dictionary at import time.
@@ -77,7 +71,7 @@ export function getSavedLanguage(): Language {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && saved in translations) return saved as Language;
   } catch {}
-  return "en";
+  return "de";
 }
 
 export function saveLanguage(lang: Language) {

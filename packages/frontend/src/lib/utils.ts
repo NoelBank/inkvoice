@@ -7,17 +7,14 @@ export function cn(...inputs: ClassValue[]) {
 
 function getCurrentLocale(): string {
   try {
-    const lang = localStorage.getItem("inkvoice-lang") || "en";
+    const lang = localStorage.getItem("inkvoice-lang") || "de";
     const localeMap: Record<string, string> = {
-      en: "en-US",
-      tr: "tr-TR",
       de: "de-DE",
-      es: "es-ES",
-      fr: "fr-FR",
+      en: "en-US",
     };
-    return localeMap[lang] || "en-US";
+    return localeMap[lang] || "de-DE";
   } catch {
-    return "en-US";
+    return "de-DE";
   }
 }
 

@@ -34,7 +34,7 @@ interface Props {
 }
 
 export default function CustomerForm({ onSave }: Props) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
   const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
   const franceEnabled = useSettingsStore((s) => s.settings.france_enabled === "true");
@@ -361,8 +361,7 @@ export default function CustomerForm({ onSave }: Props) {
                     <option value="">{t("customers.select_country")}</option>
                     {COUNTRIES.map((c) => (
                       <option key={c.code} value={c.code}>
-                        {/* Curated names exist for en/tr; other UI languages fall back to English. */}
-                        {language === "tr" ? c.tr : c.en}
+                        {c.en}
                       </option>
                     ))}
                   </select>
