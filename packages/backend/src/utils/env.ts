@@ -30,9 +30,6 @@ export interface Env {
   /** "sandbox" (default) or "live". */
   PAYPAL_ENV: string;
   SLACK_WEBHOOK_URL: string;
-  PEPPOL_SH_API_KEY: string;
-  PEPPOL_SH_WEBHOOK_SECRET: string;
-  PEPPOL_SH_BASE_URL: string;
   PUBLIC_BASE_URL: string;
   /** Nightly on-disk snapshots of the SQLite database. */
   BACKUP_ENABLED: boolean;
@@ -100,25 +97,6 @@ export function getEnv(): Env {
     PAYPAL_WEBHOOK_ID: process.env.PAYPAL_WEBHOOK_ID || "",
     PAYPAL_ENV: process.env.PAYPAL_ENV || "sandbox",
     SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL || "",
-    PEPPOL_SH_API_KEY: process.env.PEPPOL_SH_API_KEY || "",
-    PEPPOL_SH_WEBHOOK_SECRET: process.env.PEPPOL_SH_WEBHOOK_SECRET || "",
-    PEPPOL_SH_BASE_URL: (() => {
-      const url = process.env.PEPPOL_SH_BASE_URL || "https://api.peppol.sh";
-      let parsed: URL;
-      try {
-        parsed = new URL(url);
-      } catch {
-        throw new Error("FATAL: PEPPOL_SH_BASE_URL must be a valid URL");
-      }
-      // SSRF guard: https only, no credentials embedded in the URL.
-      if (parsed.protocol !== "https:") {
-        throw new Error("FATAL: PEPPOL_SH_BASE_URL must use https");
-      }
-      if (parsed.username || parsed.password) {
-        throw new Error("FATAL: PEPPOL_SH_BASE_URL must not contain credentials");
-      }
-      return url;
-    })(),
     PUBLIC_BASE_URL: (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, ""),
     // On by default: the most common way a self-hosted install loses data is
     // nobody ever setting a backup up.

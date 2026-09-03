@@ -33,7 +33,7 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 - 🗄️ **Own your data** — everything lives in a single SQLite file you control.
 - 📦 **One container, runs anywhere** — Docker, [Coolify](https://coolify.io), or [one-click on Dokploy](https://dokploy.com/templates/inkvoice); ~50–100&nbsp;MB RAM.
 - ⚡ **Modern & fast** — Bun + Hono + React, no heavyweight runtime.
-- 🌍 **Multi-currency, multi-user, multi-language** out of the box.
+- 🇩🇪 **Built for a German Kleinunternehmer** — § 19 UStG limits, cash-basis EÜR and a tax reserve on the dashboard.
 - ☁️ **Don't want to self-host?** Use the managed **[Inkvoice Cloud](https://cloud.inkvoice.app)** and skip the ops.
 
 <div align="center">
@@ -64,18 +64,11 @@ Inkvoice is a lightweight, **self-hosted** invoicing dashboard for people who'd 
 
 **German e-invoicing (E-Rechnung)**
 - Opt-in module, **off by default** — only German users need it, everyone else never sees it
-- Emit **EN 16931**-compliant e-invoices: **ZUGFeRD 2.2 hybrid PDF**, **XRechnung (UBL)** and **PEPPOL BIS**
+- Emit **EN 16931**-compliant e-invoices: **ZUGFeRD 2.2 hybrid PDF** and **XRechnung (UBL)**
 - **E-invoice inbox** — import, parse and process incoming XRechnung / ZUGFeRD files
 - Auto-attach the e-invoice to sent invoice emails (per-invoice or globally)
 
-**PEPPOL transport**
-- Send invoices and credit notes over the **PEPPOL network** (provider-agnostic; peppol.sh driver ships with bring-your-own credentials)
-- **Receive** inbound PEPPOL documents straight into the e-invoice inbox
-- Delivery state machine with retries and per-attempt audit trail
-- Register your business as a PEPPOL receiver, with conflict detection (no accidental access-point takeover)
-
 **Money & books**
-- **Multi-currency** with live exchange rates + base-currency consolidated reporting
 - **Expense tracking** — billable expenses, receipts and categories
 - Customer **account statements** (PDF per period)
 - **Reports** — tax summary, A/R aging, revenue by customer & product, profit & loss, expenses by category, currency breakdown, and cash-flow forecast — every report exports to **CSV**
@@ -215,8 +208,8 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 
 | Variable                  | Required | Default               | Description                                                          |
 | ------------------------- | -------- | --------------------- | -------------------------------------------------------------------- |
-| `ADMIN_USER`              | yes      | `admin`               | Initial admin username (created on first boot if no users exist). `demo` when `DEMO_MODE=true` |
-| `ADMIN_PASS`              | yes      | `changeme`            | Initial admin password. `demo` when `DEMO_MODE=true`                 |
+| `ADMIN_USER`              | yes      | `admin`               | Initial admin username (created on first boot if no users exist) |
+| `ADMIN_PASS`              | yes      | `changeme`            | Initial admin password                 |
 | `JWT_SECRET`              | yes      | (dev-only fallback)   | JWT signing secret — must be ≥ 32 chars in production                |
 | `DATABASE_PATH`           | no       | `./data/invoice.db`   | SQLite database file path                                            |
 | `PORT`                    | no       | `3000`                | HTTP listen port                                                     |
@@ -241,26 +234,6 @@ Copy `.env.example` to `.env` to bootstrap a local config. Most runtime knobs (c
 | `PAYPAL_SECRET`           | no       | —                     | PayPal REST app secret                                               |
 | `PAYPAL_WEBHOOK_ID`       | no       | —                     | PayPal webhook ID — required for PayPal (signature verification)     |
 | `PAYPAL_ENV`              | no       | `sandbox`             | PayPal environment: `sandbox` or `live`                              |
-| `OIDC_ISSUER_URL`          | no       | —                     | OIDC issuer URL. Setting it enables SSO (must be https; requires `OIDC_CLIENT_ID`/`OIDC_CLIENT_SECRET`) |
-| `OIDC_CLIENT_ID`           | no       | —                     | OIDC confidential client id                                             |
-| `OIDC_CLIENT_SECRET`       | no       | —                     | OIDC confidential client secret                                         |
-| `OIDC_SCOPE`               | no       | `openid email profile`| Space-separated OIDC scopes (`openid` is always included)               |
-| `OIDC_ALLOWED_DOMAINS`     | no       | —                     | Comma-separated email domains allowed to self-register (JIT provisioning gate) |
-| `OIDC_AUTO_PROVISION`      | no       | `true`                | Auto-create a read-only Viewer account on first SSO login               |
-| `OIDC_PROVIDER_NAME`       | no       | —                     | Custom label for the login-page SSO button                              |
-| `PEPPOL_SH_API_KEY`       | no       | —                     | peppol.sh API key — enables the PEPPOL transport driver             |
-| `PEPPOL_SH_WEBHOOK_SECRET`| no       | —                     | HMAC secret verifying inbound PEPPOL callbacks (required to receive)|
-| `PEPPOL_SH_BASE_URL`      | no       | `https://api.peppol.sh`| Provider base URL override (sandbox/proxy). Must be https            |
-| `DEMO_MODE`               | no       | `false`               | Periodically reset DB to seeded demo data (for public demo deploys). Also defaults the admin login to `demo`/`demo` and shows it on the sign-in page |
-| `DEMO_RESET_INTERVAL`     | no       | `86400000`            | Demo reset interval in ms (default 24h)                              |
-
-### SSO / OIDC
-
-Any standards-compliant OIDC provider (Keycloak, Authentik, Authelia, Entra ID, Okta, Google Workspace, …) can act as the single sign-on source. Set `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` to enable it — everything else is auto-discovered via `/.well-known/openid-configuration`.
-
-1. Register a **confidential** client at your provider with redirect URI `https://your-domain/api/v1/auth/oidc/callback` (use the origin your install is served from, or set `PUBLIC_BASE_URL`).
-2. First-time logins auto-provision a read-only **Viewer** account unless `OIDC_AUTO_PROVISION=false` — promote users in **Users**. Restrict who can self-register with `OIDC_ALLOWED_DOMAINS`.
-3. Existing accounts link automatically on first SSO login only when the provider attests the email (`email_verified` claim). Password login remains available and is the admin recovery path.
 
 ## Tech Stack
 
@@ -276,7 +249,7 @@ Any standards-compliant OIDC provider (Keycloak, Authentik, Authelia, Entra ID, 
 
 - [Architecture overview](./docs/ARCHITECTURE.md) — components, data flow, where to add features.
 - [Template variables](./docs/TEMPLATE_VARIABLES.md) — every `{{token}}` available in invoice/quote/email templates.
-- [E-Invoicing (E-Rechnung)](./docs/features/e-invoicing.md) — German ZUGFeRD/XRechnung/PEPPOL emission and inbox, step by step.
+- [E-Invoicing (E-Rechnung)](./docs/features/e-invoicing.md) — German ZUGFeRD/XRechnung emission and inbox, step by step.
 - [Contributing](./CONTRIBUTING.md) — setup, conventions, and PR checklist.
 - Full docs: **[docs.inkvoice.app](https://docs.inkvoice.app)**
 

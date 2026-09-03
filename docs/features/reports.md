@@ -2,8 +2,6 @@
 
 Inkvoice includes built-in reports for tracking revenue, taxes, and outstanding payments. All reports can be exported as CSV.
 
-To hand financial data to an accountant, see [Accounting Export](./accounting-export) — QuickBooks Online- and Xero-compatible CSV for invoices, payments and expenses.
-
 ## Available Reports
 
 ### Tax Summary

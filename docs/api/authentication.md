@@ -72,25 +72,6 @@ Returns the currently authenticated user's profile.
 }
 ```
 
-## API Tokens (for integrations)
-
-For scripts and automation tools (Zapier, Make, cron jobs) that can't run an
-interactive login, use a long-lived **API token** instead of a session JWT.
-Generate one under **Settings → API**, then send it as a bearer token:
-
-```
-Authorization: Bearer ink_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-API tokens:
-
-- are shown **once** at creation — store them securely;
-- can be **scoped** to specific resources/actions, or granted full access;
-- never expire on a clock — revoke them to cut access;
-- authenticate as the user who created them.
-
-See [Integrations](/api/integrations) for the full token and polling workflow.
-
 ## Rate Limiting
 
 The login endpoint is rate-limited by default. After `RATE_LIMIT_MAX_ATTEMPTS` failed attempts within `RATE_LIMIT_WINDOW` seconds, further attempts are blocked.

@@ -45,7 +45,6 @@ export default defineConfig({
           { text: "Recurring Invoices", link: "/features/recurring" },
           { text: "Templates", link: "/features/templates" },
           { text: "Reports", link: "/features/reports" },
-          { text: "Accounting Export", link: "/features/accounting-export" },
           { text: "Online Payments", link: "/features/payments" },
           { text: "E-Invoicing (E-Rechnung)", link: "/features/e-invoicing" },
         ],
@@ -62,7 +61,6 @@ export default defineConfig({
           { text: "Templates", link: "/api/templates" },
           { text: "Settings", link: "/api/settings" },
           { text: "Reports", link: "/api/reports" },
-          { text: "Integrations", link: "/api/integrations" },
         ],
       },
       {

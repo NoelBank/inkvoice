@@ -34,7 +34,7 @@ inkvoice/
 │   │       ├── database/         # connection singleton + migrations + seed
 │   │       ├── utils/            # pure helpers (tax math, CSV, ZIP, JWT, …)
 │   │       ├── types/            # Shared TS types (Invoice, Customer, …)
-│   │       ├── xml/              # e-invoice XML profiles (UBL, Peppol, …)
+│   │       ├── xml/              # e-invoice XML profiles (ZUGFeRD, XRechnung)
 │   │       └── tests/            # bun:test integration tests
 │   └── frontend/                 # React SPA
 │       └── src/

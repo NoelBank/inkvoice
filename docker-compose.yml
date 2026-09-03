@@ -29,9 +29,6 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      PEPPOL_SH_API_KEY: ${PEPPOL_SH_API_KEY:-}
-      PEPPOL_SH_WEBHOOK_SECRET: ${PEPPOL_SH_WEBHOOK_SECRET:-}
-      PEPPOL_SH_BASE_URL: ${PEPPOL_SH_BASE_URL:-https://api.peppol.sh}
       # Payment gateways. Both stay dormant until their credentials are present
       # AND the gateway is toggled on in Settings, so leaving these empty is safe.
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}

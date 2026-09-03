@@ -18,9 +18,7 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 
 ## Compliance
 
-- **[E-Invoicing (E-Rechnung)](/features/e-invoicing)** — German ZUGFeRD 2.2 / XRechnung / PEPPOL emission, hybrid PDFs, and an inbox for incoming e-invoices (opt-in module)
-- **[France E-Invoicing (Factur-X)](/features/france-e-invoicing)** — French buyer identifiers (SIREN/SIRET), franchise-en-base exemption, and PDP delivery via a registered PA on Inkvoice Cloud
-- **[PEPPOL Transport](/features/peppol-transport)** — send and receive e-invoices over the PEPPOL network (opt-in module, provider-agnostic)
+- **[E-Invoicing (E-Rechnung)](/features/e-invoicing)** — German ZUGFeRD 2.2 and XRechnung emission, hybrid PDFs, and an inbox for incoming e-invoices (opt-in module)
 
 ## Tools
 
@@ -29,7 +27,6 @@ Inkvoice covers the full invoicing workflow for freelancers and small businesses
 - **PDF Generation** — Generate and download professional PDFs from any invoice or quote
 - **Email Sending** — Send invoices and quotes directly from the app via SMTP
 - **Activity Log** — Track all changes across invoices, customers, and settings
-- **[Plugins](/features/plugins)**: Optional extensions like Time Tracking, enabled per install from Settings
 
 ## Platform
 

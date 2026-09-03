@@ -22,7 +22,6 @@ never see the E-Rechnung UI. Enable it under **Settings → E-Rechnung (e-invoic
 |---|---|---|
 | **ZUGFeRD 2.2** (Factur-X) | Default (`zugferd`) | CII XML embedded in a **PDF/A-3 hybrid PDF** |
 | **XRechnung 3.0** (UBL) | Customer has a **Leitweg-ID**, or format set to `xrechnung` | UBL 2.1 XML (no hybrid PDF) |
-| **PEPPOL BIS 3.0** | Customer or business format set to `peppol` | UBL XML |
 
 Resolution order per invoice: **customer format → business setting → ZUGFeRD**; a customer
 Leitweg-ID always forces XRechnung.
@@ -49,7 +48,7 @@ In the customer form (visible when the module is enabled):
 | **E-invoice format** | Overrides the business default for this customer |
 | **Tax number (Steuernummer)** | The customer's German tax number, used as buyer tax number |
 | **Leitweg-ID** | Official ID for public-sector (B2G) customers — forces XRechnung |
-| **Receiver ID / scheme** | Identifier for XRechnung/PEPPOL delivery, e.g. `DE:VAT`, `0204` |
+| **Receiver ID / scheme** | Identifier for XRechnung delivery, e.g. `DE:VAT`, `0204` |
 
 ## Emitting an e-invoice
 

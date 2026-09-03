@@ -93,22 +93,3 @@ See [Online Payments](/features/payments) for setup instructions.
 Nothing to configure. Inkvoice renders invoices and quotes as HTML and the browser's print
 dialog turns them into PDFs, so there is no Chrome or Chromium to install, bundle or point
 at. The `CHROME_PATH` variable used by older versions is gone and is ignored if still set.
-
-## Demo Mode
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEMO_MODE` | `false` | Enable demo mode with sample data and periodic resets |
-| `DEMO_RESET_INTERVAL` | `86400000` | Reset interval in milliseconds (default 24 hours) |
-
-With `DEMO_MODE=true` the admin defaults change from `admin` / `changeme` to
-**`demo` / `demo`**, and the login page shows those credentials so visitors can
-get in. Leave `ADMIN_USER` and `ADMIN_PASS` unset to pick up that default. The
-repo's `docker-compose.yml` passes them through empty so the app decides, but
-`.env.example` and the compose snippet in [Getting Started](./getting-started)
-set them explicitly, so clear them if you copied either.
-
-The login page only ever advertises the literal `demo` / `demo` pair. If you set
-your own `ADMIN_PASS` alongside `DEMO_MODE=true`, no credentials are shown, so
-enabling demo mode on an instance that holds real data can never publish its
-password.
