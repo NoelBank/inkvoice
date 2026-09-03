@@ -17,7 +17,6 @@ import {
   isDraftNumber,
 } from "../utils/invoice-number";
 import { calculateInvoiceTotals, calculateLineItem } from "../utils/tax-calculator";
-import { maybeAutoTransmit } from "./einvoice-transport.service";
 import { getBaseCurrency } from "./exchange-rate.service";
 import { applyLateFees } from "./late-fee.service";
 import { recordPayment as recordPaymentService } from "./payment.service";
@@ -693,8 +692,6 @@ export function markSent(id: string): InvoiceWithItems | null {
   }
 
   // Automatic PEPPOL transmit when enabled and the customer is reachable.
-  // Fire-and-forget: a transport failure must never fail the invoice send.
-  maybeAutoTransmit(id);
 
   return getInvoice(id);
 }

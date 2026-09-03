@@ -28,7 +28,6 @@ import { settings } from "./routes/settings";
 import { tags } from "./routes/tags";
 import { tax } from "./routes/tax";
 import { templates } from "./routes/templates";
-import { webhooks } from "./routes/webhooks";
 import { getEnv } from "./utils/env";
 import { initXmlProfiles } from "./xml/init";
 
@@ -110,7 +109,6 @@ export function createApp(options?: CreateAppOptions): Hono {
   // Public routes (no auth required)
   app.route("/api/v1/auth", auth);
   app.route("/api/v1/public", publicRoutes);
-  app.route("/api/v1/webhooks", webhooks);
 
   // Additional routes registered by an overlay (e.g. OAuth, billing)
   if (options?.registerRoutes) {

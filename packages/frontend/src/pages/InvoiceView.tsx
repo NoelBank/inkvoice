@@ -26,7 +26,6 @@ import { EinvoicePanel } from "@/components/invoices/EinvoicePanel";
 import { PaymentHistory } from "@/components/invoices/PaymentHistory";
 import { RecordPaymentDialog } from "@/components/invoices/RecordPaymentDialog";
 import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog";
-import { TransmissionPanel } from "@/components/invoices/TransmissionPanel";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TagInput } from "@/components/shared/TagInput";
@@ -66,8 +65,6 @@ interface Props {
 export default function InvoiceView({ onBack }: Props) {
   const { t } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
-  const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
-  const franceEnabled = useSettingsStore((s) => s.settings.france_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<any>(null);
@@ -711,7 +708,6 @@ export default function InvoiceView({ onBack }: Props) {
       {einvoiceEnabled && <EinvoicePanel invoiceId={id!} />}
 
       {/* E-invoice transport (send + delivery state) */}
-      {(peppolEnabled || franceEnabled) && <TransmissionPanel invoiceId={id!} />}
 
       {/* Record Payment Dialog */}
       <RecordPaymentDialog

@@ -36,8 +36,6 @@ interface Props {
 export default function CustomerForm({ onSave }: Props) {
   const { t } = useTranslation();
   const einvoiceEnabled = useSettingsStore((s) => s.settings.einvoice_enabled === "true");
-  const peppolEnabled = useSettingsStore((s) => s.settings.peppol_enabled === "true");
-  const franceEnabled = useSettingsStore((s) => s.settings.france_enabled === "true");
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,34 +63,6 @@ export default function CustomerForm({ onSave }: Props) {
     token: null,
   });
   const [portalBusy, setPortalBusy] = useState(false);
-  const [peppolChecking, setPeppolChecking] = useState(false);
-  const [peppolResult, setPeppolResult] = useState<{
-    ok: "reachable" | "unreachable" | "conflict" | "error";
-    detail: string;
-  } | null>(null);
-  const [checkingFrance, setCheckingFrance] = useState(false);
-  const [franceReachable, setFranceReachable] = useState<boolean | null>(null);
-  const [franceResult, setFranceResult] = useState<string | null>(null);
-  async function checkFrance() {
-    if (!form.siren) return;
-    setCheckingFrance(true);
-    setFranceResult(null);
-    try {
-      const res = await api.franceLookup(form.siren, isEdit ? id : undefined);
-      if (res.success) {
-        setFranceReachable(res.data.exists);
-        setFranceResult(
-          res.data.exists ? t("customers.france_reachable") : t("customers.france_unreachable"),
-        );
-      } else {
-        setFranceResult(t("customers.france_check_error"));
-      }
-    } catch (err) {
-      setFranceResult(formatApiError(err, t));
-    } finally {
-      setCheckingFrance(false);
-    }
-  }
   const [form, setForm] = useState({
     name: navState?.prefillName ?? "",
     email: "",
@@ -184,7 +154,6 @@ export default function CustomerForm({ onSave }: Props) {
           currency: d.currency || "",
           tags: d.tags || [],
         });
-        setFranceReachable(d.france_reachable === 1);
         setStats({
           invoice_count: d.invoice_count,
           total_revenue: d.total_revenue,
@@ -488,7 +457,6 @@ export default function CustomerForm({ onSave }: Props) {
                     <option value="">{t("customers.einvoice_format_inherit")}</option>
                     <option value="zugferd">ZUGFeRD 2.2</option>
                     <option value="xrechnung">XRechnung (UBL)</option>
-                    <option value="peppol">PEPPOL BIS 3.0</option>
                   </select>
                 </FormField>
                 <FormField label={t("customers.tax_number")} hint={t("customers.tax_number_hint")}>
@@ -526,119 +494,6 @@ export default function CustomerForm({ onSave }: Props) {
                     />
                   </FormField>
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormField label={t("customers.siren")} hint={t("customers.siren_hint")}>
-                    <Input
-                      value={form.siren ?? ""}
-                      onChange={(e) => {
-                        set("siren")(e);
-                        setFranceReachable(null);
-                        setFranceResult(null);
-                      }}
-                      placeholder="123456789"
-                      maxLength={9}
-                    />
-                  </FormField>
-                  <FormField label={t("customers.siret")} hint={t("customers.siret_hint")}>
-                    <Input
-                      value={form.siret ?? ""}
-                      onChange={set("siret")}
-                      placeholder="12345678900012"
-                      maxLength={14}
-                    />
-                  </FormField>
-                </div>
-                {franceEnabled && (
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm text-muted-foreground">
-                      {franceResult ||
-                        (franceReachable === null
-                          ? ""
-                          : franceReachable
-                            ? t("customers.france_reachable")
-                            : t("customers.france_unreachable"))}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!form.siren || checkingFrance}
-                      onClick={checkFrance}
-                    >
-                      {t("customers.france_check")}
-                    </Button>
-                  </div>
-                )}
-                {peppolEnabled && (
-                  <div className="pt-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        peppolChecking ||
-                        !form.einvoice_receiver_id ||
-                        !form.einvoice_receiver_scheme
-                      }
-                      onClick={async () => {
-                        setPeppolChecking(true);
-                        setPeppolResult(null);
-                        try {
-                          const res = await api.lookupPeppolParticipant(
-                            form.einvoice_receiver_scheme,
-                            form.einvoice_receiver_id,
-                            isEdit ? id : undefined,
-                          );
-                          const cap = res.data;
-                          if (cap.servedElsewhere) {
-                            setPeppolResult({
-                              ok: "conflict",
-                              detail: cap.accessPointName
-                                ? t("peppol.lookup_conflict_with", {
-                                    name: cap.accessPointName,
-                                  })
-                                : t("peppol.lookup_conflict"),
-                            });
-                          } else if (cap.exists) {
-                            setPeppolResult({
-                              ok: "reachable",
-                              detail: t("peppol.lookup_reachable", {
-                                types: cap.documentTypes.join(", ") || "invoice",
-                              }),
-                            });
-                          } else {
-                            setPeppolResult({
-                              ok: "unreachable",
-                              detail: t("peppol.lookup_unreachable"),
-                            });
-                          }
-                        } catch (err) {
-                          setPeppolResult({ ok: "error", detail: formatApiError(err, t) });
-                        } finally {
-                          setPeppolChecking(false);
-                        }
-                      }}
-                    >
-                      {peppolChecking ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <SearchCheck className="h-4 w-4" />
-                      )}
-                      {t("peppol.check_button")}
-                    </Button>
-                    {peppolResult && (
-                      <p
-                        className={`mt-2 text-sm ${
-                          peppolResult.ok === "reachable"
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-amber-600 dark:text-amber-400"
-                        }`}
-                      >
-                        {peppolResult.detail}
-                      </p>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}

@@ -1,7 +1,6 @@
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
 import { runBackup, shouldRunBackups } from "./backup.service";
-import { startTransportWorker, stopTransportWorker } from "./einvoice-transport.service";
 import { processAllDue } from "./recurring.service";
 import { processAllReminders } from "./reminder.service";
 
@@ -17,10 +16,6 @@ export function startScheduler(intervalMs = 60 * 60 * 1000): void {
   // Then run periodically
   intervalId = setInterval(runScheduledTasks, intervalMs);
   logger.info({ intervalSec: intervalMs / 1000 }, "Scheduler started");
-
-  // The e-invoice transport queue needs a much faster tick than the hourly
-  // scheduler; it keeps its own 60s worker under the same lifecycle owner.
-  startTransportWorker();
 
   // Backups run on their own (much slower) cadence than the hourly task tick.
   // No immediate run at startup: a crash-loop would otherwise churn out a
@@ -48,7 +43,6 @@ export function stopScheduler(): void {
     clearInterval(backupIntervalId);
     backupIntervalId = null;
   }
-  stopTransportWorker();
 }
 
 async function runScheduledTasks(): Promise<void> {

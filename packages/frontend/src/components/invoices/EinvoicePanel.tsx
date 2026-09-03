@@ -35,7 +35,6 @@ const FORMAT_LABELS: Record<string, string> = {
   zugferd: "ZUGFeRD 2.2",
   "xrechnung-ubl": "XRechnung 3.0",
   "xrechnung-cii": "XRechnung CII",
-  peppol: "PEPPOL BIS 3.0",
 };
 
 function EinvoicePanel({ invoiceId }: Props) {

@@ -200,17 +200,7 @@ export default function Einvoices() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      {item.source === "peppol" ? (
-                        <Badge
-                          variant="outline"
-                          className="text-blue-600 dark:text-blue-400"
-                          title={
-                            item.sender_id ? `${item.sender_scheme}:${item.sender_id}` : undefined
-                          }
-                        >
-                          {t("einvoice.source_peppol")}
-                        </Badge>
-                      ) : item.source === "qonto" ? (
+                      {item.source === "qonto" ? (
                         <Badge
                           variant="outline"
                           className="text-blue-600 dark:text-blue-400"

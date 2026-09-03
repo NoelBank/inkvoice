@@ -392,55 +392,6 @@ export const api = {
     request<{ success: boolean }>(`/einvoices/transmissions/${transmissionId}/cancel`, {
       method: "POST",
     }),
-  getPeppolParticipant: () =>
-    request<{ success: boolean; data: any }>("/einvoices/peppol/participant"),
-  registerPeppolParticipant: (data: {
-    scheme: string;
-    identifier: string;
-    legal_name: string;
-    country_code: string;
-    contact_email: string;
-  }) =>
-    request<{ success: boolean; data: any }>("/einvoices/peppol/participant", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  refreshPeppolParticipant: () =>
-    request<{ success: boolean; data: any }>("/einvoices/peppol/participant/refresh", {
-      method: "POST",
-    }),
-  deregisterPeppolParticipant: () =>
-    request<{ success: boolean }>("/einvoices/peppol/participant", { method: "DELETE" }),
-  lookupPeppolParticipant: (scheme: string, identifier: string, customerId?: string) =>
-    request<{
-      success: boolean;
-      data: {
-        exists: boolean;
-        documentTypes: string[];
-        accessPointName: string | null;
-        servedElsewhere: boolean;
-      };
-    }>("/einvoices/peppol/lookup", {
-      method: "POST",
-      body: JSON.stringify({
-        scheme,
-        identifier,
-        ...(customerId ? { customer_id: customerId } : {}),
-      }),
-    }),
-  franceLookup: (siren: string, customerId?: string) =>
-    request<{ success: boolean; data: { exists: boolean; documentTypes: string[] } }>(
-      "/einvoices/france/lookup",
-      {
-        method: "POST",
-        body: JSON.stringify({ siren, ...(customerId ? { customer_id: customerId } : {}) }),
-      },
-    ),
-  listPeppolTransports: () =>
-    request<{
-      success: boolean;
-      data: Array<{ id: string; label: string; networks: string[]; configured: boolean }>;
-    }>("/einvoices/peppol/transports"),
   createCreditNote: (id: string) =>
     request<{ success: boolean; data: any }>(`/invoices/${id}/credit-note`, { method: "POST" }),
   listCreditNotes: (id: string) =>
