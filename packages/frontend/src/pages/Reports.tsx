@@ -37,9 +37,7 @@ const REPORT_TABS = [
   "profit-loss",
   "euer",
   "expenses-category",
-  "currency-breakdown",
   "cash-flow",
-  "accounting-export",
   "year-archive",
 ] as const;
 type ReportTab = (typeof REPORT_TABS)[number];
@@ -158,15 +156,12 @@ export default function Reports() {
   const [dateTo, setDateTo] = useState(() => fmtDate(now));
   const [monthsAhead, setMonthsAhead] = useState(6);
   const [euerYear, setEuerYear] = useState(now.getFullYear());
-  const [aeFormat, setAeFormat] = useState<"xero" | "quickbooks">("xero");
-  const [aeSalesAccount, setAeSalesAccount] = useState("200");
-  const [aeExpenseAccount, setAeExpenseAccount] = useState("400");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
-    if (tab === "accounting-export" || tab === "year-archive") {
+    if (tab === "year-archive") {
       // Download-only tabs: no JSON report to fetch.
       setData(null);
       setLoadError(null);
@@ -200,9 +195,6 @@ export default function Reports() {
         setData(res.data);
       } else if (tab === "expenses-category") {
         const res = await api.getExpensesByCategory(params);
-        setData(res.data);
-      } else if (tab === "currency-breakdown") {
-        const res = await api.getCurrencyBreakdown(params);
         setData(res.data);
       } else if (tab === "cash-flow") {
         const res = await api.getCashFlowForecast(monthsAhead);
@@ -252,26 +244,15 @@ export default function Reports() {
     window.open(api.reportCsvUrl(csvReport, params), "_blank");
   };
 
-  const downloadAccounting = (dataset: "invoices" | "payments" | "expenses") => {
-    const params: Record<string, string> = { format: aeFormat, dataset };
-    if (dateFrom) params.date_from = dateFrom;
-    if (dateTo) params.date_to = dateTo;
-    if (aeFormat === "xero") {
-      params.sales_account = aeSalesAccount;
-      params.expense_account = aeExpenseAccount;
-    }
-    window.open(api.accountingExportCsvUrl(params), "_blank");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t("reports.title")}</h1>
-        {tab !== "accounting-export" && (
+        {
           <Button variant="outline" onClick={exportCsv}>
             <Download className="h-4 w-4 mr-2" /> {t("common.export_csv")}
           </Button>
-        )}
+        }
       </div>
 
       {loadError && (
@@ -300,11 +281,7 @@ export default function Reports() {
           <TabsTrigger value="profit-loss">{t("reports.tab_profit_loss")}</TabsTrigger>
           <TabsTrigger value="euer">{t("reports.tab_euer")}</TabsTrigger>
           <TabsTrigger value="expenses-category">{t("reports.tab_expenses_category")}</TabsTrigger>
-          <TabsTrigger value="currency-breakdown">
-            {t("reports.tab_currency_breakdown")}
-          </TabsTrigger>
           <TabsTrigger value="cash-flow">{t("reports.tab_cash_flow")}</TabsTrigger>
-          <TabsTrigger value="accounting-export">{t("reports.tab_accounting_export")}</TabsTrigger>
           <TabsTrigger value="year-archive">{t("reports.tab_year_archive")}</TabsTrigger>
         </TabsList>
       </Tabs>
@@ -353,92 +330,6 @@ export default function Reports() {
       )}
 
       {tab === "year-archive" && <YearArchiveCard />}
-
-      {tab === "accounting-export" && (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <p className="text-sm text-muted-foreground">{t("reports.ae_intro")}</p>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">{t("reports.ae_format")}:</span>
-              {(["xero", "quickbooks"] as const).map((f) => (
-                <Button
-                  key={f}
-                  variant={aeFormat === f ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setAeFormat(f)}
-                >
-                  {f === "xero" ? "Xero" : "QuickBooks Online"}
-                </Button>
-              ))}
-            </div>
-
-            {aeFormat === "xero" && (
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground" htmlFor="ae-sales-account">
-                    {t("reports.ae_sales_account")}
-                  </label>
-                  <Input
-                    id="ae-sales-account"
-                    value={aeSalesAccount}
-                    onChange={(e) => setAeSalesAccount(e.target.value)}
-                    className="w-32"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground" htmlFor="ae-expense-account">
-                    {t("reports.ae_expense_account")}
-                  </label>
-                  <Input
-                    id="ae-expense-account"
-                    value={aeExpenseAccount}
-                    onChange={(e) => setAeExpenseAccount(e.target.value)}
-                    className="w-32"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground flex-1 min-w-[12rem]">
-                  {t("reports.ae_account_hint")}
-                </p>
-              </div>
-            )}
-
-            <div className="divide-y rounded-md border">
-              {(
-                [
-                  {
-                    ds: "invoices",
-                    label: t("reports.ae_invoices"),
-                    hint: t("reports.ae_invoices_hint"),
-                  },
-                  {
-                    ds: "payments",
-                    label: t("reports.ae_payments"),
-                    hint: t("reports.ae_payments_hint"),
-                  },
-                  {
-                    ds: "expenses",
-                    label: t("reports.ae_expenses"),
-                    hint: t("reports.ae_expenses_hint"),
-                  },
-                ] as const
-              ).map((row) => (
-                <div key={row.ds} className="flex items-center justify-between gap-4 p-3">
-                  <div>
-                    <p className="text-sm font-medium">{row.label}</p>
-                    <p className="text-xs text-muted-foreground">{row.hint}</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => downloadAccounting(row.ds)}>
-                    <Download className="h-4 w-4 mr-2" /> {t("reports.ae_download")}
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-xs text-muted-foreground">{t("reports.ae_docs_hint")}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {loading && (
         <div className="flex justify-center py-8" role="status">
@@ -890,58 +781,6 @@ export default function Reports() {
                     <TableCell />
                     <TableCell className="text-right tabular-nums">
                       {formatCurrency(data.total ?? 0)}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {!loading && tab === "currency-breakdown" && data && (
-        <Card>
-          <CardContent className="pt-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("reports.currency")}</TableHead>
-                  <TableHead className="text-right">{t("nav.invoices")}</TableHead>
-                  <TableHead className="text-right">{t("reports.native_total")}</TableHead>
-                  <TableHead className="text-right">{t("reports.rate")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("reports.base_total", { currency: data.base_currency })}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(!data.rows || data.rows.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {t("reports.no_currency_data")}
-                    </TableCell>
-                  </TableRow>
-                )}
-                {data.rows?.map((r: any) => (
-                  <TableRow key={r.currency}>
-                    <TableCell className="font-medium">{r.currency}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.invoice_count}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(r.native_total, r.currency)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{r.exchange_rate}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(r.base_total, data.base_currency)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {data.rows?.length > 0 && (
-                  <TableRow className="font-semibold">
-                    <TableCell colSpan={4}>
-                      {t("reports.consolidated_total", { currency: data.base_currency })}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(data.base_total ?? 0, data.base_currency)}
                     </TableCell>
                   </TableRow>
                 )}

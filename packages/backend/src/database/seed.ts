@@ -102,7 +102,6 @@ export async function seed(): Promise<void> {
       ["company_logo", ""],
       ["currency", "USD"],
       ["base_currency", "USD"],
-      ["exchange_rate_auto_fetch", "false"],
       ["tax_label", "Tax"],
       ["invoice_number_pattern", "INV-{YYYY}-{SEQ4}"],
       ["quote_number_pattern", "QT-{YYYY}-{SEQ4}"],

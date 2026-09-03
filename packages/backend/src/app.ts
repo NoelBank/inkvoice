@@ -12,7 +12,6 @@ import { auth } from "./routes/auth";
 import { customers } from "./routes/customers";
 import { dashboard } from "./routes/dashboard";
 import { einvoices } from "./routes/einvoice";
-import { exchangeRate } from "./routes/exchange-rate";
 import { expenses } from "./routes/expenses";
 import { exportRoutes } from "./routes/export";
 import { healthRoute } from "./routes/health";
@@ -136,7 +135,6 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/api/v1/products", products);
   app.route("/api/v1/expenses", expenses);
   app.route("/api/v1/attachments", attachments);
-  app.route("/api/v1/exchange-rate", exchangeRate);
   app.route("/api/v1/tax-definitions", tax);
   app.route("/api/v1/settings", settings);
   app.route("/api/v1/templates", templates);

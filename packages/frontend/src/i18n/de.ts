@@ -267,8 +267,6 @@ const de: TranslationKeys = {
     add_product_named: '"{{name}}" hinzufügen',
     payment_terms: "Zahlungsbedingungen",
     currency: "Währung",
-    exchange_rate: "Wechselkurs",
-    exchange_rate_hint: "1 {{from}} in {{base}} — wird zur Konsolidierung der Berichte verwendet",
     fetch_rate: "Abrufen",
     rate_fetched: "Wechselkurs aktualisiert",
     rate_unavailable: "Kurs konnte nicht abgerufen werden — bitte manuell eingeben",
@@ -837,10 +835,7 @@ const de: TranslationKeys = {
     euer_no_data: "Keine Einnahmen oder Ausgaben in {{year}}.",
     no_expense_data: "Keine Ausgaben für diesen Zeitraum.",
     // Aufschlüsselung nach Währung
-    tab_currency_breakdown: "Nach Währung",
     currency: "Währung",
-    native_total: "Summe in Originalwährung",
-    base_total: "Summe in Basiswährung ({{currency}})",
     consolidated_total: "Konsolidierte Summe ({{currency}})",
     no_currency_data: "Keine Rechnungen für diesen Zeitraum.",
     // Cashflow-Prognose
@@ -852,22 +847,6 @@ const de: TranslationKeys = {
     months_ahead: "Monate im Voraus",
     month: "Monat",
     // Buchhaltungsexport
-    tab_accounting_export: "Buchhaltungsexport",
-    ae_intro:
-      "Laden Sie Rechnungen, Zahlungen und Ausgaben als CSV-Dateien herunter, formatiert für den Import in QuickBooks Online oder Xero — eine einseitige Übergabe an Ihre Buchhaltung.",
-    ae_format: "Format",
-    ae_invoices: "Rechnungen",
-    ae_invoices_hint: "Ausgangsrechnungen — eine Zeile pro Position.",
-    ae_payments: "Zahlungen",
-    ae_payments_hint: "Erfasste Zahlungen als Kontoauszugs-CSV.",
-    ae_expenses: "Ausgaben",
-    ae_expenses_hint: "Ausgaben als Eingangsrechnungen / Einkäufe.",
-    ae_sales_account: "Erlöskonto",
-    ae_expense_account: "Aufwandskonto",
-    ae_account_hint:
-      "Xero erfordert pro Position einen Kontocode. Standardwerte werden angezeigt — passen Sie sie an Ihren Kontenrahmen an.",
-    ae_download: "CSV herunterladen",
-    ae_docs_hint: "Lesen Sie vor dem Import die Spaltenzuordnungs-Referenz in der Dokumentation.",
   },
 
   // Einstellungen
@@ -999,9 +978,6 @@ const de: TranslationKeys = {
     currency: "Währung",
     base_currency: "Basiswährung",
     base_currency_hint: "Berichte und das Dashboard konsolidieren jede Währung in diese Währung",
-    auto_fetch_rates: "Wechselkurse",
-    auto_fetch_rates_hint: "Tägliche EZB-Kurse abrufen, wenn eine Fremdwährung ausgewählt wird",
-    auto_fetch_rates_label: "Kurse automatisch abrufen",
     tax_label: "Steuerbezeichnung",
     tax_label_placeholder: "Steuer, MwSt., USt. ...",
     number_patterns: "Nummernkreise",

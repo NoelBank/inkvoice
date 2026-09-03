@@ -1,14 +1,4 @@
 import { Hono } from "hono";
-import {
-  EXPORT_DATASETS,
-  EXPORT_FORMATS,
-  type ExportDataset,
-  type ExportFormat,
-  getExpenseLayout,
-  getInvoiceLayout,
-  getPaymentLayout,
-} from "../services/accounting-export.formats";
-import * as accountingExport from "../services/accounting-export.service";
 import * as reportService from "../services/report.service";
 import { buildCsv, type CsvColumn, csvHeaders } from "../utils/csv";
 import { todayIso } from "../utils/date";
@@ -191,32 +181,6 @@ reports.get("/profit-loss/csv", (c) => {
   return c.body(buildCsv(data.months, cols));
 });
 
-reports.get("/currency-breakdown", (c) => {
-  const data = reportService.getCurrencyBreakdown({
-    date_from: c.req.query("date_from"),
-    date_to: c.req.query("date_to"),
-  });
-  return c.json({ success: true, data });
-});
-
-reports.get("/currency-breakdown/csv", (c) => {
-  const data = reportService.getCurrencyBreakdown({
-    date_from: c.req.query("date_from"),
-    date_to: c.req.query("date_to"),
-  });
-  const cols: CsvColumn<(typeof data.rows)[number]>[] = [
-    { header: "Currency", key: "currency" },
-    { header: "Invoices", key: "invoice_count" },
-    { header: "Native Total", key: "native_total" },
-    { header: "Rate", key: "exchange_rate" },
-    { header: `Base Total (${data.base_currency})`, key: "base_total" },
-  ];
-  const date = todayIso();
-  const headers = csvHeaders(`currency-breakdown-${date}.csv`);
-  for (const [k, v] of Object.entries(headers)) c.header(k, v);
-  return c.body(buildCsv(data.rows, cols));
-});
-
 reports.get("/cash-flow-forecast", (c) => {
   const monthsParam = parseInt(c.req.query("months") || "6", 10);
   const months = Math.min(Math.max(Number.isFinite(monthsParam) ? monthsParam : 6, 1), 24);
@@ -238,49 +202,6 @@ reports.get("/cash-flow-forecast/csv", (c) => {
   const headers = csvHeaders(`cash-flow-forecast-${date}.csv`);
   for (const [k, v] of Object.entries(headers)) c.header(k, v);
   return c.body(buildCsv(data, cols));
-});
-
-// Accounting export — QuickBooks Online / Xero-compatible CSV for invoices,
-// payments and expenses over a date range. One handler dispatches on
-// ?format=xero|quickbooks and ?dataset=invoices|payments|expenses.
-reports.get("/accounting-export/csv", (c) => {
-  const formatParam = c.req.query("format");
-  const datasetParam = c.req.query("dataset");
-  const format: ExportFormat = EXPORT_FORMATS.includes(formatParam as ExportFormat)
-    ? (formatParam as ExportFormat)
-    : "xero";
-  const dataset: ExportDataset = EXPORT_DATASETS.includes(datasetParam as ExportDataset)
-    ? (datasetParam as ExportDataset)
-    : "invoices";
-
-  const range = {
-    date_from: c.req.query("date_from"),
-    date_to: c.req.query("date_to"),
-  };
-  const opts = {
-    salesAccount: c.req.query("sales_account") || "200",
-    expenseAccount: c.req.query("expense_account") || "400",
-  };
-
-  let csv: string;
-  let stem: string;
-  if (dataset === "payments") {
-    const layout = getPaymentLayout(format);
-    csv = buildCsv(accountingExport.getPaymentExportRows(range), layout.columns);
-    stem = layout.filenameStem;
-  } else if (dataset === "expenses") {
-    const layout = getExpenseLayout(format, opts);
-    csv = buildCsv(accountingExport.getExpenseExportRows(range), layout.columns);
-    stem = layout.filenameStem;
-  } else {
-    const layout = getInvoiceLayout(format, opts);
-    csv = buildCsv(accountingExport.getInvoiceExportRows(range), layout.columns);
-    stem = layout.filenameStem;
-  }
-
-  const headers = csvHeaders(`inkvoice-${stem}-${todayIso()}.csv`);
-  for (const [k, v] of Object.entries(headers)) c.header(k, v);
-  return c.body(csv);
 });
 
 // Cash-basis EÜR for one calendar year; `year` defaults to the current one.

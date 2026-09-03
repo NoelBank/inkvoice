@@ -348,63 +348,6 @@ export function getProfitAndLoss(params: DateRangeParams): {
   return { base_currency: getBaseCurrency(), revenue, expenses, net: revenue - expenses, months };
 }
 
-export interface CurrencyBreakdownRow {
-  currency: string;
-  invoice_count: number;
-  native_total: number;
-  base_total: number;
-  /** Effective blended rate (base_total / native_total); 1 for the base currency. */
-  exchange_rate: number;
-}
-
-/**
- * Exposure across currencies: issued (non-draft, non-voided) invoices grouped
- * by their own currency, with both the native total and its base-currency
- * equivalent so a mixed-currency user can see the split behind a consolidated
- * total.
- */
-export function getCurrencyBreakdown(params: DateRangeParams): {
-  base_currency: string;
-  rows: CurrencyBreakdownRow[];
-  base_total: number;
-} {
-  const db = getDb();
-  const conditions = [
-    "status NOT IN ('draft', 'voided')",
-    "deleted_at IS NULL",
-    "(type = 'invoice' OR type IS NULL)",
-  ];
-  const queryParams: string[] = [];
-  if (params.date_from) {
-    conditions.push("issue_date >= ?");
-    queryParams.push(params.date_from);
-  }
-  if (params.date_to) {
-    conditions.push("issue_date <= ?");
-    queryParams.push(params.date_to);
-  }
-
-  const where = `WHERE ${conditions.join(" AND ")}`;
-  const raw = db
-    .query(
-      `SELECT COALESCE(currency, 'USD') as currency,
-              COUNT(*) as invoice_count,
-              COALESCE(SUM(total), 0) as native_total,
-              COALESCE(SUM(total * COALESCE(exchange_rate, 1)), 0) as base_total
-       FROM invoices ${where}
-       GROUP BY COALESCE(currency, 'USD')
-       ORDER BY base_total DESC`,
-    )
-    .all(...queryParams) as Omit<CurrencyBreakdownRow, "exchange_rate">[];
-
-  const rows: CurrencyBreakdownRow[] = raw.map((r) => ({
-    ...r,
-    exchange_rate: r.native_total ? Math.round((r.base_total / r.native_total) * 1e6) / 1e6 : 1,
-  }));
-  const base_total = rows.reduce((sum, r) => sum + r.base_total, 0);
-  return { base_currency: getBaseCurrency(), rows, base_total };
-}
-
 export interface CashFlowForecastRow {
   month: string;
   expected_invoiced: number;

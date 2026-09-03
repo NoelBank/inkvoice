@@ -5,8 +5,6 @@ import { toast } from "sonner";
 import { api } from "@/api/client";
 import { AttachmentsCard, type AttachmentsCardHandle } from "@/components/shared/AttachmentsCard";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
-import { CurrencyCombobox } from "@/components/shared/CurrencyCombobox";
-import { ExchangeRateField } from "@/components/shared/ExchangeRateField";
 import { FormField } from "@/components/shared/FormField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,10 +41,6 @@ export default function ExpenseForm({ onSave }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const defaultCurrency = useSettingsStore((s) => s.settings.currency) || "USD";
-  const baseCurrency = useSettingsStore(
-    (s) => s.settings.base_currency || s.settings.currency || "USD",
-  );
-  const autoFetchRates = useSettingsStore((s) => s.settings.exchange_rate_auto_fetch === "true");
   const isEdit = !!id && id !== "new";
   const [loading, setLoading] = useState(false);
   const [rebilling, setRebilling] = useState(false);
@@ -155,25 +149,6 @@ export default function ExpenseForm({ onSave }: Props) {
     const newForm = { ...form, [field]: value };
     setForm(newForm);
     onChange(field as any, newForm as any);
-  };
-
-  const handleCurrencyChange = (code: string) => {
-    const isBase = code.toUpperCase() === baseCurrency.toUpperCase();
-    setForm((f) => ({ ...f, currency: code, exchange_rate: isBase ? 1 : f.exchange_rate }));
-    if (autoFetchRates && !isBase) {
-      api
-        .getExchangeRate(code, baseCurrency)
-        .then((res) => {
-          if (res.data.rate != null) {
-            setForm((f) =>
-              f.currency === code ? { ...f, exchange_rate: res.data.rate as number } : f,
-            );
-          }
-        })
-        .catch(() => {
-          /* offline — keep manual entry */
-        });
-    }
   };
 
   const canRebill = isEdit && !!form.is_billable && !!form.customer_id && !billedInvoiceId;
@@ -291,18 +266,7 @@ export default function ExpenseForm({ onSave }: Props) {
                 ))}
               </select>
             </FormField>
-            <FormField label={t("invoices.currency")}>
-              <CurrencyCombobox value={form.currency} onChange={handleCurrencyChange} />
-            </FormField>
           </div>
-
-          <ExchangeRateField
-            fromCurrency={form.currency}
-            baseCurrency={baseCurrency}
-            rate={form.exchange_rate}
-            onChange={(rate) => setForm((f) => ({ ...f, exchange_rate: rate }))}
-            amount={form.amount}
-          />
 
           <FormField label={t("expenses.receipt_reference")}>
             <Input

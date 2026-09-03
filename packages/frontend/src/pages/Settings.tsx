@@ -372,27 +372,6 @@ export default function Settings() {
                     ))}
                   </select>
                 </FormField>
-                <FormField
-                  label={t("settings.auto_fetch_rates")}
-                  hint={t("settings.auto_fetch_rates_hint")}
-                >
-                  <label className="flex items-center gap-2 h-9">
-                    <input
-                      type="checkbox"
-                      checked={settings.exchange_rate_auto_fetch === "true"}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          exchange_rate_auto_fetch: e.target.checked ? "true" : "false",
-                        })
-                      }
-                      className="rounded"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {t("settings.auto_fetch_rates_label")}
-                    </span>
-                  </label>
-                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label={t("settings.date_format")}>

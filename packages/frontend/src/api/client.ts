@@ -801,17 +801,6 @@ export const api = {
   },
   getEuerReport: (year: number) =>
     request<{ success: boolean; data: any }>(`/reports/euer?year=${year}`),
-  getCurrencyBreakdown: (params?: Record<string, string>) => {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
-    return request<{ success: boolean; data: any }>(`/reports/currency-breakdown${query}`);
-  },
-  getExchangeRate: (from: string, to?: string) => {
-    const q = new URLSearchParams({ from, ...(to ? { to } : {}) }).toString();
-    return request<{
-      success: boolean;
-      data: { from: string; to: string; rate: number | null };
-    }>(`/exchange-rate?${q}`);
-  },
   reportCsvUrl: (report: string, params?: Record<string, string>) => {
     const filtered = params
       ? Object.fromEntries(Object.entries(params).filter(([, v]) => v))
@@ -819,14 +808,6 @@ export const api = {
     const query = filtered ? `?${new URLSearchParams(filtered).toString()}` : "";
     return `${API_BASE}/reports/${report}/csv${query}`;
   },
-  accountingExportCsvUrl: (params?: Record<string, string>) => {
-    const filtered = params
-      ? Object.fromEntries(Object.entries(params).filter(([, v]) => v))
-      : undefined;
-    const query = filtered ? `?${new URLSearchParams(filtered).toString()}` : "";
-    return `${API_BASE}/reports/accounting-export/csv${query}`;
-  },
-
   // Export
   backupUrl: () => `${API_BASE}/export/backup`,
   sqliteBackupUrl: () => `${API_BASE}/export/sqlite`,

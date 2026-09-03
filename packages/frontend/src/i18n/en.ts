@@ -251,8 +251,6 @@ const en = {
     add_product_named: 'Add "{{name}}"',
     payment_terms: "Payment Terms",
     currency: "Currency",
-    exchange_rate: "Exchange Rate",
-    exchange_rate_hint: "1 {{from}} in {{base}} — used to consolidate reports",
     fetch_rate: "Fetch",
     rate_fetched: "Exchange rate updated",
     rate_unavailable: "Couldn't fetch a rate — enter it manually",
@@ -816,10 +814,7 @@ const en = {
     euer_no_data: "No receipts or expenses in {{year}}.",
     no_expense_data: "No expenses for this period.",
     // Currency breakdown
-    tab_currency_breakdown: "By Currency",
     currency: "Currency",
-    native_total: "Native Total",
-    base_total: "Base Total ({{currency}})",
     consolidated_total: "Consolidated Total ({{currency}})",
     no_currency_data: "No invoices for this period.",
     // Cash flow forecast
@@ -831,22 +826,6 @@ const en = {
     months_ahead: "Months ahead",
     month: "Month",
     // Accounting export
-    tab_accounting_export: "Accounting Export",
-    ae_intro:
-      "Download invoices, payments and expenses as CSV files formatted for QuickBooks Online or Xero import — a one-way hand-off for your accountant.",
-    ae_format: "Format",
-    ae_invoices: "Invoices",
-    ae_invoices_hint: "Sales invoices — one row per line item.",
-    ae_payments: "Payments",
-    ae_payments_hint: "Recorded payments as a bank-statement CSV.",
-    ae_expenses: "Expenses",
-    ae_expenses_hint: "Expenses as bills / purchases.",
-    ae_sales_account: "Sales account code",
-    ae_expense_account: "Expense account code",
-    ae_account_hint:
-      "Xero requires an account code per line. Defaults are shown — adjust to match your chart of accounts.",
-    ae_download: "Download CSV",
-    ae_docs_hint: "See the column-mapping reference in the docs before importing.",
   },
 
   // Settings
@@ -974,9 +953,6 @@ const en = {
     currency: "Currency",
     base_currency: "Base Currency",
     base_currency_hint: "Reports and the dashboard consolidate every currency into this one",
-    auto_fetch_rates: "Exchange Rates",
-    auto_fetch_rates_hint: "Fetch daily ECB rates when a foreign currency is picked",
-    auto_fetch_rates_label: "Auto-fetch rates",
     tax_label: "Tax Label",
     tax_label_placeholder: "Tax, VAT, GST...",
     number_patterns: "Number Patterns",

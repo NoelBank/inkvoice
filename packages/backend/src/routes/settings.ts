@@ -32,7 +32,6 @@ const ALLOWED_SETTINGS = new Set([
   "company_logo",
   "currency",
   "base_currency",
-  "exchange_rate_auto_fetch",
   "public_url",
   "pdf_qr_code_enabled",
   "pdf_epc_qr_enabled",
