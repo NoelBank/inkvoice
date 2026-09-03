@@ -55,12 +55,6 @@ beforeAll(async () => {
   runMigrations();
   await seed();
   app = createApp();
-
-  const res = await app.request("/api/v1/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "admin", password: "testpass123" }),
-  });
 });
 
 afterAll(() => {

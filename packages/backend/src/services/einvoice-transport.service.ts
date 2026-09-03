@@ -388,7 +388,7 @@ async function processTransmission(
 
     const retryable = err instanceof TransportHttpError ? err.isRetryable() : true;
     if (!retryable || attemptNumber >= MAX_ATTEMPTS) {
-      failTransmission(row.id, message, statusCode, responseBody);
+      failTransmission(row.id, message, statusCode);
     } else {
       const delayMinutes =
         BACKOFF_MINUTES[attemptNumber - 1] ?? BACKOFF_MINUTES[BACKOFF_MINUTES.length - 1];
@@ -434,7 +434,6 @@ function failTransmission(
   transmissionId: string,
   message: string,
   statusCode: number | null = null,
-  responseBody: string | null = null,
 ): void {
   const db = getDb();
   const row = db
