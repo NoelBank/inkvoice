@@ -85,6 +85,5 @@ export function runBackup(): BackupFile | null {
 
 export function shouldRunBackups(): boolean {
   const env = getEnv();
-  // A demo instance wipes itself on a timer; snapshotting it is pure noise.
-  return env.BACKUP_ENABLED && !env.DEMO_MODE;
+  return env.BACKUP_ENABLED;
 }

@@ -171,55 +171,6 @@ describe("Templates CRUD", () => {
   });
 });
 
-describe("Users CRUD", () => {
-  let userId: string;
-
-  test("create user", async () => {
-    const res = await authed("/api/v1/users", {
-      method: "POST",
-      body: JSON.stringify({
-        username: "testuser",
-        password: "testpassword12",
-        email: "test@example.com",
-      }),
-    });
-    expect(res.status).toBe(201);
-    const data = (await res.json()) as any;
-    expect(data.data.username).toBe("testuser");
-    userId = data.data.id;
-  });
-
-  test("list users", async () => {
-    const res = await authed("/api/v1/users");
-    expect(res.status).toBe(200);
-    const data = (await res.json()) as any;
-    expect(data.data.length).toBeGreaterThanOrEqual(2);
-  });
-
-  test("update user", async () => {
-    const res = await authed(`/api/v1/users/${userId}`, {
-      method: "PUT",
-      body: JSON.stringify({ display_name: "Test User" }),
-    });
-    expect(res.status).toBe(200);
-    const data = (await res.json()) as any;
-    expect(data.data.display_name).toBe("Test User");
-  });
-
-  test("delete user", async () => {
-    const res = await authed(`/api/v1/users/${userId}`, { method: "DELETE" });
-    expect(res.status).toBe(200);
-  });
-
-  test("password too short returns 400", async () => {
-    const res = await authed("/api/v1/users", {
-      method: "POST",
-      body: JSON.stringify({ username: "shortpw", password: "abc" }),
-    });
-    expect(res.status).toBe(400);
-  });
-});
-
 describe("Invoice State Machine", () => {
   let customerId: string;
   let invoiceId: string;

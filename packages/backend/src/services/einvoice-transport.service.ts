@@ -29,7 +29,6 @@ import {
   type TransportWebhookResult,
 } from "./einvoice-transports/types";
 import { validateEinvoice } from "./einvoice-validator.service";
-import { dispatchEvent } from "./outgoing-webhooks.service";
 import { getSetting } from "./settings.service";
 
 /** Retry backoff in minutes, one entry per attempt after attempt N failed. */
@@ -380,12 +379,6 @@ async function processTransmission(
       [receipt.providerMessageId, row.id],
     );
     recordAttempt(row.id, attemptNumber, 202, null, null);
-    void dispatchEvent("einvoice.transmitted", {
-      invoice_id: row.invoice_id,
-      transmission_id: row.id,
-      invoice_number: invoice.invoice_number,
-      transport_id: transport.id,
-    });
     return;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Transport send failed";
@@ -458,13 +451,6 @@ function failTransmission(
       resource_type: "invoice",
       resource_id: row.invoice_id,
       metadata: { transmission_id: transmissionId, detail: message, status_code: statusCode },
-    });
-    void dispatchEvent("einvoice.failed", {
-      invoice_id: row.invoice_id,
-      transmission_id: transmissionId,
-      detail: message,
-      status_code: statusCode,
-      response_body: responseBody,
     });
   }
 }
@@ -769,12 +755,6 @@ function handleInboundDocument(
     resource_id: id,
     metadata: { source, provider_message_id: result.providerMessageId },
   });
-  void dispatchEvent("einvoice.received", {
-    inbox_id: id,
-    provider_message_id: result.providerMessageId,
-    sender_scheme: result.sender.scheme,
-    sender_id: result.sender.value,
-  });
 }
 
 function handleInboundStatus(result: Extract<TransportWebhookResult, { kind: "status" }>): void {
@@ -811,10 +791,6 @@ function handleInboundStatus(result: Extract<TransportWebhookResult, { kind: "st
       transmission_id: row.id,
       detail: result.detail,
     };
-    void dispatchEvent(
-      result.status === "delivered" ? "einvoice.delivered" : "einvoice.rejected",
-      payload,
-    );
   }
 }
 

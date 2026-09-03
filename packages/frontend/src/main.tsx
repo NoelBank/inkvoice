@@ -1,10 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
-// Overlay bootstrap: registers overlay/plugin routes, nav, slots, settings
-// tabs, and i18n at import time (before render). OSS ships an empty stub; an
-// overlay overrides @/registrations via the build's overlay resolver.
-import "@/registrations";
 import App from "./App";
 import { I18nProvider } from "./i18n/I18nProvider";
 

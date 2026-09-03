@@ -1,6 +1,5 @@
 import type { InvoiceWithItems } from "../types/invoice";
 import { logActivity } from "./activity.service";
-import { dispatchEvent } from "./outgoing-webhooks.service";
 import { getAllSettings, getSetting } from "./settings.service";
 
 /**
@@ -19,14 +18,6 @@ export async function notifyInvoiceViewed(invoice: InvoiceWithItems): Promise<vo
     resource_type: "invoice",
     resource_id: invoice.id,
     metadata: { invoice_number: invoice.invoice_number, customer_name: customerName },
-  });
-
-  void dispatchEvent("invoice.viewed", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    total: invoice.total,
-    currency: invoice.currency,
-    customer_name: customerName,
   });
 
   if (getSetting("notify_on_invoice_view") !== "true") return;

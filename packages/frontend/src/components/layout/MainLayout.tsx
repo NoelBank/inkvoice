@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { CommandPalette } from "@/components/CommandPalette";
-import { FeedbackButton } from "@/components/FeedbackButton";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePersistentState } from "@/hooks/use-persistent-state";
 import { useTranslation } from "@/i18n";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { Slot } from "./slot-registry";
 
 export function MainLayout() {
   const { t } = useTranslation();
@@ -44,7 +42,6 @@ export function MainLayout() {
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Slot name="top-banners" />
         <Header
           onToggleSidebar={() => {
             if (isMobile) {
@@ -58,7 +55,6 @@ export function MainLayout() {
           <Outlet />
         </main>
       </div>
-      <FeedbackButton />
       <CommandPalette />
     </div>
   );

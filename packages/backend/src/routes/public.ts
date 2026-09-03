@@ -10,7 +10,6 @@ import {
 import * as quoteService from "../services/quote.service";
 import { getAllSettings, getSetting } from "../services/settings.service";
 import { isStripeConfigured } from "../services/stripe.service";
-import { DEMO_ADMIN_PASS, DEMO_ADMIN_USER, getEnv } from "../utils/env";
 import { isLikelyBot } from "../utils/user-agent";
 import { buildXmlInvoiceData } from "../xml/build-data";
 import { getProfile } from "../xml/profile-registry";
@@ -21,26 +20,7 @@ const publicRoutes = new Hono();
 // Everything here answers before auth, so it is permanently public — keep the
 // payload minimal.
 publicRoutes.get("/config", (c) => {
-  const env = getEnv();
-
-  // Only ever publish the well-known demo pair. Someone who turns DEMO_MODE on
-  // for its other features (sample data, periodic reset) on a box with real
-  // credentials must not have those credentials handed out here, so this fails
-  // closed rather than echoing whatever ADMIN_PASS happens to be.
-  const isThrowawayAdmin = env.ADMIN_USER === DEMO_ADMIN_USER && env.ADMIN_PASS === DEMO_ADMIN_PASS;
-
-  return c.json({
-    success: true,
-    data: {
-      demo_mode: env.DEMO_MODE,
-      demo_credentials:
-        env.DEMO_MODE && isThrowawayAdmin
-          ? { username: DEMO_ADMIN_USER, password: DEMO_ADMIN_PASS }
-          : null,
-      oidc_enabled: env.OIDC_ENABLED,
-      oidc_provider_name: env.OIDC_PROVIDER_NAME || null,
-    },
-  });
+  return c.json({ success: true, data: {} });
 });
 
 // Extension point: a deployment can report whether an online "Pay now"

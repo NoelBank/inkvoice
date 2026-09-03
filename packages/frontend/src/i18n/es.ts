@@ -54,8 +54,6 @@ const es: TranslationKeys = {
     error_boundary_body: "Se produjo un error inesperado. Pruebe a recargar la página.",
     retry: "Reintentar",
     load_failed: "No se pudo cargar esta página. Compruebe su conexión e inténtelo de nuevo.",
-    demo_mode: "Modo demo",
-    demo_mode_notice: "Los datos se restablecen periódicamente",
     just_now: "ahora mismo",
     seconds_ago: "hace {{count}}s",
     minutes_ago: "hace {{count}}min",
@@ -84,10 +82,7 @@ const es: TranslationKeys = {
     reports: "Informes",
 
     settings: "Configuración",
-    users: "Usuarios",
-    activity: "Actividad",
     templates: "Plantillas",
-    plugins: "Plugins",
   },
 
   // Encabezado
@@ -127,21 +122,6 @@ const es: TranslationKeys = {
     sign_in: "Iniciar sesión",
     signing_in: "Iniciando sesión...",
     login_failed: "Error al iniciar sesión",
-    demo_credentials: "Acceso de demostración:",
-    demo_fill: "Rellenar",
-    sign_in_with_sso: "Iniciar sesión con SSO",
-    sign_in_with_provider: "Iniciar sesión con {{provider}}",
-    sso_or: "o",
-    oidc_error: {
-      invalid_state: "No se pudo validar el intento de inicio de sesión. Inténtelo de nuevo.",
-      auth_failed: "Falló el inicio de sesión con SSO. Inténtelo de nuevo o use su contraseña.",
-      email_required: "Su proveedor de identidad no proporcionó una dirección de correo.",
-      unverified_email: "Su proveedor de identidad no pudo verificar su correo electrónico.",
-      domain_not_allowed: "Su dominio de correo no tiene permitido iniciar sesión.",
-      provisioning_disabled: "No existe una cuenta para usted y el auto-registro está desactivado.",
-      user_inactive: "Su cuenta ha sido desactivada.",
-      misconfigured: "SSO no está configurado correctamente. Contacte con su administrador.",
-    },
     email: "Correo electrónico",
     forgot_title: "¿Olvidó su contraseña?",
     forgot_description:
@@ -902,7 +882,6 @@ const es: TranslationKeys = {
     tab_products: "Productos",
     tab_peppol: "PEPPOL",
     tab_templates: "Plantillas",
-    tab_api: "API",
     preferences: "Preferencias",
     save_settings: "Guardar configuración",
     settings_saved: "Configuración guardada",
@@ -986,22 +965,8 @@ const es: TranslationKeys = {
     wipe_cta: "Lo entiendo, borrar todo",
     wipe_success: "Todos los datos borrados. Recargando…",
     wipe_error: "Error al borrar",
-    demo_section: "Demo y datos de ejemplo",
-    sample_data_description:
-      "Rellene este panel con clientes, productos y facturas de ejemplo para capturas de pantalla o evaluación. Se rechaza si ya existen facturas.",
-    load_sample_data: "Cargar datos de ejemplo",
-    sample_data_loading: "Cargando datos de ejemplo…",
-    sample_data_loaded:
-      "Cargados {{customers}} clientes, {{products}} productos y {{invoices}} facturas",
     sample_data_unavailable:
       "La base de datos ya tiene facturas; no se pueden cargar datos de ejemplo.",
-    demo_reset_description:
-      "Borra y vuelve a poblar la base de datos de demostración. Solo disponible porque DEMO_MODE está activado.",
-    reset_demo: "Restablecer datos de demo",
-    demo_data_reset: "Datos de demo restablecidos",
-    demo_reset_confirm_title: "¿Restablecer los datos de demo?",
-    demo_reset_confirm_body:
-      "Esto borrará la base de datos actual y la volverá a poblar con contenido de demostración. No hay vuelta atrás.",
     // Asistente de configuración inicial
     onboarding_title: "Configuremos Inkvoice",
     onboarding_subtitle:
@@ -1147,53 +1112,8 @@ const es: TranslationKeys = {
   },
 
   // Usuarios
-  users: {
-    title: "Usuarios",
-    add_user: "Añadir usuario",
-    username: "Nombre de usuario",
-    display_name: "Nombre visible",
-    email: "Correo electrónico",
-    role: "Rol",
-    status: "Estado",
-    edit_user: "Editar usuario",
-    new_user: "Nuevo usuario",
-    password: "Contraseña",
-    new_password: "Nueva contraseña (en blanco para mantener)",
-    admin_label: "Administrador",
-    active_label: "Activo",
-    delete_title: "Eliminar usuario",
-    delete_description:
-      "¿Seguro que desea eliminar este usuario? Esta acción no se puede deshacer.",
-    batch_delete_description: "Esto eliminará definitivamente los usuarios seleccionados.",
-    batch_confirm: "Esto aplicará {{action}} a los usuarios seleccionados.",
-    user_created: "Usuario creado",
-    user_updated: "Usuario actualizado",
-    user_deleted: "Usuario eliminado",
-    batch_updated: "{{count}} usuario(s) actualizado(s)",
-    batch_update_failed: "{{count}} usuario(s) con error",
-    batch_action_title: "¿{{action}} {{count}} usuario(s)?",
-    activate: "Activar",
-    deactivate: "Desactivar",
-    // Validación
-    username_required: "El nombre de usuario es obligatorio",
-    username_max: "El nombre de usuario debe tener como máximo 50 caracteres",
-    email_invalid: "Dirección de correo no válida",
-    password_required: "La contraseña es obligatoria",
-    password_min: "La contraseña debe tener al menos 6 caracteres",
-  },
 
   // Registro de actividad
-  activity: {
-    title: "Registro de actividad",
-    no_activity: "Aún no hay actividad registrada.",
-    filter_all: "Todos los recursos",
-    filter_invoices: "Facturas",
-    filter_customers: "Clientes",
-    filter_products: "Productos",
-    filter_quotes: "Presupuestos",
-    filter_users: "Usuarios",
-    filter_settings: "Configuración",
-  },
 
   // Plantillas
   templates: {

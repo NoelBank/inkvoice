@@ -3,13 +3,11 @@ import {
   ClipboardList,
   Clock,
   FileText,
-  History,
   LayoutDashboard,
   Package,
   Plus,
   Repeat,
   Settings,
-  UserCog,
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -139,13 +137,7 @@ export function CommandPalette() {
       { icon: Users, label: t("nav.customers"), to: "/customers" },
       { icon: Package, label: t("nav.products"), to: "/products" },
       { icon: BarChart3, label: t("nav.reports"), to: "/reports" },
-      ...(isAdmin
-        ? [
-            { icon: Settings, label: t("nav.settings"), to: "/settings" },
-            { icon: UserCog, label: t("nav.users"), to: "/users" },
-            { icon: History, label: t("nav.activity"), to: "/activity" },
-          ]
-        : []),
+      ...(isAdmin ? [{ icon: Settings, label: t("nav.settings"), to: "/settings" }] : []),
     ],
     [t, isAdmin],
   );

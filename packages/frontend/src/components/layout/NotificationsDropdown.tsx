@@ -49,9 +49,6 @@ function actionPath(item: ActivityItem): string | null {
   if (item.resource_type === "invoice" && item.resource_id) {
     return `/invoices/${item.resource_id}`;
   }
-  if (item.resource_type === "user" && item.resource_id) {
-    return `/users`;
-  }
   return null;
 }
 

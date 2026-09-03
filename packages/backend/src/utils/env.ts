@@ -14,8 +14,6 @@ export interface Env {
   RATE_LIMIT_ENABLED: boolean;
   RATE_LIMIT_MAX_ATTEMPTS: number;
   RATE_LIMIT_WINDOW: number;
-  DEMO_MODE: boolean;
-  DEMO_RESET_INTERVAL: number;
   ALLOWED_ORIGINS: string[];
   SMTP_HOST: string;
   SMTP_PORT: number;
@@ -35,15 +33,7 @@ export interface Env {
   PEPPOL_SH_API_KEY: string;
   PEPPOL_SH_WEBHOOK_SECRET: string;
   PEPPOL_SH_BASE_URL: string;
-  OIDC_ISSUER_URL: string;
-  OIDC_CLIENT_ID: string;
-  OIDC_CLIENT_SECRET: string;
-  OIDC_SCOPE: string;
-  OIDC_ALLOWED_DOMAINS: string[];
-  OIDC_AUTO_PROVISION: boolean;
-  OIDC_PROVIDER_NAME: string;
   PUBLIC_BASE_URL: string;
-  OIDC_ENABLED: boolean;
   /** Nightly on-disk snapshots of the SQLite database. */
   BACKUP_ENABLED: boolean;
   /** Seconds between automatic backups. */
@@ -56,14 +46,6 @@ export interface Env {
   ATTACHMENTS_DIR: string;
 }
 
-/**
- * Well-known throwaway credentials for public demo instances. A visitor has to
- * be able to sign in, so DEMO_MODE defaults the admin account to these and the
- * login page advertises them (see routes/public.ts → GET /public/config).
- */
-export const DEMO_ADMIN_USER = "demo";
-export const DEMO_ADMIN_PASS = "demo";
-
 let cachedEnv: Env | null = null;
 
 export function resetEnvCache(): void {
@@ -73,18 +55,10 @@ export function resetEnvCache(): void {
 export function getEnv(): Env {
   if (cachedEnv) return cachedEnv;
 
-  // Read up front: properties below can't see their siblings mid-literal, and
-  // DEMO_MODE changes what the admin defaults are.
-  const demoMode = process.env.DEMO_MODE === "true";
-
   cachedEnv = {
-    ADMIN_USER: process.env.ADMIN_USER || (demoMode ? DEMO_ADMIN_USER : "admin"),
+    ADMIN_USER: process.env.ADMIN_USER || "admin",
     ADMIN_PASS: (() => {
       const pass = process.env.ADMIN_PASS;
-      // A demo falling back to its throwaway password is deliberate, so the
-      // production warning would just be noise. A demo that sets a password
-      // still gets warned if it's a known-weak one.
-      if (demoMode && !pass) return DEMO_ADMIN_PASS;
       if (!pass || pass === "changeme") {
         logger.warn("WARNING: Using default admin password. Set ADMIN_PASS for production.");
       }
@@ -109,8 +83,6 @@ export function getEnv(): Env {
     RATE_LIMIT_ENABLED: process.env.RATE_LIMIT_ENABLED !== "false",
     RATE_LIMIT_MAX_ATTEMPTS: parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || "5", 10),
     RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW || "900", 10),
-    DEMO_MODE: demoMode,
-    DEMO_RESET_INTERVAL: parseInt(process.env.DEMO_RESET_INTERVAL || "86400000", 10),
     ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:3000")
       .split(",")
       .map((s) => s.trim()),
@@ -146,45 +118,6 @@ export function getEnv(): Env {
         throw new Error("FATAL: PEPPOL_SH_BASE_URL must not contain credentials");
       }
       return url;
-    })(),
-    OIDC_ISSUER_URL: (() => {
-      const raw = (process.env.OIDC_ISSUER_URL || "").trim();
-      if (!raw) return "";
-      let parsed: URL;
-      try {
-        parsed = new URL(raw);
-      } catch {
-        throw new Error("FATAL: OIDC_ISSUER_URL must be a valid URL");
-      }
-      if (parsed.protocol !== "https:") {
-        throw new Error("FATAL: OIDC_ISSUER_URL must use https");
-      }
-      if (parsed.username || parsed.password) {
-        throw new Error("FATAL: OIDC_ISSUER_URL must not contain credentials");
-      }
-      return raw.replace(/\/+$/, "");
-    })(),
-    OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID || "",
-    OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET || "",
-    OIDC_SCOPE: process.env.OIDC_SCOPE || "openid email profile",
-    OIDC_ALLOWED_DOMAINS: (process.env.OIDC_ALLOWED_DOMAINS || "")
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean),
-    OIDC_AUTO_PROVISION: process.env.OIDC_AUTO_PROVISION !== "false",
-    OIDC_PROVIDER_NAME: process.env.OIDC_PROVIDER_NAME || "",
-    OIDC_ENABLED: (() => {
-      // Computed last so it can see the values above. Presence of the issuer
-      // enables SSO; a half-configured client is a boot-time error, never a
-      // silent login-page surprise.
-      const issuer = process.env.OIDC_ISSUER_URL || "";
-      if (!issuer) return false;
-      if (!process.env.OIDC_CLIENT_ID || !process.env.OIDC_CLIENT_SECRET) {
-        throw new Error(
-          "FATAL: OIDC_ISSUER_URL is set but OIDC_CLIENT_ID/OIDC_CLIENT_SECRET are missing",
-        );
-      }
-      return true;
     })(),
     PUBLIC_BASE_URL: (process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, ""),
     // On by default: the most common way a self-hosted install loses data is

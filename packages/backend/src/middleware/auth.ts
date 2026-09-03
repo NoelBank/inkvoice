@@ -1,7 +1,6 @@
 import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 import { getDb } from "../database/connection";
-import { findActiveTokenByHash, hashToken, touchLastUsed } from "../services/api-token.service";
 import type { Action, Resource } from "../types/user";
 import { CURRENT_JWT_VERSION, type JWTPayload, verifyToken } from "../utils/jwt";
 import { roleAllows } from "../utils/permissions";
@@ -10,16 +9,10 @@ declare module "hono" {
   interface ContextVariableMap {
     user: JWTPayload;
     userId: string;
-    /** Set when the request was authenticated with a public API token. */
-    apiToken?: { id: string; scopes: string[] };
     /** Set by a multi-tenant overlay's middleware. Undefined standalone. */
     tenant?: { id: string; slug: string; status: string; plan: string };
   }
 }
-
-// Public API tokens are opaque (non-JWT) and carry this prefix so the middleware
-// can route them to the token-lookup path instead of JWT verification.
-const API_TOKEN_PREFIX = "ink_";
 
 export async function authMiddleware(c: Context, next: Next) {
   let token: string | undefined;
@@ -27,12 +20,6 @@ export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
     token = authHeader.slice(7);
-  }
-
-  // Bearer tokens with the API-token prefix are long-lived integration tokens,
-  // not session JWTs — authenticate them against the api_tokens table.
-  if (token?.startsWith(API_TOKEN_PREFIX)) {
-    return authenticateApiToken(c, next, token);
   }
 
   if (!token) {
@@ -77,40 +64,6 @@ export async function authMiddleware(c: Context, next: Next) {
 
   c.set("user", payload);
   c.set("userId", payload.sub);
-  await next();
-}
-
-async function authenticateApiToken(c: Context, next: Next, token: string) {
-  const tokenRow = findActiveTokenByHash(hashToken(token));
-  if (!tokenRow) {
-    return c.json({ success: false, error: "Invalid API token" }, 401);
-  }
-
-  const db = getDb();
-  const user = db
-    .query("SELECT id, username, is_admin FROM users WHERE id = ? AND is_active = 1")
-    .get(tokenRow.user_id) as { id: string; username: string; is_admin: number } | null;
-  if (!user) {
-    return c.json({ success: false, error: "Account deactivated" }, 401);
-  }
-
-  // A token belongs to exactly one tenant's DB, so cross-tenant replay is
-  // impossible by construction (the hash won't exist in another tenant's DB).
-  const tenant = c.get("tenant") as { id: string } | undefined;
-  const payload: JWTPayload = {
-    sub: user.id,
-    username: user.username,
-    is_admin: !!user.is_admin,
-    tenant_id: tenant?.id,
-    v: CURRENT_JWT_VERSION,
-    // API tokens don't expire on a clock; revocation is the kill switch.
-    exp: Math.floor(Date.now() / 1000) + 31_536_000,
-  };
-
-  touchLastUsed(tokenRow.id);
-  c.set("user", payload);
-  c.set("userId", user.id);
-  c.set("apiToken", { id: tokenRow.id, scopes: tokenRow.scopes });
   await next();
 }
 

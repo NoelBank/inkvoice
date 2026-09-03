@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@sentry/bun": "^10.53.1",
-    "arctic": "^3.5.0",
     "bcryptjs": "^2.4.3",
     "hono": "^4.7.0",
     "jose": "^6.2.3",

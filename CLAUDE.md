@@ -79,7 +79,6 @@ inkvoice/
 │   │       │   ├── templates.ts       # CRUD + install + preview
 │   │       │   ├── settings.ts        # GET/PUT business settings
 │   │       │   ├── tax.ts             # Tax definitions CRUD
-│   │       │   ├── users.ts           # User management + permissions
 │   │       │   ├── dashboard.ts       # Dashboard stats + chart data
 │   │       │   └── public.ts          # Public invoice view + PDF download
 │   │       ├── middleware/
@@ -144,7 +143,6 @@ inkvoice/
 │           │   ├── Templates.tsx       # Invoice template manager
 │           │   ├── TemplateEditor.tsx  # HTML template editor
 │           │   ├── Settings.tsx        # Business settings
-│           │   ├── Users.tsx           # User management (admin)
 │           │   ├── Login.tsx           # Auth page
 │           │   └── PublicInvoice.tsx   # Public shareable invoice view
 │           ├── components/
@@ -404,13 +402,6 @@ CREATE INDEX idx_tax_definitions_active ON tax_definitions(is_active);
 - `PUT    /api/v1/settings` — Update settings (batch)
 - `POST   /api/v1/settings/logo` — Upload company logo
 
-### Users (Admin only)
-- `GET    /api/v1/users` — List users
-- `POST   /api/v1/users` — Create user
-- `PUT    /api/v1/users/:id` — Update user
-- `DELETE /api/v1/users/:id` — Delete user
-- `PUT    /api/v1/users/:id/permissions` — Update user permissions
-
 ### Dashboard
 - `GET    /api/v1/dashboard/stats` — Overview stats (total revenue, invoice counts by status, etc.)
 - `GET    /api/v1/dashboard/revenue-chart` — Monthly revenue data for charts
@@ -448,12 +439,7 @@ RATE_LIMIT_ENABLED=true              # Enable login rate limiting
 RATE_LIMIT_MAX_ATTEMPTS=5            # Max failed login attempts
 RATE_LIMIT_WINDOW=900                # Rate limit window in seconds
 
-# Optional
-DEMO_MODE=false                      # Enable demo mode with periodic resets; also defaults
-                                     # ADMIN_USER/ADMIN_PASS to demo/demo and publishes them
-                                     # via GET /api/v1/public/config for the login-page hint.
-                                     # Seeds a demo company profile with onboarding pre-completed,
-                                     # and seeds the sample dataset at boot on an empty database
+
 ```
 
 ---
@@ -488,11 +474,8 @@ DEMO_MODE=false                      # Enable demo mode with periodic resets; al
 The app supports multiple languages via a lightweight, custom i18n system (no external libraries).
 
 ### Current Languages
-- **English (en)** — default
-- **Turkish (tr)**
-- **Spanish (es)**
 - **German (de)**
-- **French (fr)**
+- **English (en)**
 
 ### Architecture
 - Translation files: `packages/frontend/src/i18n/en.ts` (English, source of truth for types) plus `tr.ts`, `es.ts`, `de.ts`, `fr.ts` matching its shape

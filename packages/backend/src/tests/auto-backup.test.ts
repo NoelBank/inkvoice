@@ -73,11 +73,6 @@ describe("configuration", () => {
     expect(shouldRunBackups()).toBe(false);
   });
 
-  test("a demo instance never backs itself up", () => {
-    setEnv({ DEMO_MODE: "true" });
-    expect(shouldRunBackups()).toBe(false);
-  });
-
   test("a nonsensical BACKUP_KEEP falls back to the default instead of wiping history", () => {
     for (const bad of ["0", "-3", "not-a-number"]) {
       setEnv({ BACKUP_KEEP: bad });

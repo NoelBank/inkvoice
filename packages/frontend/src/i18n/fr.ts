@@ -54,8 +54,6 @@ const fr: TranslationKeys = {
     error_boundary_body: "Une erreur inattendue s'est produite. Essayez de recharger la page.",
     retry: "Réessayer",
     load_failed: "Impossible de charger cette page. Vérifiez votre connexion et réessayez.",
-    demo_mode: "Mode démo",
-    demo_mode_notice: "Les données sont réinitialisées périodiquement",
     just_now: "à l'instant",
     seconds_ago: "il y a {{count}}s",
     minutes_ago: "il y a {{count}}min",
@@ -84,10 +82,7 @@ const fr: TranslationKeys = {
     reports: "Rapports",
 
     settings: "Paramètres",
-    users: "Utilisateurs",
-    activity: "Activité",
     templates: "Modèles",
-    plugins: "Plugins",
   },
 
   // En-tête
@@ -127,23 +122,6 @@ const fr: TranslationKeys = {
     sign_in: "Se connecter",
     signing_in: "Connexion...",
     login_failed: "Échec de la connexion",
-    demo_credentials: "Connexion démo :",
-    demo_fill: "Remplir",
-    sign_in_with_sso: "Se connecter avec SSO",
-    sign_in_with_provider: "Se connecter avec {{provider}}",
-    sso_or: "ou",
-    oidc_error: {
-      invalid_state: "La tentative de connexion n'a pas pu être validée. Veuillez réessayer.",
-      auth_failed: "La connexion SSO a échoué. Veuillez réessayer ou utiliser votre mot de passe.",
-      email_required: "Votre fournisseur d'identité n'a pas fourni d'adresse e-mail.",
-      unverified_email:
-        "Votre adresse e-mail n'a pas pu être vérifiée par le fournisseur d'identité.",
-      domain_not_allowed: "Votre domaine de messagerie n'est pas autorisé à se connecter.",
-      provisioning_disabled:
-        "Aucun compte n'existe pour vous et l'auto-inscription est désactivée.",
-      user_inactive: "Votre compte a été désactivé.",
-      misconfigured: "SSO n'est pas configuré correctement. Contactez votre administrateur.",
-    },
     email: "E-mail",
     forgot_title: "Mot de passe oublié ?",
     forgot_description:
@@ -906,7 +884,6 @@ const fr: TranslationKeys = {
     tab_products: "Produits",
     tab_peppol: "PEPPOL",
     tab_templates: "Modèles",
-    tab_api: "API",
     preferences: "Préférences",
     save_settings: "Enregistrer les paramètres",
     settings_saved: "Paramètres enregistrés",
@@ -990,22 +967,8 @@ const fr: TranslationKeys = {
     wipe_cta: "Je comprends, tout effacer",
     wipe_success: "Toutes les données ont été effacées. Rechargement…",
     wipe_error: "Échec de l'effacement",
-    demo_section: "Démo et données d'exemple",
-    sample_data_description:
-      "Remplit ce tableau de bord avec des clients, produits et factures d'exemple pour des captures d'écran ou une évaluation. Refusé si des factures existent déjà.",
-    load_sample_data: "Charger les données d'exemple",
-    sample_data_loading: "Chargement des données d'exemple…",
-    sample_data_loaded:
-      "{{customers}} clients, {{products}} produits et {{invoices}} factures chargés",
     sample_data_unavailable:
       "La base de données contient déjà des factures ; impossible de charger les données d'exemple.",
-    demo_reset_description:
-      "Efface et réinitialise la base de données de démo. Disponible uniquement car DEMO_MODE est activé.",
-    reset_demo: "Réinitialiser les données de démo",
-    demo_data_reset: "Données de démo réinitialisées",
-    demo_reset_confirm_title: "Réinitialiser les données de démo ?",
-    demo_reset_confirm_body:
-      "Cette action effacera la base de données actuelle et la remplira de contenu de démo. Aucune annulation possible.",
     // Assistant de configuration
     onboarding_title: "Configurons Inkvoice",
     onboarding_subtitle:
@@ -1152,54 +1115,8 @@ const fr: TranslationKeys = {
   },
 
   // Utilisateurs
-  users: {
-    title: "Utilisateurs",
-    add_user: "Ajouter un utilisateur",
-    username: "Nom d'utilisateur",
-    display_name: "Nom affiché",
-    email: "E-mail",
-    role: "Rôle",
-    status: "Statut",
-    edit_user: "Modifier l'utilisateur",
-    new_user: "Nouvel utilisateur",
-    password: "Mot de passe",
-    new_password: "Nouveau mot de passe (laisser vide pour conserver)",
-    admin_label: "Administrateur",
-    active_label: "Actif",
-    delete_title: "Supprimer l'utilisateur",
-    delete_description:
-      "Voulez-vous vraiment supprimer cet utilisateur ? Cette action est irréversible.",
-    batch_delete_description:
-      "Cette action supprimera définitivement les utilisateurs sélectionnés.",
-    batch_confirm: "Cette action va {{action}} les utilisateurs sélectionnés.",
-    user_created: "Utilisateur créé",
-    user_updated: "Utilisateur mis à jour",
-    user_deleted: "Utilisateur supprimé",
-    batch_updated: "{{count}} utilisateur(s) mis à jour",
-    batch_update_failed: "{{count}} utilisateur(s) en échec",
-    batch_action_title: "{{action}} {{count}} utilisateur(s) ?",
-    activate: "Activer",
-    deactivate: "Désactiver",
-    // Validation
-    username_required: "Le nom d'utilisateur est requis",
-    username_max: "Le nom d'utilisateur doit comporter au plus 50 caractères",
-    email_invalid: "Adresse e-mail invalide",
-    password_required: "Le mot de passe est requis",
-    password_min: "Le mot de passe doit comporter au moins 6 caractères",
-  },
 
   // Journal d'activité
-  activity: {
-    title: "Journal d'activité",
-    no_activity: "Aucune activité enregistrée pour l'instant.",
-    filter_all: "Toutes les ressources",
-    filter_invoices: "Factures",
-    filter_customers: "Clients",
-    filter_products: "Produits",
-    filter_quotes: "Devis",
-    filter_users: "Utilisateurs",
-    filter_settings: "Paramètres",
-  },
 
   // Modèles
   templates: {

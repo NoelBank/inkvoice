@@ -1,13 +1,10 @@
 import { Check, Download, Mail, Pencil, Plus, Save, Trash2, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api/client";
-import { Slot } from "@/components/layout/slot-registry";
-import { ApiTokensCard } from "@/components/shared/ApiTokensCard";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { FormField } from "@/components/shared/FormField";
-import { OutgoingWebhooksCard } from "@/components/shared/OutgoingWebhooksCard";
 import { PaymentTermsPicker } from "@/components/shared/PaymentTermsPicker";
 import { ReminderRulesCard } from "@/components/shared/ReminderRulesCard";
 import { Button } from "@/components/ui/button";
@@ -28,7 +25,6 @@ import { type Language, languages, useTranslation } from "@/i18n";
 import { deriveCapabilities } from "@/lib/capabilities";
 import { formatApiError } from "@/lib/format-api-error";
 import ProductSettings from "@/pages/ProductSettings";
-import { getSettingsTabs } from "@/pages/settings-tab-registry";
 import Templates from "@/pages/Templates";
 import { useSettingsStore } from "@/stores/settings.store";
 import { extractColors } from "@/utils/color-extractor";
@@ -66,13 +62,12 @@ const BASE_SETTINGS_TABS = [
   "reminders",
   "products",
   "templates",
-  "api",
 ] as const;
 type SettingsTab = string; // Validated dynamically via the tab registry + base set.
 
-function isSettingsTab(value: string | undefined, extraTabs: string[] = []): value is SettingsTab {
+function isSettingsTab(value: string | undefined): value is SettingsTab {
   if (!value) return false;
-  return (BASE_SETTINGS_TABS as readonly string[]).includes(value) || extraTabs.includes(value);
+  return (BASE_SETTINGS_TABS as readonly string[]).includes(value);
 }
 
 export default function Settings() {
@@ -82,17 +77,11 @@ export default function Settings() {
   const { tab: tabParam } = useParams<{ tab: string }>();
   // Detect /settings/templates/* sub-routes (new, :id/edit)
   const isTemplateSubRoute = location.pathname.startsWith("/settings/templates/");
-  // Detect /settings/plugins/:pluginId so the tab resolves to plugins.
-  const isPluginSubRoute = location.pathname.startsWith("/settings/plugins/");
-  // Registered at bootstrap (before first render), so reading once is safe.
-  const extraTabs = useMemo(() => getSettingsTabs().map((t) => t.id), []);
   const tab: SettingsTab = isTemplateSubRoute
     ? "templates"
-    : isPluginSubRoute
-      ? "plugins"
-      : isSettingsTab(tabParam, extraTabs)
-        ? (tabParam as SettingsTab)
-        : "general";
+    : isSettingsTab(tabParam)
+      ? (tabParam as SettingsTab)
+      : "general";
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [pendingLanguage, setPendingLanguage] = useState<Language>(language);
   const [loading, setLoading] = useState(false);
@@ -125,15 +114,10 @@ export default function Settings() {
   }, [settings.company_logo, extractLogoColors]);
 
   useEffect(() => {
-    if (
-      tabParam &&
-      !isSettingsTab(tabParam, extraTabs) &&
-      !isTemplateSubRoute &&
-      !isPluginSubRoute
-    ) {
+    if (tabParam && !isSettingsTab(tabParam) && !isTemplateSubRoute) {
       navigate("/settings/general", { replace: true });
     }
-  }, [tabParam, navigate, isTemplateSubRoute, isPluginSubRoute, extraTabs]);
+  }, [tabParam, navigate, isTemplateSubRoute]);
 
   const handleSave = async () => {
     const email = settings.company_email || "";
@@ -188,40 +172,6 @@ export default function Settings() {
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setSettings({ ...settings, [key]: e.target.value });
-
-  const [demoBusy, setDemoBusy] = useState<"sample" | "reset" | null>(null);
-  const [demoResetConfirmOpen, setDemoResetConfirmOpen] = useState(false);
-
-  const handleSeedSampleData = async () => {
-    setDemoBusy("sample");
-    try {
-      const res = await api.seedSampleData();
-      toast.success(
-        t("settings.sample_data_loaded", {
-          customers: String(res.data.customers),
-          products: String(res.data.products),
-          invoices: String(res.data.invoices),
-        }),
-      );
-    } catch (err: unknown) {
-      toast.error(formatApiError(err, t));
-    } finally {
-      setDemoBusy(null);
-    }
-  };
-
-  const handleResetDemo = async () => {
-    setDemoBusy("reset");
-    setDemoResetConfirmOpen(false);
-    try {
-      await api.resetDemoData();
-      toast.success(t("settings.demo_data_reset"));
-    } catch (err: unknown) {
-      toast.error(formatApiError(err, t));
-    } finally {
-      setDemoBusy(null);
-    }
-  };
 
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
@@ -359,14 +309,6 @@ export default function Settings() {
           <TabsTrigger value="reminders">{t("settings.tab_reminders")}</TabsTrigger>
           <TabsTrigger value="products">{t("settings.tab_products")}</TabsTrigger>
           <TabsTrigger value="templates">{t("settings.tab_templates")}</TabsTrigger>
-          <TabsTrigger value="api">{t("settings.tab_api")}</TabsTrigger>
-          {getSettingsTabs()
-            .filter((tab) => !(tab.hidden?.() ?? false))
-            .map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id}>
-                {t(tab.label)}
-              </TabsTrigger>
-            ))}
         </TabsList>
 
         <TabsContent value="general" className="max-w-3xl">
@@ -604,53 +546,6 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle className="text-sm">{t("settings.demo_section")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {t("settings.sample_data_description")}
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={handleSeedSampleData}
-                  disabled={demoBusy !== null}
-                >
-                  {demoBusy === "sample"
-                    ? t("settings.sample_data_loading")
-                    : t("settings.load_sample_data")}
-                </Button>
-              </div>
-              {settings.demo_mode === "true" && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {t("settings.demo_reset_description")}
-                  </p>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDemoResetConfirmOpen(true)}
-                    disabled={demoBusy !== null}
-                  >
-                    {t("settings.reset_demo")}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <ConfirmDialog
-            open={demoResetConfirmOpen}
-            onOpenChange={setDemoResetConfirmOpen}
-            title={t("settings.demo_reset_confirm_title")}
-            description={t("settings.demo_reset_confirm_body")}
-            variant="destructive"
-            confirmLabel={t("settings.reset_demo")}
-            onConfirm={handleResetDemo}
-            loading={demoBusy === "reset"}
-          />
 
           <ConfirmDialog
             open={restoreConfirmOpen}
@@ -1396,12 +1291,9 @@ export default function Settings() {
               </p>
             </CardContent>
           </Card>
-
-          <OutgoingWebhooksCard />
         </TabsContent>
         <TabsContent value="payments" className="max-w-3xl">
           {/* Overlay-provided payment integrations (e.g. platform Connect). */}
-          <Slot name="settings-payments" />
           <Card className="mt-4">
             <CardHeader>
               <CardTitle className="text-sm">{t("settings.stripe_title")}</CardTitle>
@@ -1544,27 +1436,14 @@ export default function Settings() {
             <Templates />
           </div>
         </TabsContent>
-        <TabsContent value="api" className="max-w-3xl">
-          <ApiTokensCard />
-        </TabsContent>
-
-        {getSettingsTabs()
-          .filter((spec) => !(spec.hidden?.() ?? false))
-          .map((spec) => (
-            <TabsContent key={spec.id} value={spec.id} className="space-y-4">
-              {spec.content}
-            </TabsContent>
-          ))}
       </Tabs>
 
-      {tab !== "templates" &&
-        tab !== "products" &&
-        !getSettingsTabs().some((s) => s.id === tab && s.hideSave) && (
-          <Button onClick={handleSave} disabled={loading}>
-            <Save className="h-4 w-4 mr-1" />
-            {loading ? t("common.saving") : t("settings.save_settings")}
-          </Button>
-        )}
+      {tab !== "templates" && tab !== "products" && (
+        <Button onClick={handleSave} disabled={loading}>
+          <Save className="h-4 w-4 mr-1" />
+          {loading ? t("common.saving") : t("settings.save_settings")}
+        </Button>
+      )}
     </div>
   );
 }

@@ -127,15 +127,3 @@ describe("public view stamping", () => {
     expect(getInvoice(id)?.first_viewed_at).toBeNull();
   });
 });
-
-describe("webhook events", () => {
-  test("invoice.viewed is an advertised outgoing-webhook event", async () => {
-    const res = await app.request(
-      new Request("http://localhost/api/v1/outgoing-webhooks/events", {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    );
-    const body = (await res.json()) as any;
-    expect(body.data.events).toContain("invoice.viewed");
-  });
-});

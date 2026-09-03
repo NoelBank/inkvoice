@@ -6,7 +6,6 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { Toaster } from "@/components/ui/sonner";
 import Login from "@/pages/Login";
-import { getRoutes } from "@/route-registry";
 import { useAuthStore } from "@/stores/auth.store";
 import { useSettingsStore } from "@/stores/settings.store";
 import { useUpgradeStore } from "@/stores/upgrade.store";
@@ -18,7 +17,6 @@ const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 
 const Account = lazy(() => import("@/pages/Account"));
-const ActivityLog = lazy(() => import("@/pages/ActivityLog"));
 const Customers = lazy(() => import("@/pages/Customers"));
 const CustomerView = lazy(() => import("@/pages/CustomerView"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -34,7 +32,6 @@ const RecurringInvoiceForm = lazy(() => import("@/pages/RecurringInvoiceForm"));
 const RecurringInvoices = lazy(() => import("@/pages/RecurringInvoices"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
-const Users = lazy(() => import("@/pages/Users"));
 const ClientPortal = lazy(() => import("@/pages/ClientPortal"));
 const OnboardingWizard = lazy(() => import("@/pages/OnboardingWizard"));
 
@@ -241,54 +238,11 @@ function App() {
                   </AdminRoute>
                 }
               />
-              <Route
-                path="/settings/plugins/:pluginId"
-                element={
-                  <AdminRoute>
-                    <Settings />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/activity"
-                element={
-                  <AdminRoute>
-                    <ActivityLog />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/users"
-                element={
-                  <AdminRoute>
-                    <Users />
-                  </AdminRoute>
-                }
-              />
-              {/* Overlay/plugin protected routes — rendered inside MainLayout
-              so they share the authenticated chrome. Admin-scoped ones are
-              wrapped in AdminRoute. */}
-              {getRoutes("protected").map((r) => (
-                <Route key={`prot:${r.path}`} path={r.path} element={r.element} />
-              ))}
-              {getRoutes("admin").map((r) => (
-                <Route
-                  key={`adm:${r.path}`}
-                  path={r.path}
-                  element={<AdminRoute>{r.element}</AdminRoute>}
-                />
-              ))}
               <Route path="*" element={<NotFound />} />
             </Route>
 
             {/* Overlay-registered routes. A downstream overlay or plugin
             adds routes here without forking App.tsx. */}
-            {getRoutes("public").map((r) => (
-              <Route key={`pub:${r.path}`} path={r.path} element={r.element} />
-            ))}
-            {getRoutes("portal").map((r) => (
-              <Route key={`portal:${r.path}`} path={r.path} element={r.element} />
-            ))}
           </Routes>
         </Suspense>
         <Toaster />

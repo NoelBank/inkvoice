@@ -13,7 +13,6 @@ import {
 import { isEmailConfigured, sendEmail } from "../services/email.service";
 import { invoiceDeliveryEmail } from "../services/email-templates";
 import * as invoiceService from "../services/invoice.service";
-import { dispatchEvent } from "../services/outgoing-webhooks.service";
 import * as paymentService from "../services/payment.service";
 import * as quoteService from "../services/quote.service";
 import { getReminderLog } from "../services/reminder.service";
@@ -208,13 +207,6 @@ invoices.post("/consolidate", async (c) => {
       consolidated_from: parsed.invoice_ids,
     },
   });
-  void dispatchEvent("invoice.created", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    total: invoice.total,
-    currency: invoice.currency,
-    consolidated_from: parsed.invoice_ids,
-  });
   return c.json({ success: true, data: invoice }, 201);
 });
 
@@ -267,12 +259,6 @@ invoices.post("/", async (c) => {
     resource_type: "invoice",
     resource_id: invoice.id,
     metadata: { invoice_number: invoice.invoice_number },
-  });
-  void dispatchEvent("invoice.created", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    total: invoice.total,
-    currency: invoice.currency,
   });
   return c.json({ success: true, data: invoice }, 201);
 });
@@ -347,11 +333,6 @@ invoices.post("/:id/void", async (c) => {
     metadata: { invoice_number: invoice.invoice_number },
   });
   // Fire-and-forget — webhook failures must not block the user response.
-  void dispatchEvent("invoice.voided", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    customer_name: (invoice as { customer_name?: string }).customer_name ?? null,
-  });
   return c.json({ success: true, data: invoice });
 });
 
@@ -367,13 +348,6 @@ invoices.post("/:id/mark-paid", async (c) => {
     resource_type: "invoice",
     resource_id: invoice.id,
     metadata: { invoice_number: invoice.invoice_number },
-  });
-  void dispatchEvent("invoice.paid", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    total: invoice.total,
-    currency: invoice.currency,
-    customer_name: (invoice as { customer_name?: string }).customer_name ?? null,
   });
   return c.json({ success: true, data: invoice });
 });
@@ -406,11 +380,6 @@ invoices.post("/:id/mark-sent", async (c) => {
     resource_type: "invoice",
     resource_id: invoice.id,
     metadata: { invoice_number: invoice.invoice_number },
-  });
-  void dispatchEvent("invoice.sent", {
-    invoice_id: invoice.id,
-    invoice_number: invoice.invoice_number,
-    customer_name: (invoice as { customer_name?: string }).customer_name ?? null,
   });
   return c.json({ success: true, data: invoice });
 });

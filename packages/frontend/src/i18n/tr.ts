@@ -53,8 +53,6 @@ const tr: TranslationKeys = {
     error_boundary_body: "Beklenmeyen bir hata oluştu. Sayfayı yenilemeyi deneyin.",
     retry: "Yeniden dene",
     load_failed: "Bu sayfa yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.",
-    demo_mode: "Demo Modu",
-    demo_mode_notice: "Veriler periyodik olarak sıfırlanır",
     just_now: "az önce",
     seconds_ago: "{{count}}sn önce",
     minutes_ago: "{{count}}dk önce",
@@ -83,10 +81,7 @@ const tr: TranslationKeys = {
     reports: "Raporlar",
 
     settings: "Ayarlar",
-    users: "Kullanıcılar",
-    activity: "Aktivite",
     templates: "Şablonlar",
-    plugins: "Eklentiler",
   },
 
   // Üst çubuk
@@ -126,21 +121,6 @@ const tr: TranslationKeys = {
     sign_in: "Giriş Yap",
     signing_in: "Giriş yapılıyor...",
     login_failed: "Giriş başarısız",
-    demo_credentials: "Demo girişi:",
-    demo_fill: "Doldur",
-    sign_in_with_sso: "SSO ile giriş yapın",
-    sign_in_with_provider: "{{provider}} ile giriş yapın",
-    sso_or: "veya",
-    oidc_error: {
-      invalid_state: "Giriş denemesi doğrulanamadı. Lütfen tekrar deneyin.",
-      auth_failed: "SSO ile giriş başarısız oldu. Lütfen tekrar deneyin veya şifrenizi kullanın.",
-      email_required: "Kimlik sağlayıcınız bir e-posta adresi sağlamadı.",
-      unverified_email: "E-posta adresiniz kimlik sağlayıcı tarafından doğrulanamadı.",
-      domain_not_allowed: "E-posta alan adınızın giriş yapmasına izin verilmiyor.",
-      provisioning_disabled: "Sizin için bir hesap yok ve kendi kendine kayıt devre dışı.",
-      user_inactive: "Hesabınız devre dışı bırakılmış.",
-      misconfigured: "SSO doğru yapılandırılmamış. Yöneticinizle iletişime geçin.",
-    },
     email: "E-posta",
     forgot_title: "Şifrenizi mi unuttunuz?",
     forgot_description: "Hesap e-postanızı girin, size bir sıfırlama bağlantısı gönderelim.",
@@ -892,7 +872,6 @@ const tr: TranslationKeys = {
     tab_products: "Ürünler",
     tab_peppol: "PEPPOL",
     tab_templates: "Şablonlar",
-    tab_api: "API",
     preferences: "Tercihler",
     save_settings: "Ayarları Kaydet",
     settings_saved: "Ayarlar kaydedildi",
@@ -977,20 +956,7 @@ const tr: TranslationKeys = {
     wipe_cta: "Anladım, her şeyi sil",
     wipe_success: "Tüm veriler silindi. Yeniden yükleniyor…",
     wipe_error: "Silme başarısız",
-    demo_section: "Demo ve Örnek Veri",
-    sample_data_description:
-      "Ekran görüntüleri veya inceleme için örnek müşteri, ürün ve faturalarla bu paneli doldurun. Veritabanında zaten faturalar varsa reddeder.",
-    load_sample_data: "Örnek Veriyi Yükle",
-    sample_data_loading: "Örnek veri yükleniyor…",
-    sample_data_loaded: "{{customers}} müşteri, {{products}} ürün, {{invoices}} fatura yüklendi",
     sample_data_unavailable: "Veritabanında zaten faturalar var; örnek veri yüklenemez.",
-    demo_reset_description:
-      "Demo veritabanını silip yeniden oluştur. Yalnızca DEMO_MODE açık olduğu için kullanılabilir.",
-    reset_demo: "Demo Verisini Sıfırla",
-    demo_data_reset: "Demo verisi sıfırlandı",
-    demo_reset_confirm_title: "Demo verisi sıfırlansın mı?",
-    demo_reset_confirm_body:
-      "Mevcut veritabanı silinip demo içeriğiyle yeniden oluşturulacak. Geri alınamaz.",
     // Onboarding wizard
     onboarding_title: "Inkvoice'u kuralım",
     onboarding_subtitle: "Hızlı bir tur — her şeyi daha sonra Ayarlar'dan değiştirebilirsiniz.",
@@ -1135,53 +1101,8 @@ const tr: TranslationKeys = {
   },
 
   // Kullanıcılar
-  users: {
-    title: "Kullanıcılar",
-    add_user: "Kullanıcı Ekle",
-    username: "Kullanıcı Adı",
-    display_name: "Görünen Ad",
-    email: "E-posta",
-    role: "Rol",
-    status: "Durum",
-    edit_user: "Kullanıcı Düzenle",
-    new_user: "Yeni Kullanıcı",
-    password: "Şifre",
-    new_password: "Yeni Şifre (boş bırakırsanız değişmez)",
-    admin_label: "Yönetici",
-    active_label: "Aktif",
-    delete_title: "Kullanıcıyı Sil",
-    delete_description:
-      "Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
-    batch_delete_description: "Seçili kullanıcılar kalıcı olarak silinecek.",
-    batch_confirm: "Seçili kullanıcılara {{action}} işlemi uygulanacak.",
-    user_created: "Kullanıcı oluşturuldu",
-    user_updated: "Kullanıcı güncellendi",
-    user_deleted: "Kullanıcı silindi",
-    batch_updated: "{{count}} kullanıcı güncellendi",
-    batch_update_failed: "{{count}} kullanıcı başarısız oldu",
-    batch_action_title: "{{count}} kullanıcıya {{action}} uygula?",
-    activate: "Aktifleştir",
-    deactivate: "Devre Dışı Bırak",
-    // Doğrulama
-    username_required: "Kullanıcı adı gerekli",
-    username_max: "Kullanıcı adı en fazla 50 karakter olmalıdır",
-    email_invalid: "Geçersiz e-posta adresi",
-    password_required: "Şifre gerekli",
-    password_min: "Şifre en az 6 karakter olmalıdır",
-  },
 
   // Aktivite Günlüğü
-  activity: {
-    title: "Aktivite Günlüğü",
-    no_activity: "Henüz aktivite kaydı yok.",
-    filter_all: "Tüm Kaynaklar",
-    filter_invoices: "Faturalar",
-    filter_customers: "Müşteriler",
-    filter_products: "Ürünler",
-    filter_quotes: "Teklifler",
-    filter_users: "Kullanıcılar",
-    filter_settings: "Ayarlar",
-  },
 
   // Şablonlar
   templates: {

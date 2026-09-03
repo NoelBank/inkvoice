@@ -18,7 +18,6 @@ import {
   type RecentEntity,
   subscribeRecentlyViewed,
 } from "@/lib/recently-viewed";
-import { useSettingsStore } from "@/stores/settings.store";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -33,8 +32,6 @@ const PATH_KEY: Record<string, string> = {
   products: "nav.products",
   reports: "nav.reports",
   settings: "nav.settings",
-  users: "nav.users",
-  activity: "nav.activity",
   templates: "nav.templates",
 };
 
@@ -54,12 +51,10 @@ function entityPath(e: RecentEntity): string {
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
 
 export function Header({ onToggleSidebar }: HeaderProps) {
-  const { settings } = useSettingsStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const openPalette = useCommandPalette((s) => s.setOpen);
-  const isDemoMode = settings.demo_mode === "true";
   const [recent, setRecent] = useState<RecentEntity[]>(() => getRecentlyViewed());
 
   useEffect(() => {
@@ -76,11 +71,6 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
   return (
     <header className="flex flex-col">
-      {isDemoMode && (
-        <div className="mx-4 mt-4 mb-0 flex items-center justify-center gap-2 h-7 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-medium border border-amber-300/40 dark:border-amber-700/30">
-          {t("common.demo_mode")} — {t("common.demo_mode_notice")}
-        </div>
-      )}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-3 h-12 px-3 rounded-lg border border-black/[0.10] dark:border-white/[0.08] bg-white/70 dark:bg-[oklch(0.10_0.025_265/0.65)] backdrop-blur-xl backdrop-saturate-[1.3] shadow-[0_6px_18px_-8px_rgb(0_0_0/0.10),inset_0_0_0_1px_rgb(0_0_0/0.04)] dark:shadow-[0_6px_18px_-8px_rgb(0_0_0/0.7),inset_0_0_0_1px_rgb(255_255_255/0.04)]">
           <Button

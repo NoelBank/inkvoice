@@ -3,7 +3,6 @@ import {
   ClipboardList,
   FileCheck2,
   FileText,
-  History,
   LayoutDashboard,
   LogOut,
   Monitor,
@@ -13,11 +12,9 @@ import {
   Repeat,
   Settings,
   Sun,
-  UserCog,
   UserRound,
   Users,
 } from "lucide-react";
-import type { ComponentType } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { InkvoiceIcon, InkvoiceLogo } from "@/components/InkvoiceLogo";
 import {
@@ -31,7 +28,6 @@ import { type Theme, useTheme } from "@/hooks/use-theme";
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
-import { getNavItems, useNavGate } from "@/nav-registry";
 import { useAuthStore } from "@/stores/auth.store";
 import { useSettingsStore } from "@/stores/settings.store";
 
@@ -86,38 +82,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
     },
   ];
 
-  const adminItems = [
-    { to: "/settings", icon: Settings, label: t("nav.settings") },
-    { to: "/users", icon: UserCog, label: t("nav.users") },
-    { to: "/activity", icon: History, label: t("nav.activity") },
-  ];
-
-  // Plugin/extension nav items registered via the nav registry. Admin-only and
-  // disabled-plugin entries are filtered out, then grouped into sidebar
-  // sections by their `section` i18n key (default "nav.plugins").
-  type SidebarSection = {
-    label: string;
-    items: { to: string; icon: ComponentType<{ className?: string }>; label: string }[];
-  };
-  const navGate = useNavGate();
-  const extensionSections: SidebarSection[] = Object.values(
-    getNavItems()
-      .filter((item) => {
-        if (item.adminOnly && !user?.is_admin) return false;
-        if (item.pluginId && !navGate(item.pluginId)) return false;
-        return true;
-      })
-      .reduce<Record<string, SidebarSection>>((acc, item) => {
-        const sectionKey = item.section ?? "nav.plugins";
-        if (!acc[sectionKey]) acc[sectionKey] = { label: t(sectionKey), items: [] };
-        acc[sectionKey].items.push({
-          to: item.to,
-          icon: item.icon,
-          label: t(item.labelKey),
-        });
-        return acc;
-      }, {}),
-  );
+  const adminItems = [{ to: "/settings", icon: Settings, label: t("nav.settings") }];
 
   return (
     <aside
@@ -130,7 +95,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
         {collapsed ? <InkvoiceIcon className="w-8 h-8" /> : <InkvoiceLogo className="h-9" />}
       </div>
       <nav className="flex-1 py-4 px-2 space-y-5 overflow-y-auto">
-        {[...navSections, ...extensionSections].map((section) => (
+        {navSections.map((section) => (
           <div key={section.label}>
             {!collapsed && (
               <p className="px-3 mb-2 font-mono text-[9.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground/70">

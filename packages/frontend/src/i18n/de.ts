@@ -58,8 +58,6 @@ const de: TranslationKeys = {
     retry: "Erneut versuchen",
     load_failed:
       "Diese Seite konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
-    demo_mode: "Demo-Modus",
-    demo_mode_notice: "Daten werden regelmäßig zurückgesetzt",
     just_now: "gerade eben",
     seconds_ago: "vor {{count}} Sek.",
     minutes_ago: "vor {{count}} Min.",
@@ -88,10 +86,7 @@ const de: TranslationKeys = {
     reports: "Berichte",
 
     settings: "Einstellungen",
-    users: "Benutzer",
-    activity: "Aktivität",
     templates: "Vorlagen",
-    plugins: "Plugins",
   },
 
   // Kopfzeile
@@ -131,23 +126,6 @@ const de: TranslationKeys = {
     sign_in: "Anmelden",
     signing_in: "Anmeldung läuft...",
     login_failed: "Anmeldung fehlgeschlagen",
-    demo_credentials: "Demo-Zugang:",
-    demo_fill: "Ausfüllen",
-    sign_in_with_sso: "Mit SSO anmelden",
-    sign_in_with_provider: "Mit {{provider}} anmelden",
-    sso_or: "oder",
-    oidc_error: {
-      invalid_state: "Die Anmeldung konnte nicht validiert werden. Bitte erneut versuchen.",
-      auth_failed:
-        "Anmeldung mit SSO fehlgeschlagen. Bitte erneut versuchen oder Ihr Passwort verwenden.",
-      email_required: "Ihr Identitätsanbieter hat keine E-Mail-Adresse geliefert.",
-      unverified_email: "Ihre E-Mail-Adresse konnte vom Identitätsanbieter nicht bestätigt werden.",
-      domain_not_allowed: "Ihre E-Mail-Domain darf sich nicht anmelden.",
-      provisioning_disabled:
-        "Für Sie existiert kein Konto und die Selbstregistrierung ist deaktiviert.",
-      user_inactive: "Ihr Konto wurde deaktiviert.",
-      misconfigured: "SSO ist nicht korrekt konfiguriert. Wenden Sie sich an Ihren Administrator.",
-    },
     email: "E-Mail",
     forgot_title: "Passwort vergessen?",
     forgot_description:
@@ -916,7 +894,6 @@ const de: TranslationKeys = {
     tab_products: "Produkte",
     tab_peppol: "PEPPOL",
     tab_templates: "Vorlagen",
-    tab_api: "API",
     preferences: "Voreinstellungen",
     save_settings: "Einstellungen speichern",
     settings_saved: "Einstellungen gespeichert",
@@ -1000,22 +977,8 @@ const de: TranslationKeys = {
     wipe_cta: "Ich verstehe, alles löschen",
     wipe_success: "Alle Daten gelöscht. Seite wird neu geladen…",
     wipe_error: "Löschen fehlgeschlagen",
-    demo_section: "Demo & Beispieldaten",
-    sample_data_description:
-      "Befüllt dieses Dashboard mit Beispielkunden, -produkten und -rechnungen für Screenshots oder zur Evaluierung. Wird verweigert, wenn bereits Rechnungen vorhanden sind.",
-    load_sample_data: "Beispieldaten laden",
-    sample_data_loading: "Beispieldaten werden geladen…",
-    sample_data_loaded:
-      "{{customers}} Kunden, {{products}} Produkte, {{invoices}} Rechnungen geladen",
     sample_data_unavailable:
       "Die Datenbank enthält bereits Rechnungen; Beispieldaten können nicht geladen werden.",
-    demo_reset_description:
-      "Demo-Datenbank löschen und neu befüllen. Nur verfügbar, weil DEMO_MODE aktiviert ist.",
-    reset_demo: "Demodaten zurücksetzen",
-    demo_data_reset: "Demodaten zurückgesetzt",
-    demo_reset_confirm_title: "Demodaten zurücksetzen?",
-    demo_reset_confirm_body:
-      "Dies löscht die aktuelle Datenbank und befüllt sie neu mit Demo-Inhalten. Es gibt kein Zurück.",
     // Einrichtungsassistent
     onboarding_title: "Richten wir Inkvoice ein",
     onboarding_subtitle:
@@ -1162,53 +1125,8 @@ const de: TranslationKeys = {
   },
 
   // Benutzer
-  users: {
-    title: "Benutzer",
-    add_user: "Benutzer hinzufügen",
-    username: "Benutzername",
-    display_name: "Anzeigename",
-    email: "E-Mail",
-    role: "Rolle",
-    status: "Status",
-    edit_user: "Benutzer bearbeiten",
-    new_user: "Neuer Benutzer",
-    password: "Passwort",
-    new_password: "Neues Passwort (leer lassen, um es beizubehalten)",
-    admin_label: "Admin",
-    active_label: "Aktiv",
-    delete_title: "Benutzer löschen",
-    delete_description:
-      "Möchten Sie diesen Benutzer wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    batch_delete_description: "Dies löscht die ausgewählten Benutzer endgültig.",
-    batch_confirm: "Dies führt „{{action}}“ für die ausgewählten Benutzer aus.",
-    user_created: "Benutzer erstellt",
-    user_updated: "Benutzer aktualisiert",
-    user_deleted: "Benutzer gelöscht",
-    batch_updated: "{{count}} Benutzer aktualisiert",
-    batch_update_failed: "{{count}} Benutzer fehlgeschlagen",
-    batch_action_title: "{{count}} Benutzer {{action}}?",
-    activate: "Aktivieren",
-    deactivate: "Deaktivieren",
-    // Validierung
-    username_required: "Benutzername ist erforderlich",
-    username_max: "Der Benutzername darf höchstens 50 Zeichen lang sein",
-    email_invalid: "Ungültige E-Mail-Adresse",
-    password_required: "Passwort ist erforderlich",
-    password_min: "Das Passwort muss mindestens 6 Zeichen lang sein",
-  },
 
   // Aktivitätsprotokoll
-  activity: {
-    title: "Aktivitätsprotokoll",
-    no_activity: "Noch keine Aktivität aufgezeichnet.",
-    filter_all: "Alle Ressourcen",
-    filter_invoices: "Rechnungen",
-    filter_customers: "Kunden",
-    filter_products: "Produkte",
-    filter_quotes: "Angebote",
-    filter_users: "Benutzer",
-    filter_settings: "Einstellungen",
-  },
 
   // Vorlagen
   templates: {

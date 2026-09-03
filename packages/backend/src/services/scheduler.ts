@@ -1,7 +1,7 @@
 import { unlinkSync } from "node:fs";
 import { closeDatabase, initDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrations";
-import { seed, seedDemoData } from "../database/seed";
+import { seed } from "../database/seed";
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
 import { runBackup, shouldRunBackups } from "./backup.service";
@@ -10,7 +10,6 @@ import { processAllDue } from "./recurring.service";
 import { processAllReminders } from "./reminder.service";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
-let demoIntervalId: ReturnType<typeof setInterval> | null = null;
 let backupIntervalId: ReturnType<typeof setInterval> | null = null;
 
 export function startScheduler(intervalMs = 60 * 60 * 1000): void {
@@ -42,13 +41,6 @@ export function startScheduler(intervalMs = 60 * 60 * 1000): void {
       "Automatic database backups enabled",
     );
   }
-
-  // Start demo reset job if demo mode is enabled
-  const env = getEnv();
-  if (env.DEMO_MODE && !demoIntervalId) {
-    demoIntervalId = setInterval(resetDemoData, env.DEMO_RESET_INTERVAL);
-    logger.info({ intervalSec: env.DEMO_RESET_INTERVAL / 1000 }, "Demo reset scheduler started");
-  }
 }
 
 export function stopScheduler(): void {
@@ -56,47 +48,11 @@ export function stopScheduler(): void {
     clearInterval(intervalId);
     intervalId = null;
   }
-  if (demoIntervalId) {
-    clearInterval(demoIntervalId);
-    demoIntervalId = null;
-  }
   if (backupIntervalId) {
     clearInterval(backupIntervalId);
     backupIntervalId = null;
   }
   stopTransportWorker();
-}
-
-// Extension point: deleting and re-seeding env.DATABASE_PATH only makes sense
-// when that file is the live database. A deployment where it isn't (e.g. one
-// database per workspace) disables demo resets entirely.
-let demoResetEnabled = true;
-
-export function setDemoResetEnabled(enabled: boolean): void {
-  demoResetEnabled = enabled;
-}
-
-export async function resetDemoData(): Promise<void> {
-  const env = getEnv();
-  if (!demoResetEnabled) {
-    throw new Error("resetDemoData is disabled in this deployment");
-  }
-  try {
-    // Close DB, delete file, reinitialize from scratch
-    closeDatabase();
-    try {
-      unlinkSync(env.DATABASE_PATH);
-    } catch {
-      // File may not exist on first run
-    }
-    initDatabase();
-    runMigrations();
-    await seed();
-    seedDemoData();
-    logger.info("Demo database reset complete.");
-  } catch (err) {
-    logger.error({ err }, "Demo reset error");
-  }
 }
 
 async function runScheduledTasks(): Promise<void> {

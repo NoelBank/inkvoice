@@ -609,6 +609,10 @@ export const api = {
   deleteTaxDefinition: (id: string) => request(`/tax-definitions/${id}`, { method: "DELETE" }),
 
   // Settings
+  listActivity: (params?: Record<string, string>) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
+    return request<{ success: boolean; data: any }>(`/activity${query}`);
+  },
   getSettings: () => request<{ success: boolean; data: Record<string, string> }>("/settings"),
   updateSettings: (data: Record<string, string>) =>
     request<{ success: boolean; data: Record<string, string> }>("/settings", {
@@ -631,16 +635,6 @@ export const api = {
       body: formData,
     });
   },
-  resetDemoData: () =>
-    request<{ success: boolean; data: { message: string } }>("/settings/reset-demo", {
-      method: "POST",
-    }),
-  seedSampleData: () =>
-    request<{
-      success: boolean;
-      data: { customers: number; products: number; invoices: number };
-    }>("/settings/seed-sample-data", { method: "POST" }),
-
   // Templates
   listTemplates: () => request<{ success: boolean; data: any }>("/templates"),
   getTemplate: (id: string) => request<{ success: boolean; data: any }>(`/templates/${id}`),
@@ -662,33 +656,11 @@ export const api = {
       `/templates/${id}/bundled`,
     ),
 
-  // Users
-  listUsers: () => request<{ success: boolean; data: any }>("/users"),
-  getUser: (id: string) => request<{ success: boolean; data: any }>(`/users/${id}`),
-  createUser: (data: any) =>
-    request<{ success: boolean; data: any }>("/users", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  updateUser: (id: string, data: any) =>
-    request<{ success: boolean; data: any }>(`/users/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-  deleteUser: (id: string) => request(`/users/${id}`, { method: "DELETE" }),
-  updateUserPermissions: (id: string, permissions: { resource: string; action: string }[]) =>
-    request(`/users/${id}/permissions`, { method: "PUT", body: JSON.stringify({ permissions }) }),
-
   // Public
   getPublicConfig: () =>
     request<{
       success: boolean;
-      data: {
-        demo_mode: boolean;
-        demo_credentials: { username: string; password: string } | null;
-        oidc_enabled: boolean;
-        oidc_provider_name: string | null;
-      };
+      data: {};
     }>("/public/config"),
   getPublicInvoice: (shareToken: string) =>
     request<{ success: boolean; data: any }>(`/public/invoices/${shareToken}`),
@@ -736,15 +708,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ ids, action }),
     }),
-  batchUsers: (ids: string[], action: string) =>
-    request<{
-      success: boolean;
-      data: { succeeded: number; failed: number; errors: { id: string; reason: string }[] };
-    }>("/users/batch", {
-      method: "POST",
-      body: JSON.stringify({ ids, action }),
-    }),
-
   // Quotes
   listQuotes: (params?: Record<string, string>) => {
     const query = params ? `?${new URLSearchParams(params).toString()}` : "";
@@ -842,11 +805,6 @@ export const api = {
       },
     ),
 
-  // Activity Log
-  listActivity: (params?: Record<string, string>) => {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
-    return request<{ success: boolean; data: any }>(`/activity${query}`);
-  },
   getResourceActivity: (type: string, id: string) =>
     request<{ success: boolean; data: any }>(`/activity/resource/${type}/${id}`),
 
@@ -1080,49 +1038,6 @@ export const api = {
       },
     ),
 
-  // Outgoing webhooks
-  listOutgoingWebhookEvents: () =>
-    request<{ success: boolean; data: { events: string[] } }>("/outgoing-webhooks/events"),
-  listOutgoingWebhooks: () =>
-    request<{
-      success: boolean;
-      data: Array<{
-        id: string;
-        name: string;
-        url: string;
-        events: string;
-        preset: string;
-        is_active: number;
-        created_at: string;
-        updated_at: string;
-      }>;
-    }>("/outgoing-webhooks"),
-  createOutgoingWebhook: (data: {
-    name: string;
-    url: string;
-    events: string[];
-    preset?: string;
-    is_active?: boolean;
-  }) =>
-    request<{ success: boolean; data: any }>("/outgoing-webhooks", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  updateOutgoingWebhook: (
-    id: string,
-    data: Partial<{
-      name: string;
-      url: string;
-      events: string[];
-      preset: string;
-      is_active: boolean;
-    }>,
-  ) =>
-    request<{ success: boolean; data: any }>(`/outgoing-webhooks/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-  deleteOutgoingWebhook: (id: string) => request(`/outgoing-webhooks/${id}`, { method: "DELETE" }),
   listWebhookDeliveries: (id: string, limit = 50) =>
     request<{
       success: boolean;
@@ -1141,36 +1056,5 @@ export const api = {
   retryWebhookDelivery: (id: string) =>
     request<{ success: boolean; data: any }>(`/outgoing-webhooks/deliveries/${id}/retry`, {
       method: "POST",
-    }),
-
-  // API tokens (public REST API / integrations)
-  listApiTokenScopes: () =>
-    request<{ success: boolean; data: { resources: string[]; actions: string[] } }>(
-      "/api-tokens/scopes",
-    ),
-  listApiTokens: () =>
-    request<{
-      success: boolean;
-      data: Array<{
-        id: string;
-        name: string;
-        token_prefix: string;
-        scopes: string[];
-        last_used_at: string | null;
-        created_at: string;
-      }>;
-    }>("/api-tokens"),
-  createApiToken: (data: { name: string; scopes?: string[] }) =>
-    request<{ success: boolean; data: { id: string; token: string } }>("/api-tokens", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  deleteApiToken: (id: string) => request(`/api-tokens/${id}`, { method: "DELETE" }),
-
-  // Feedback
-  submitFeedback: (data: { message: string; page_url?: string }) =>
-    request<{ success: boolean; data: any }>("/feedback", {
-      method: "POST",
-      body: JSON.stringify(data),
     }),
 };

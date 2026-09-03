@@ -5,13 +5,13 @@ import { peppolShTransport } from "./peppol-sh.transport";
 import type { EinvoiceTransport } from "./types";
 
 // All transports, in the order they should appear in Settings. The fake
-// driver is only available under test / demo so a real install never offers
+// driver is only available under test so a real install never offers
 // "send into the void" as a choice.
 const REGISTERED: EinvoiceTransport[] = [];
 
 function baseTransports(): EinvoiceTransport[] {
   const list: EinvoiceTransport[] = [peppolShTransport];
-  if (process.env.NODE_ENV === "test" || getEnv().DEMO_MODE) {
+  if (process.env.NODE_ENV === "test") {
     list.push(fakeTransport);
   }
   return [...list, ...REGISTERED];

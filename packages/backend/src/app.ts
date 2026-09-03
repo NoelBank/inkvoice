@@ -1,18 +1,12 @@
 import type { Context, Next } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { apiTokenScopeMiddleware } from "./middleware/api-token-scope";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { metricsMiddleware, metricsRoute } from "./middleware/metrics";
 import { requestContextMiddleware } from "./middleware/request-context";
 import { securityHeaders } from "./middleware/security";
-import { pluginGate } from "./plugins/gate";
-import "./plugins"; // side-effect: registers official plugins
-import { getBackendPlugins } from "./plugins/registry";
-import { pluginsAdminRoutes } from "./plugins/routes";
 import { activity } from "./routes/activity";
-import { apiTokens } from "./routes/api-tokens";
 import { attachments } from "./routes/attachments";
 import { auth } from "./routes/auth";
 import { customers } from "./routes/customers";
@@ -21,11 +15,8 @@ import { einvoices } from "./routes/einvoice";
 import { exchangeRate } from "./routes/exchange-rate";
 import { expenses } from "./routes/expenses";
 import { exportRoutes } from "./routes/export";
-import { feedback } from "./routes/feedback";
 import { healthRoute } from "./routes/health";
 import { invoices } from "./routes/invoices";
-import { oidcRoutes } from "./routes/oidc";
-import { outgoingWebhooks } from "./routes/outgoing-webhooks";
 import { products } from "./routes/products";
 import { publicRoutes } from "./routes/public";
 import { quotes } from "./routes/quotes";
@@ -37,7 +28,6 @@ import { settings } from "./routes/settings";
 import { tags } from "./routes/tags";
 import { tax } from "./routes/tax";
 import { templates } from "./routes/templates";
-import { users } from "./routes/users";
 import { webhooks } from "./routes/webhooks";
 import { getEnv } from "./utils/env";
 import { initXmlProfiles } from "./xml/init";
@@ -119,7 +109,6 @@ export function createApp(options?: CreateAppOptions): Hono {
 
   // Public routes (no auth required)
   app.route("/api/v1/auth", auth);
-  app.route("/api/v1/auth/oidc", oidcRoutes);
   app.route("/api/v1/public", publicRoutes);
   app.route("/api/v1/webhooks", webhooks);
 
@@ -130,8 +119,6 @@ export function createApp(options?: CreateAppOptions): Hono {
 
   // Protected routes (auth required)
   app.use("/api/v1/*", authMiddleware);
-  // Enforce per-token scopes (no-op for session auth).
-  app.use("/api/v1/*", apiTokenScopeMiddleware);
 
   // Admin-only routes
   const adminOnly = async (c: Context, next: Next) => {
@@ -139,8 +126,6 @@ export function createApp(options?: CreateAppOptions): Hono {
     if (!user?.is_admin) return c.json({ success: false, error: "Forbidden" }, 403);
     await next();
   };
-  app.use("/api/v1/users/*", adminOnly);
-  app.use("/api/v1/users", adminOnly);
   app.use("/api/v1/settings/*", adminOnly);
   app.use("/api/v1/settings", adminOnly);
   app.use("/api/v1/export/*", adminOnly);
@@ -156,7 +141,6 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/api/v1/exchange-rate", exchangeRate);
   app.route("/api/v1/tax-definitions", tax);
   app.route("/api/v1/settings", settings);
-  app.route("/api/v1/users", users);
   app.route("/api/v1/templates", templates);
   app.route("/api/v1/dashboard", dashboard);
   app.route("/api/v1/recurring-invoices", recurring);
@@ -164,20 +148,8 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/api/v1/search", searchRoutes);
   app.route("/api/v1/reminder-rules", reminders);
   app.route("/api/v1/activity", activity);
-  app.route("/api/v1/feedback", feedback);
   app.route("/api/v1/export", exportRoutes);
-  app.route("/api/v1/outgoing-webhooks", outgoingWebhooks);
-  app.route("/api/v1/api-tokens", apiTokens);
   app.route("/api/v1/tags", tags);
 
-  // Official plugins. Mounted after core auth (registered above), each behind
-  // its per-install enablement gate; the management API lists the catalog and
-  // toggles plugins (admin only for writes). Overlays register extra plugins
-  // into the same registry at import time, so they mount here too.
-  app.route("/api/v1/plugins", pluginsAdminRoutes);
-  for (const plugin of getBackendPlugins()) {
-    app.use(`/api/v1/plugins/${plugin.id}/*`, pluginGate(plugin));
-    app.route(`/api/v1/plugins/${plugin.id}`, plugin.routes);
-  }
   return app;
 }

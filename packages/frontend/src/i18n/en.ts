@@ -51,8 +51,6 @@ const en = {
     error_boundary_body: "An unexpected error occurred. Try reloading the page.",
     retry: "Retry",
     load_failed: "Could not load this page. Check your connection and try again.",
-    demo_mode: "Demo Mode",
-    demo_mode_notice: "Data resets periodically",
     just_now: "just now",
     seconds_ago: "{{count}}s ago",
     minutes_ago: "{{count}}m ago",
@@ -81,10 +79,7 @@ const en = {
     reports: "Reports",
 
     settings: "Settings",
-    users: "Users",
-    activity: "Activity",
     templates: "Templates",
-    plugins: "Plugins",
   },
 
   // Header
@@ -124,21 +119,6 @@ const en = {
     sign_in: "Sign In",
     signing_in: "Signing in...",
     login_failed: "Login failed",
-    demo_credentials: "Demo login:",
-    demo_fill: "Fill",
-    sign_in_with_sso: "Sign in with SSO",
-    sign_in_with_provider: "Sign in with {{provider}}",
-    sso_or: "or",
-    oidc_error: {
-      invalid_state: "The sign-in attempt could not be validated. Please try again.",
-      auth_failed: "Sign-in with SSO failed. Please try again or use your password.",
-      email_required: "Your identity provider did not provide an email address.",
-      unverified_email: "Your email address could not be verified by the identity provider.",
-      domain_not_allowed: "Your email domain is not allowed to sign in.",
-      provisioning_disabled: "No account exists for you and self-registration is disabled.",
-      user_inactive: "Your account has been deactivated.",
-      misconfigured: "SSO is not configured correctly. Contact your administrator.",
-    },
     email: "Email",
     forgot_title: "Forgot your password?",
     forgot_description: "Enter your account email and we'll send you a reset link.",
@@ -892,7 +872,6 @@ const en = {
     tab_products: "Products",
     tab_templates: "Templates",
     tab_peppol: "PEPPOL",
-    tab_api: "API",
     preferences: "Preferences",
     save_settings: "Save Settings",
     settings_saved: "Settings saved",
@@ -976,21 +955,7 @@ const en = {
     wipe_cta: "I understand, wipe everything",
     wipe_success: "All data wiped. Reloading…",
     wipe_error: "Wipe failed",
-    demo_section: "Demo & Sample Data",
-    sample_data_description:
-      "Populate this dashboard with sample customers, products, and invoices for screenshots or evaluation. Refuses if invoices already exist.",
-    load_sample_data: "Load Sample Data",
-    sample_data_loading: "Loading sample data…",
-    sample_data_loaded:
-      "Loaded {{customers}} customers, {{products}} products, {{invoices}} invoices",
     sample_data_unavailable: "Database already has invoices; cannot load sample data.",
-    demo_reset_description:
-      "Wipe and re-seed the demo database. Only available because DEMO_MODE is enabled.",
-    reset_demo: "Reset Demo Data",
-    demo_data_reset: "Demo data reset",
-    demo_reset_confirm_title: "Reset demo data?",
-    demo_reset_confirm_body:
-      "This will erase the current database and re-seed it with demo content. There's no undo.",
     // Onboarding wizard
     onboarding_title: "Let's get Inkvoice set up",
     onboarding_subtitle: "A quick walkthrough — you can change anything later in Settings.",
@@ -1133,52 +1098,8 @@ const en = {
   },
 
   // Users
-  users: {
-    title: "Users",
-    add_user: "Add User",
-    username: "Username",
-    display_name: "Display Name",
-    email: "Email",
-    role: "Role",
-    status: "Status",
-    edit_user: "Edit User",
-    new_user: "New User",
-    password: "Password",
-    new_password: "New Password (leave blank to keep)",
-    admin_label: "Admin",
-    active_label: "Active",
-    delete_title: "Delete User",
-    delete_description: "Are you sure you want to delete this user? This action cannot be undone.",
-    batch_delete_description: "This will permanently delete the selected users.",
-    batch_confirm: "This will {{action}} the selected users.",
-    user_created: "User created",
-    user_updated: "User updated",
-    user_deleted: "User deleted",
-    batch_updated: "{{count}} user(s) updated",
-    batch_update_failed: "{{count}} user(s) failed",
-    batch_action_title: "{{action}} {{count}} user(s)?",
-    activate: "Activate",
-    deactivate: "Deactivate",
-    // Validation
-    username_required: "Username is required",
-    username_max: "Username must be at most 50 characters",
-    email_invalid: "Invalid email address",
-    password_required: "Password is required",
-    password_min: "Password must be at least 6 characters",
-  },
 
   // Activity Log
-  activity: {
-    title: "Activity Log",
-    no_activity: "No activity recorded yet.",
-    filter_all: "All Resources",
-    filter_invoices: "Invoices",
-    filter_customers: "Customers",
-    filter_products: "Products",
-    filter_quotes: "Quotes",
-    filter_users: "Users",
-    filter_settings: "Settings",
-  },
 
   // Templates
   templates: {

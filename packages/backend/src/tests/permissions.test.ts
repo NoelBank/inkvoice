@@ -71,9 +71,8 @@ function authedRequest(token: string, path: string, opts: RequestInit = {}) {
 }
 
 describe("admin-only endpoints", () => {
-  // adminOnly middleware in app.ts protects /api/v1/users, /api/v1/settings, /api/v1/export.
+  // adminOnly middleware in app.ts protects /api/v1/settings and /api/v1/export.
   const adminPaths: { path: string; method?: string }[] = [
-    { path: "/api/v1/users" },
     { path: "/api/v1/settings" },
     { path: "/api/v1/export/backup" },
   ];
