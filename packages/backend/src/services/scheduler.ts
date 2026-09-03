@@ -1,7 +1,3 @@
-import { unlinkSync } from "node:fs";
-import { closeDatabase, initDatabase } from "../database/connection";
-import { runMigrations } from "../database/migrations";
-import { seed } from "../database/seed";
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
 import { runBackup, shouldRunBackups } from "./backup.service";

@@ -786,11 +786,6 @@ function handleInboundStatus(result: Extract<TransportWebhookResult, { kind: "st
       resource_id: row.invoice_id,
       metadata: { transmission_id: row.id, detail: result.detail },
     });
-    const payload = {
-      invoice_id: row.invoice_id,
-      transmission_id: row.id,
-      detail: result.detail,
-    };
   }
 }
 

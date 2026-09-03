@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { getDb } from "../database/connection";
 import { isEmailConfigured, sendEmail, testConnection } from "../services/email.service";
 import { getAllSettings, updateSettings } from "../services/settings.service";
-import { getEnv } from "../utils/env";
 import { isSepaIban, isValidBic, normalizeBic, normalizeIban } from "../utils/epc-qr";
 
 const settings = new Hono();

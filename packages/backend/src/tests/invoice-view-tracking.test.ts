@@ -19,7 +19,6 @@ import { isLikelyBot } from "../utils/user-agent";
 
 const TEST_DB = "./data/test-invoice-view.db";
 let app: Hono;
-let token: string;
 
 /** Create a published+sent invoice and return its share token + id. */
 function shareableInvoice(): { id: string; shareToken: string } {
@@ -62,7 +61,6 @@ beforeAll(async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "admin", password: "testpass123" }),
   });
-  token = ((await res.json()) as any).data.token;
 });
 
 afterAll(() => {

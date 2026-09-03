@@ -1,4 +1,3 @@
-import { getEnv } from "../../utils/env";
 import { getSetting } from "../settings.service";
 import { fakeTransport } from "./fake.transport";
 import { peppolShTransport } from "./peppol-sh.transport";

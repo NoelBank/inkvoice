@@ -1,7 +1,5 @@
 import crypto from "node:crypto";
 import { BUILTIN_TEMPLATES, readTemplateFile } from "../services/builtin-templates";
-import { updateSettings } from "../services/settings.service";
-import { toIsoDate } from "../utils/date";
 import { getEnv } from "../utils/env";
 import { logger } from "../utils/logger";
 import { hashPassword } from "../utils/password";
